@@ -170,6 +170,20 @@ const STR = {
   resetDemo:  { pt: 'Recomeçar com dados de exemplo', en: 'Reset with sample data' },
   resetWarn:  { pt: 'Isso apaga tudo que você criou e volta ao exemplo. Fazer isso?', en: 'This deletes everything you created and restores the sample. Do it?' },
 
+  /* whatsapp */
+  waHello:   { pt: 'Oi Melissa! Vi seu app de passeios e quero saber mais 🙂', en: 'Hi Melissa! I found your tours app and would love to know more 🙂' },
+  waSendBooking: { pt: 'Me apresentar no WhatsApp da Melissa', en: 'Say hi on Melissa’s WhatsApp' },
+  waBookingMsg: { pt: 'Oi Melissa! Acabei de reservar: {tour}, {when}. Meu código é {code}. Sou {name} 🙂', en: 'Hi Melissa! I just booked: {tour}, {when}. My code is {code}. I’m {name} 🙂' },
+  waHi:      { pt: 'Oi {name}! Aqui é a Melissa 🙂 Sobre o seu passeio {tour}, {when} — está tudo certo por aí?', en: 'Hi {name}! Melissa here 🙂 About your {tour} on {when} — all good on your end?' },
+  waCharge:  { pt: 'Oi {name}! Aqui é a Melissa 🙂 Faltam {v} do passeio {tour} ({when}). Consegue acertar por aqui? Obrigada!', en: 'Hi {name}! Melissa here 🙂 {v} is still due for {tour} ({when}). Could you settle it here? Thank you!' },
+  yourContact:{ pt: 'Seu contato', en: 'Your contact' },
+  yourWhats: { pt: 'Seu WhatsApp (com DDI)', en: 'Your WhatsApp (with country code)' },
+  yourInsta: { pt: 'Seu Instagram (sem @)', en: 'Your Instagram (without @)' },
+  contactHelp:{ pt: 'É para onde vão os botões de WhatsApp e Instagram do site inteiro.', en: 'Every WhatsApp and Instagram button on the site points here.' },
+  contactSaved:{ pt: 'Contato salvo. Todos os botões do site já apontam para ele.', en: 'Contact saved. Every button on the site now points to it.' },
+  placeholderWarn:{ pt: 'Este número é de exemplo — troque pelo seu WhatsApp de verdade.', en: 'This is a sample number — replace it with your real WhatsApp.' },
+  saveBtn:   { pt: 'Salvar', en: 'Save' },
+
   /* divulgar */
   share:      { pt: 'Divulgar', en: 'Share' },
   shareLink:  { pt: 'O link dos seus clientes', en: 'Your guests’ link' },

@@ -12,6 +12,31 @@ const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
 const app = $('#app');
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+/* ---------- contato (WhatsApp, mapa, agenda, vCard) ---------- */
+function waNum() { return (DB.settings.whats || '').replace(/\D/g, ''); }
+function waLink(text, num) {
+  return 'https://wa.me/' + (num || waNum()) + (text ? '?text=' + encodeURIComponent(text) : '');
+}
+function mapLink(q) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q); }
+function icsFor(b, x) {
+  const dt = b.date.replace(/-/g, '') + 'T' + b.time.replace(':', '') + '00';
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//VoyagesImages//PT', 'BEGIN:VEVENT',
+    'UID:' + b.code + '@voyages-images', 'DTSTART:' + dt,
+    'SUMMARY:' + (x.name[LANG] || x.name.pt) + ' — Melissa Hallais',
+    'LOCATION:' + x.meeting.replace(/,/g, '\\,'),
+    'DESCRIPTION:' + (LANG === 'pt' ? 'Código ' : 'Code ') + b.code,
+    'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+}
+function vcfLink() {
+  const v = ['BEGIN:VCARD', 'VERSION:3.0', 'FN:Melissa Hallais',
+    'ORG:Voyages & Images', 'TEL;TYPE=CELL:' + DB.settings.whats,
+    'URL:https://eugeniofim.github.io/app-melissa/',
+    'X-SOCIALPROFILE;TYPE=instagram:https://instagram.com/' + DB.settings.insta,
+    'END:VCARD'].join('\r\n');
+  return 'data:text/vcard;charset=utf-8,' + encodeURIComponent(v);
+}
+
 /* ---------- toast ---------- */
 const toastEl = document.createElement('div');
 toastEl.className = 'toast'; document.body.appendChild(toastEl);
@@ -104,10 +129,10 @@ function viewHub() {
       <button class="lk main" id="goTours">
         <span class="ic">📍</span><span><b>${t('seeTours')}</b><small>${t('seeToursSub')}</small></span><span class="go">→</span>
       </button>
-      <a class="lk" href="https://instagram.com" target="_blank" rel="noopener"><span class="ic">◎</span><span><b>Instagram</b><small>@melissahallais</small></span><span class="go">→</span></a>
-      <button class="lk" data-demo="wa"><span class="ic">✆</span><span><b>${t('whatsapp')}</b></span><span class="go">→</span></button>
+      <a class="lk" href="https://instagram.com/${esc(DB.settings.insta)}" target="_blank" rel="noopener"><span class="ic">◎</span><span><b>Instagram</b><small>@${esc(DB.settings.insta)}</small></span><span class="go">→</span></a>
+      <a class="lk" href="${waLink(t('waHello'))}" target="_blank" rel="noopener"><span class="ic">✆</span><span><b>${t('whatsapp')}</b></span><span class="go">→</span></a>
       <button class="lk" data-demo="rev"><span class="ic">★</span><span><b>${t('reviews')}</b><small>4,9 · 128</small></span><span class="go">→</span></button>
-      <button class="lk" data-demo="vcf"><span class="ic">＋</span><span><b>${t('saveContact')}</b></span><span class="go">→</span></button>
+      <a class="lk" href="${vcfLink()}" download="melissa-hallais.vcf"><span class="ic">＋</span><span><b>${t('saveContact')}</b></span><span class="go">→</span></a>
       <button class="adm-entry" id="admEntry">🔒 ${t('admEntry')}</button>
     </div>
   </div>`;
@@ -306,14 +331,14 @@ function renderBook() {
         <p>${fmtDate(b.date)} · ${b.time}</p><p>${esc(x.meeting)}</p>
         ${due > 0 ? `<p class="due">${t('balanceNote', { v: eur(due), d: fmtDate(Bookings.dueDate(b)) })}</p>` : ''}
       </div>
+      <a class="cta" style="text-decoration:none;text-align:center" target="_blank" rel="noopener"
+         href="${waLink(t('waBookingMsg', { code: b.code, tour: x.name[LANG] || x.name.pt, when: fmtDate(b.date) + ' ' + b.time, name: b.name }))}">✆ ${t('waSendBooking')}</a>
       <div class="okrow">
-        <button class="mini" data-demo>${t('addCal')}</button>
-        <button class="mini" data-demo>${t('msgMelissa')}</button>
-        <button class="mini" data-demo>${t('seeMap')}</button>
+        <a class="mini" href="${icsFor(b, x)}" download="${b.code}.ics">${t('addCal')}</a>
+        <a class="mini" target="_blank" rel="noopener" href="${mapLink(x.meeting)}">${t('seeMap')}</a>
       </div>
       <button class="cta soft" id="again">${t('bookAgain')}</button>`;
     $('#again').onclick = () => go('/tours');
-    $$('[data-demo]', book).forEach(z => z.onclick = () => toast(LANG === 'pt' ? 'No app final este botão funciona de verdade.' : 'Works for real in the final app.'));
   }
 }
 
@@ -571,7 +596,12 @@ function admBookings() {
         } else pill = `<span class="pill warn">${t('depositPaid', { v: eur(due) })}</span>`;
         act = `<button class="mini" data-charge="${b.id}">${t('chargeNow')}</button>`;
       }
-      const wa = `https://wa.me/${b.whats.replace(/\D/g, '')}?text=${encodeURIComponent((LANG === 'pt' ? 'Oi ' : 'Hi ') + b.name.split(' ')[0] + '!')}`;
+      const first = b.name.split(' ')[0];
+      const tourName = x ? (x.name[LANG] || x.name.pt) : '';
+      const waText = (b.status !== 'cancelled' && due > 0)
+        ? t('waCharge', { name: first, v: eur(due), tour: tourName, when: fmtDate(b.date) })
+        : t('waHi', { name: first, tour: tourName, when: fmtDate(b.date) + ' ' + b.time });
+      const wa = waLink(waText, b.whats.replace(/\D/g, ''));
       return `<div class="trow">
         <div class="tinfo"><b>${esc(b.name)}</b>
           <small>${esc(x ? x.name.pt : '?')} · ${fmtDate(b.date)} ${b.time} · ${b.pax}p · <span class="mono">${b.code}</span></small></div>
@@ -666,6 +696,16 @@ function admSettings() {
       ${langBar()}
     </section>
     <section class="card">
+      <h3>${t('yourContact')}</h3>
+      ${DB.settings.placeholderContact ? `<div class="alert warn">⚠ ${t('placeholderWarn')}</div>` : ''}
+      <p class="why">${t('contactHelp')}</p>
+      <div class="frow">
+        <label class="fld">${t('yourWhats')}<input id="setWhats" value="${esc(DB.settings.whats)}" placeholder="+33 6 12 34 56 78"></label>
+        <label class="fld">${t('yourInsta')}<input id="setInsta" value="${esc(DB.settings.insta)}" placeholder="melissahallais"></label>
+        <button class="cta sm" id="setContactSave">${t('saveBtn')}</button>
+      </div>
+    </section>
+    <section class="card">
       <h3>${t('share')}</h3>
       <label class="fld">${t('shareLink')}
         <div class="crow"><input id="shLink" readonly value="https://eugeniofim.github.io/app-melissa/">
@@ -693,6 +733,12 @@ function admSettings() {
       <button class="mini danger" id="reset">${t('resetDemo')}</button>
     </section>`);
   bindLang(app);
+  $('#setContactSave').onclick = () => {
+    DB.settings.whats = $('#setWhats').value.trim();
+    DB.settings.insta = $('#setInsta').value.trim().replace(/^@/, '');
+    DB.settings.placeholderContact = false; save();
+    toast(t('contactSaved')); admSettings();
+  };
   $('#shCopy').onclick = async () => {
     try { await navigator.clipboard.writeText($('#shLink').value); } catch (e) { $('#shLink').select(); document.execCommand('copy'); }
     toast(t('copied'));

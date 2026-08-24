@@ -23,7 +23,8 @@ Coupon     {code, pct, until, oncePerPerson, uses:[email]}
 
 function _blank() {
   return { tours: [], rules: [], departures: [], blocks: [], bookings: [], coupons: [],
-           settings: { lang: 'pt', tutorialClient: true, tutorialAdm: true, admName: 'Melissa' } };
+           settings: { lang: 'pt', tutorialClient: true, tutorialAdm: true, admName: 'Melissa',
+           whats: '+33612345678', insta: 'melissahallais', placeholderContact: true } };
 }
 
 function _seed() {
@@ -58,6 +59,10 @@ let DB = null;
 function load() {
   try { DB = JSON.parse(localStorage.getItem(DB_KEY)) || null; } catch (e) { DB = null; }
   if (!DB || !DB.tours) { DB = _seed(); save(); }
+  if (DB.settings.whats === undefined) {
+    DB.settings.whats = '+33612345678'; DB.settings.insta = 'melissahallais';
+    DB.settings.placeholderContact = true; save();
+  }
   return DB;
 }
 function save() { localStorage.setItem(DB_KEY, JSON.stringify(DB)); }
