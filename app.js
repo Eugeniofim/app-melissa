@@ -758,3 +758,16 @@ function admSettings() {
 }
 
 route();
+
+/* ---------- nuvem ---------- */
+cloudStart((r) => {
+  if (r.bootstrap) return;
+  if (r.fresh && r.fresh.length && location.hash.startsWith('#/adm')) {
+    const b = r.fresh[r.fresh.length - 1];
+    toast((LANG === 'pt' ? '🎉 Nova reserva: ' : '🎉 New booking: ') + b.name + ' · ' + eur(b.total));
+  }
+  /* re-render seguro: nunca no meio de um formulário de reserva */
+  const h = location.hash;
+  const inCheckout = h.startsWith('#/tour/') && viewTour._s && viewTour._s.step > 1;
+  if (!inCheckout && !document.querySelector('.coach')) route();
+});

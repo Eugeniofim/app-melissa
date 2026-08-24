@@ -65,7 +65,10 @@ function load() {
   }
   return DB;
 }
-function save() { localStorage.setItem(DB_KEY, JSON.stringify(DB)); }
+function save() {
+  localStorage.setItem(DB_KEY, JSON.stringify(DB));
+  if (typeof cloudPushState === 'function') cloudPushState();
+}
 function resetDemo() { DB = _seed(); save(); }
 
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -186,7 +189,9 @@ const Bookings = {
                       kind: policy === 'split' ? 'deposit' : 'full' });
     DB.bookings.push(b);
     if (couponCode) Coupons.consume(couponCode, email);
-    save();
+    localStorage.setItem(DB_KEY, JSON.stringify(DB));
+    if (typeof cloudPushBooking === 'function') cloudPushBooking(b);
+    if (couponCode && typeof cloudPushState === 'function') cloudPushState();
     return b;
   },
 
@@ -197,9 +202,12 @@ const Bookings = {
     const b = Bookings.get(id); if (!b) return;
     const due = Bookings.due(b); if (due <= 0) return;
     b.payments.push({ amount: due, date: isoToday(), method: method || 'card', kind: 'balance' });
-    save();
+    localStorage.setItem(DB_KEY, JSON.stringify(DB));
+    if (typeof cloudUpdateBooking === 'function') cloudUpdateBooking(b);
   },
-  cancel(id) { const b = Bookings.get(id); if (b) { b.status = 'cancelled'; save(); } },
+  cancel(id) { const b = Bookings.get(id); if (b) { b.status = 'cancelled';
+    localStorage.setItem(DB_KEY, JSON.stringify(DB));
+    if (typeof cloudUpdateBooking === 'function') cloudUpdateBooking(b); } },
 
   /* extrato: uma linha por PAGAMENTO (é o que o contador quer) */
   statement(fromIso, toIso) {
