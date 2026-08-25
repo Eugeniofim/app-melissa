@@ -1039,29 +1039,51 @@ function admBookings() {
           const days = Math.round((new Date(today) - new Date(dd)) / 864e5);
           pill = `<span class="pill bad">${t('daysLate', { n: days })}</span>`;
         } else pill = `<span class="pill warn">${t('depositPaid', { v: eur(due) })}</span>`;
-        act = `<button class="mini" data-charge="${b.id}">${t('chargeNow')}</button>`;
+        act = `<button class="mini strong" data-got="${b.id}">${t('gotBalance')}</button>`;
       }
       const first = b.name.split(' ')[0];
       const tourName = x ? (x.name[LANG] || x.name.pt) : '';
       const waText = (b.status !== 'cancelled' && due > 0)
         ? t('waCharge', { name: first, v: eur(due), tour: tourName, when: fmtDate(b.date) })
         : t('waHi', { name: first, tour: tourName, when: fmtDate(b.date) + ' ' + b.time });
-      const wa = waLink(waText, b.whats.replace(/\D/g, ''));
+      const wa = waLink(waText, (b.whats || '').replace(/\D/g, ''));
+      /* cobrar é mandar mensagem. É este o botão que a palavra "cobrar" promete. */
+      const cobrar = b.whats
+        ? `<a class="mini cta-ish" target="_blank" rel="noopener" href="${wa}">${due > 0 ? t('askPay') : t('sendMsg')}</a>`
+        : (b.email
+            ? `<a class="mini cta-ish" href="mailto:${esc(b.email)}?subject=${encodeURIComponent(tourName)}&body=${encodeURIComponent(waText)}">${t('askPayMail')}</a>`
+            : '');
       return `<div class="trow">
         <div class="tinfo"><b>${esc(b.name)}</b>
           <small>${esc(x ? x.name.pt : '?')} · ${fmtDate(b.date)} ${b.time} · ${b.pax}p · <span class="mono">${b.code}</span></small></div>
         <b class="mono">${eur(b.total)}</b>${pill}
-        <div class="tacts">${act}<a class="mini" target="_blank" rel="noopener" href="${wa}">✆</a></div>
+        <div class="tacts" id="ta-${b.id}">${cobrar}${act}</div>
       </div>`;
     }).join('')}</div>`
     : `<div class="emptybox"><p>${t('emptyBookings')}</p></div>`}`);
-  $$('[data-charge]').forEach(btn => btn.onclick = () => {
-    const b = Bookings.get(btn.dataset.charge);
-    Bookings.payBalance(b.id, 'card');
-    toast(t('charged', { v: eur(b.payments.at(-1).amount), n: b.name.split(' ')[0] }));
-    admBookings();
+  /* Dar baixa move dinheiro no extrato. Antes de gravar, perguntamos COMO
+     ela recebeu — o botão antigo cravava "cartão" e o extrato saía mentindo. */
+  $$('[data-got]').forEach(btn => btn.onclick = () => {
+    const id = btn.dataset.got;
+    const cx = $('#ta-' + id);
+    if (!cx) return;
+    const formas = [['pix','mPix'],['card','mCard'],['cash','mCash'],['transfer','mTransfer'],['other','mOther']];
+    cx.innerHTML = `<span class="howgot">${t('howGot')}:</span>`
+      + formas.map(([v, k]) => `<button class="mini" data-m="${v}">${t(k)}</button>`).join('')
+      + `<button class="mini ghost" data-m="">${t('cancelSm')}</button>`;
+    $$('[data-m]', cx).forEach(b2 => b2.onclick = () => {
+      if (!b2.dataset.m) return admBookings();
+      const b = Bookings.get(id);
+      Bookings.payBalance(id, b2.dataset.m);
+      toast(t('charged', { v: eur(b.payments.at(-1).amount), n: b.name.split(' ')[0] }));
+      admBookings();
+    });
   });
 }
+
+const METODO = { pix: 'mPix', card: 'mCard', cash: 'mCash', transfer: 'mTransfer',
+                 applepay: 'mApple', other: 'mOther' };
+function formaPg(m) { return METODO[m] ? t(METODO[m]) : (m || '—'); }
 
 /* ---- Extrato ---- */
 function admMoney() {
@@ -1085,7 +1107,7 @@ function admMoney() {
       <tbody>${rows.map(r => {
         const x = Tours.get(r.tourId);
         return `<tr><td class="mono">${r.date}</td><td>${esc(r.client)}</td><td>${esc(x ? x.name.pt : '?')}</td>
-          <td>${t(KIND[r.kind])}</td><td>${r.method}</td><td class="mono right">${eur(r.amount)}</td></tr>`;
+          <td>${t(KIND[r.kind])}</td><td>${formaPg(r.method)}</td><td class="mono right">${eur(r.amount)}</td></tr>`;
       }).join('')}</tbody>
       <tfoot><tr><td colspan="5"><b>${t('received')}</b></td><td class="mono right"><b>${eur(total)}</b></td></tr></tfoot></table>`
       : `<p class="empty">${t('stEmpty')}</p>`}
@@ -1096,7 +1118,7 @@ function admMoney() {
   $('#dlCsv').onclick = () => {
     const csv = [cols.join(';')].concat(rows.map(r => {
       const x = Tours.get(r.tourId);
-      return [r.date, r.client, x ? x.name.pt : '', t(KIND[r.kind]), r.method, r.amount].join(';');
+      return [r.date, r.client, x ? x.name.pt : '', t(KIND[r.kind]), formaPg(r.method), r.amount].join(';');
     })).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
