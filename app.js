@@ -12,6 +12,20 @@ const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
 const app = $('#app');
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+/* ---------- abertura ----------
+   Aparece uma vez por sessão. Quem só quer reservar não vê a marca
+   três vezes seguidas — e um toque pula na hora. */
+(function splash() {
+  const el = document.getElementById('splash');
+  if (!el) return;
+  const kill = () => el.remove();
+  if (sessionStorage.getItem('vi_seen')) return kill();
+  sessionStorage.setItem('vi_seen', '1');
+  el.addEventListener('pointerdown', kill);
+  const slow = matchMedia('(prefers-reduced-motion:reduce)').matches ? 1250 : 2760;
+  setTimeout(kill, slow);
+})();
+
 /* ---------- contato (WhatsApp, mapa, agenda, vCard) ---------- */
 function waNum() { return (DB.settings.whats || '').replace(/\D/g, ''); }
 function waLink(text, num) {
@@ -113,7 +127,12 @@ function route() {
   const h = location.hash.slice(2) || '';
   const p = h.split('/');
   document.documentElement.lang = LANG === 'pt' ? 'pt-BR' : 'en';
-  if (p[0] === 'adm')      viewAdm(p[1] || 'today', p[2]);
+  if (p[0] === 'login')    viewLogin();
+  else if (p[0] === 'adm') {
+    if (DB.settings.authRequired && !isLoggedIn()) return viewLogin('in');
+    viewAdm(p[1] || 'today', p[2]);
+  }
+  else if (p[0] === 'about') viewAbout();
   else if (p[0] === 'tours') viewShowcase();
   else if (p[0] === 'tour')  viewTour(p[1]);
   else                       viewHub();
@@ -148,6 +167,10 @@ function viewHub() {
       <button class="lk main" id="goTours">
         <span class="ic">📍</span><span><b>${t('seeTours')}</b><small>${t('seeToursSub')}</small></span><span class="go" aria-hidden="true">→</span>
       </button>
+      <button class="lk" id="goAbout">
+        <span class="ic"><img id="hubFace" src="${esc(DB.settings.photo || 'melissa.jpg')}" alt=""
+          style="width:34px;height:34px;border-radius:50%;object-fit:cover;object-position:center 20%"></span><span><b>${t('aboutLink')}</b><small>${t('aboutLinkSub')}</small></span><span class="go" aria-hidden="true">→</span>
+      </button>
       <a class="lk" href="https://instagram.com/${esc(DB.settings.insta)}" target="_blank" rel="noopener"><span class="ic">◎</span><span><b>Instagram</b><small>@${esc(DB.settings.insta)}</small></span><span class="go" aria-hidden="true">→</span></a>
       <a class="lk" href="${waLink(t('waHello'))}" target="_blank" rel="noopener"><span class="ic">✆</span><span><b>${t('whatsapp')}</b></span><span class="go" aria-hidden="true">→</span></a>
       <button class="adm-entry" id="admEntry">🔒 ${t('admEntry')}</button>
@@ -155,12 +178,77 @@ function viewHub() {
   </div>`;
   bindLang(app);
   $('#goTours').onclick = () => go('/tours');
+  fallbackPhoto($('#hubFace'), '☺');
+  $('#goAbout').onclick = () => go('/about');
   $('#admEntry').onclick = () => go('/adm/today');
   $$('[data-demo]').forEach(b => b.onclick = () => toast(LANG === 'pt' ? 'Protótipo: no app final este botão abre o destino real.' : 'Prototype: this opens the real destination in the final app.'));
   Coach.start([
     { sel: '#goTours',  txt: { pt: 'Seu cliente começa aqui: toca e vê todos os passeios com datas reais.', en: 'Your guest starts here: all tours with live dates.' } },
     { sel: '#admEntry', txt: { pt: 'E esta é a SUA porta, Melissa — o painel onde você controla tudo.', en: 'And this is YOUR door, Melissa — the panel where you control everything.' } },
   ], 'tutorialClient');
+}
+
+/* --- quem sou eu ---
+   Vem antes do preço de propósito: quem confia na pessoa
+   aceita melhor o valor. A foto e o texto saem dos Ajustes. */
+function viewAbout() {
+  const st = DB.settings;
+  const bio = (st.bio && (st.bio[LANG] || st.bio.pt)) || '';
+  const paras = bio.split(/\n\s*\n/).filter(Boolean);
+  const nTours = Tours.live().length;
+
+  app.innerHTML = `
+  <header class="topbar">
+    <button class="backbtn" id="bk" aria-label="${t('back')}">←</button>
+    <span class="tbrand">${logoMark(24, 'var(--brand-amarelo)')}<b>Melissa Hallais</b></span>
+    ${langBar('right')}
+  </header>
+  <main class="wrap about">
+    <div class="ab-hero">
+      <img class="ab-photo" id="abImg" src="${esc(st.photo || 'melissa.jpg')}" alt="Melissa Hallais">
+      <div class="ab-cap">
+        ${st.badge ? `<span class="ab-badge">✓ ${esc(st.badge)}</span>` : ''}
+        <h1>${t('aboutTitle')}</h1>
+        <p class="ab-meta">${t('role')}</p>
+      </div>
+    </div>
+
+    <div class="ab-body">
+      ${paras.map(p => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('')}
+    </div>
+
+    <div class="ab-facts">
+      <div><small>${t('aboutBased')}</small><b>${esc(st.base || 'Colmar')}</b></div>
+      <div><small>${LANG === 'pt' ? 'Idiomas' : 'Languages'}</small><b>${t('aboutLangs')}</b></div>
+      <div><small>${LANG === 'pt' ? 'Passeios' : 'Tours'}</small><b>${nTours}</b></div>
+    </div>
+
+    <div class="ab-cta">
+      <h3>${t('aboutMeet')}</h3>
+      <p>${t('aboutMeetSub')}</p>
+      <div class="ab-btns">
+        <button class="cta" id="abTours">${t('aboutCta')}</button>
+        <a class="mini" href="${waLink(t('waHello'))}" target="_blank" rel="noopener">${t('aboutTalk')}</a>
+        <a class="mini" href="https://instagram.com/${esc(st.insta)}" target="_blank" rel="noopener">@${esc(st.insta)}</a>
+      </div>
+    </div>
+  </main>`;
+  bindLang(app);
+  /* sem foto ainda: em vez de um ícone quebrado, diz onde ela põe a dela */
+  fallbackPhoto($('#abImg'), `<div class="ab-photo none">${LANG === 'pt'
+    ? 'Sua foto entra aqui.<br>Ajustes → Sua foto e sua história.'
+    : 'Your photo goes here.<br>Settings → Your photo and your story.'}</div>`);
+  $('#bk').onclick = () => go('/');
+  $('#abTours').onclick = () => go('/tours');
+}
+
+/* A foto pode vir do painel (dataURL) ou de um melissa.jpg na pasta.
+   Se não houver nenhuma das duas, troca a imagem pelo aviso. */
+function fallbackPhoto(img, html) {
+  if (!img) return;
+  const swap = () => { img.outerHTML = html; };
+  img.onerror = swap;
+  if (img.complete && img.naturalWidth === 0) swap();
 }
 
 const TYPE_LABEL = { walk: 'fWalk', photo: 'fPhoto', bike: 'fBike' };
@@ -311,6 +399,8 @@ function renderBook() {
       <label class="fld">${t('email')}<input id="fE" type="email" autocomplete="email"></label>
       <label class="fld">${t('whatsLbl')}<input id="fW" placeholder="+33 6 …"><small class="why">${t('whyWhats')}</small></label>
       <label class="fld">${t('instaLbl')}<input id="fI" placeholder="@"></label>
+      <label class="optin"><input type="checkbox" id="fOptin">
+        <span><b>${t('consentLbl')}</b><small>${t('consentWhy')}</small></span></label>
       ${splitAllowed ? `
       <div class="payopts">
         <button class="popt ${S.policy === 'full' ? 'on' : ''}" data-p="full"><b>${t('payFull')}</b><small>${t('payFullSub')} · ${eur(total)}</small></button>
@@ -330,12 +420,14 @@ function renderBook() {
     $('#payBtn').onclick = () => {
       const name = $('#fN').value.trim(), email = $('#fE').value.trim(), whats = $('#fW').value.trim();
       if (!name || !email || !whats) return toast(LANG === 'pt' ? 'Preencha nome, e-mail e WhatsApp.' : 'Fill in name, email and WhatsApp.');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { $('#fE').focus(); return toast(t('badEmail')); }
       if (Cal.seatsLeft(x.id, S.date, S.time, S.cap || x.max) < S.pax) { S.step = 1; S.time = null; renderBook(); return toast(t('lastSpotGone')); }
       const btn = $('#payBtn'); btn.disabled = true; btn.textContent = t('confirming');
       setTimeout(() => {
         S.booking = Bookings.create({
           tourId: x.id, date: S.date, time: S.time, name, email, whats,
           insta: $('#fI').value.trim(), pax: S.pax, coupon: S.coupon,
+          consent: $('#fOptin').checked,
           policy: splitAllowed ? S.policy : 'full', origin: 'site',
         });
         S.step = 4; renderBook();
@@ -396,7 +488,10 @@ function admShell(tab, inner) {
   </div>`;
   $$('.nb[data-tab]').forEach(b => b.onclick = () => go('/adm/' + b.dataset.tab));
   $('#viewSite').onclick = () => go('/');
-  $('#exitAdm').onclick = () => go('/');
+  $('#exitAdm').onclick = async () => {
+    if (isLoggedIn()) { await authSignOut(); toast(t('loginOut')); }
+    go('/');
+  };
 }
 
 function viewAdm(tab, arg) {
@@ -415,6 +510,12 @@ function viewAdm(tab, arg) {
 
 /* ---- Hoje ---- */
 function admToday() {
+  if (!DB.settings.authRequired && !isLoggedIn() && !admToday._asked) {
+    admToday._asked = true;
+    setTimeout(() => {
+      if (confirm(t('protectWhy') + '\n\n' + t('protectNow') + '?')) go('/login');
+    }, 900);
+  }
   const today = isoToday();
   const deps = Tours.all().flatMap(x =>
     Cal.departures(x.id, today, today).map(d => ({ ...d, tour: x })));
@@ -790,6 +891,29 @@ function admSettings() {
       </div>
     </section>
     <section class="card">
+      <h3>${t('admAbout')}</h3>
+      <p class="why">${t('admAboutHelp')}</p>
+      <div class="ph-edit">
+        <img id="abThumb" src="${esc(DB.settings.photo || 'melissa.jpg')}" alt="">
+        <div>
+          <label class="fld">${t('admPhoto')}<input type="file" id="abPhoto" accept="image/*"></label>
+          <p class="why">${t('admPhotoHelp')}</p>
+        </div>
+      </div>
+      <div class="rulesep"></div>
+      <div class="frow">
+        <label class="fld">${t('admBadge')}<input id="abBadge" value="${esc(DB.settings.badge || '')}" placeholder="Guide Conférencier · Guides d'Alsace"></label>
+        <label class="fld">${t('admBase')}<input id="abBase" value="${esc(DB.settings.base || '')}" placeholder="Colmar, Alsácia"></label>
+      </div>
+      <label class="fld">${t('admBio')} (PT)<textarea id="abBioPt" rows="6">${esc((DB.settings.bio && DB.settings.bio.pt) || '')}</textarea></label>
+      <label class="fld">${t('admBio')} (EN)<textarea id="abBioEn" rows="6">${esc((DB.settings.bio && DB.settings.bio.en) || '')}</textarea></label>
+      <p class="why">${t('admBioHelp')}</p>
+      <div class="btnrow">
+        <button class="cta sm" id="abSave">${t('saveBtn')}</button>
+        <button class="mini" id="abSee">${t('admPreview')}</button>
+      </div>
+    </section>
+    <section class="card">
       <h3>${t('share')}</h3>
       <label class="fld">${t('shareLink')}
         <div class="crow"><input id="shLink" readonly value="https://eugeniofim.github.io/app-melissa/">
@@ -831,6 +955,26 @@ function admSettings() {
     DB.settings.placeholderContact = false; save();
     toast(t('contactSaved')); admSettings();
   };
+  /* foto + história */
+  let abNew = null;
+  fallbackPhoto($('#abThumb'), '<div class="none">☺</div>');
+  $('#abPhoto').onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    abNew = await readImageResized(f, 700, 0.82);   /* retrato: 700px basta e pesa pouco */
+    const prev = $('.ph-edit img') || $('.ph-edit .none');
+    if (prev.tagName === 'IMG') prev.src = abNew;
+    else prev.outerHTML = `<img src="${abNew}" alt="">`;
+  };
+  $('#abSave').onclick = () => {
+    if (abNew) DB.settings.photo = abNew;
+    DB.settings.badge = $('#abBadge').value.trim();
+    DB.settings.base  = $('#abBase').value.trim();
+    DB.settings.bio   = { pt: $('#abBioPt').value, en: $('#abBioEn').value };
+    save(); cloudPushState();
+    toast(t('aboutSaved')); admSettings();
+  };
+  $('#abSee').onclick = () => go('/about');
+
   $('#shCopy').onclick = async () => {
     try { await navigator.clipboard.writeText($('#shLink').value); } catch (e) { $('#shLink').select(); document.execCommand('copy'); }
     toast(t('copied'));
@@ -1038,13 +1182,18 @@ function drawBars(cv, series, hi) {
    CLIENTES — a base que nasce sozinha
 ===================================================== */
 function admClients() {
-  const list = Clients.all();
-  const total = list.reduce((s, c) => s + c.spent, 0);
+  const all = Clients.all();
+  const onlyOptIn = admClients._f === 'optin';
+  const list = onlyOptIn ? all.filter(c => c.consent) : all;
+  const canMail = all.filter(c => c.consent).length;
+  const total = all.reduce((s, c) => s + c.spent, 0);
   const cols = t('clCols');
   admShell('clients', `
     <div class="pagehead"><h1 class="pageh">${t('clTitle')}</h1>
       <div class="chips">
-        <span class="chip on">${t('clTotal', { n: list.length, v: eur(total) })}</span>
+        <span class="chip on">${t('clTotal', { n: all.length, v: eur(total) })}</span>
+        <button class="chip ${onlyOptIn ? '' : 'on'}" id="clAll">${t('clAll')}</button>
+        <button class="chip ${onlyOptIn ? 'on' : ''}" id="clOpt">${t('clOnlyOptIn', { n: canMail })} · ${canMail}</button>
         <button class="mini" id="clCsv">${t('clDlCsv')}</button>
       </div></div>
     <section class="card">
@@ -1052,7 +1201,8 @@ function admClients() {
       <tbody>${list.map(c => `<tr>
         <td><b>${esc(c.name)}</b><br><small class="mono">${esc(c.email || '')}</small></td>
         <td>${c.tours > 1 ? `<span class="pill ok">${t('clRepeat', { n: c.tours })}</span>`
-                          : `<span class="pill">${t('clNew')}</span>`}</td>
+                          : `<span class="pill">${t('clNew')}</span>`}
+          <br><span class="pill ${c.consent ? 'ok' : ''}" title="${c.consentAt ? c.consentAt.slice(0,10) : ''}">${c.consent ? '✓ ' + t('consentYes') : t('consentNo')}</span></td>
         <td class="mono right">${eur(c.spent)}</td>
         <td class="mono">${c.last ? fmtDate(c.last) : '—'}</td>
         <td class="tacts">
@@ -1064,15 +1214,70 @@ function admClients() {
         </td></tr>`).join('')}</tbody></table>`
       : `<p class="empty">${t('clEmpty')}</p>`}
     </section>`);
+  $('#clAll').onclick = () => { admClients._f = 'all'; admClients(); };
+  $('#clOpt').onclick = () => { admClients._f = 'optin'; admClients(); };
   $('#clCsv').onclick = () => {
     const csv = [cols.join(';')].concat(list.map(c =>
-      [c.name, c.email, c.whats, c.insta || '', c.tours, c.spent, c.last].join(';'))).join('\n');
+      [c.name, c.email, c.whats, c.insta || '', c.tours, c.spent, c.last,
+       c.consent ? 'sim ' + (c.consentAt || '').slice(0, 10) : 'nao'].join(';'))).join('\n');
     const a2 = document.createElement('a');
     a2.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
     a2.download = 'clientes.csv'; a2.click();
   };
 }
 
+
+/* =====================================================
+   LOGIN DA MELISSA
+===================================================== */
+function viewLogin(mode) {
+  const m = mode || viewLogin._m || 'in';
+  viewLogin._m = m;
+  app.innerHTML = `
+  <div class="loginwrap">
+    <div class="logincard">
+      <div class="loginlogo">${logoMark(46, 'var(--brand-amarelo)')}</div>
+      <h1>${t('loginTitle')}</h1>
+      <p class="why center">${m === 'up' ? t('protectWhy') : t('loginSub')}</p>
+      <label class="fld">${t('loginEmail')}
+        <input id="lgEmail" type="email" autocomplete="email" inputmode="email" placeholder="melissa@exemplo.com"></label>
+      <label class="fld">${t('loginPass')}
+        <input id="lgPass" type="password" autocomplete="${m === 'up' ? 'new-password' : 'current-password'}"></label>
+      <button class="cta" id="lgGo">${m === 'up' ? t('loginCreate') : t('loginBtn')}</button>
+      <button class="linkbtn center" id="lgSwap">${m === 'up' ? t('loginBack') : t('loginFirst')}</button>
+      ${m === 'in' ? `<button class="linkbtn center" id="lgForgot">${t('loginForgot')}</button>` : ''}
+      <p class="fine center">🔒 ${t('loginSafe')}</p>
+      <button class="linkbtn center" id="lgHome">← ${t('viewSite')}</button>
+    </div>
+  </div>`;
+
+  const busy = (on) => { const b = $('#lgGo'); b.disabled = on; b.textContent = on ? t('loginWait') : (m === 'up' ? t('loginCreate') : t('loginBtn')); };
+
+  $('#lgGo').onclick = async () => {
+    const email = $('#lgEmail').value.trim(), pass = $('#lgPass').value;
+    if (!email) { $('#lgEmail').focus(); return toast(t('loginNoEmail')); }
+    if (m === 'up' && pass.length < 8) { $('#lgPass').focus(); return toast(t('loginWeak')); }
+    busy(true);
+    const r = m === 'up' ? await authSignUp(email, pass) : await authSignIn(email, pass);
+    busy(false);
+    if (!r.ok) return toast(r.error || t('loginWrong'));
+    if (r.needsConfirm) return toast(t('loginConfirm', { e: email }));
+    const own = await claimOwnership();
+    if (own.taken) { await authSignOut(); return toast(t('loginTaken')); }
+    DB.settings.authRequired = true; save();
+    toast(t('loginHi'));
+    go('/adm/today');
+  };
+  $('#lgSwap').onclick = () => viewLogin(m === 'up' ? 'in' : 'up');
+  const fg = $('#lgForgot');
+  if (fg) fg.onclick = async () => {
+    const email = $('#lgEmail').value.trim();
+    if (!email) { $('#lgEmail').focus(); return toast(t('loginNoEmail')); }
+    await authReset(email); toast(t('loginSent', { e: email }));
+  };
+  $('#lgHome').onclick = () => go('/');
+  $('#lgEmail').focus();
+}
 
 /* ---------- proteção contra perda de trabalho ----------
    A nuvem chega a cada 25s. Se ela chegar enquanto a Melissa preenche

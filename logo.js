@@ -1,25 +1,30 @@
 /* =====================================================
    VOYAGES & IMAGES — marca
-   Reconstrução vetorial do símbolo do logotipo:
-   o colombage alsaciano (duas vigas + X + travessa),
-   nas cores oficiais. Substituir pelo SVG original
-   quando a Melissa enviar o arquivo.
+   Símbolo redesenhado a partir do logotipo original:
+   colombage alsaciano — duas vigas, o X e a travessa.
+   Proporção real: 272 × 485, viga de 27.
    ===================================================== */
 'use strict';
 
-/* símbolo sozinho — para ícones, selos, avatar */
-function logoMark(size = 32, color = '#d9aa0e') {
-  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" fill="none"
-    stroke="${color}" stroke-width="9" stroke-linecap="square" aria-hidden="true">
-    <path d="M31 44 L69 6"/><path d="M69 44 L31 6"/>
-    <path d="M31 6 L31 94"/><path d="M69 6 L69 94"/>
-    <path d="M31 62 L69 62"/>
+const LOGO_VB = { w: 272, h: 485 };
+
+/* símbolo — para ícones, selos e a abertura */
+function logoMark(height = 40, color = '#d9aa0e', opts = {}) {
+  const w = Math.round(height * LOGO_VB.w / LOGO_VB.h);
+  const cls = opts.cls ? ` class="${opts.cls}"` : '';
+  return `<svg${cls} viewBox="0 0 272 485" width="${w}" height="${height}"
+    fill="none" stroke="${color}" stroke-width="27" stroke-linecap="butt" aria-hidden="true">
+    <path class="lg-x1" d="M13.5 0 L258.5 230"/>
+    <path class="lg-x2" d="M258.5 0 L13.5 230"/>
+    <path class="lg-v1" d="M13.5 0 L13.5 485"/>
+    <path class="lg-v2" d="M258.5 0 L258.5 485"/>
+    <path class="lg-h"  d="M13.5 278 L258.5 278"/>
   </svg>`;
 }
 
-/* símbolo + palavra — para cabeçalhos */
+/* símbolo + palavra — cabeçalhos */
 function logoFull(opts = {}) {
-  const { mark = 30, color = 'var(--brand-amarelo)', ink = 'var(--ink)', sub = '' } = opts;
+  const { mark = 30, color = 'var(--brand-amarelo)', sub = '' } = opts;
   return `<span class="vi-logo">
     <span class="vi-mark">${logoMark(mark, color)}</span>
     <span class="vi-word">
@@ -27,4 +32,15 @@ function logoFull(opts = {}) {
       ${sub ? `<small>${sub}</small>` : ''}
     </span>
   </span>`;
+}
+
+/* logotipo completo, empilhado — abertura do app */
+function logoLockup(markHeight = 150) {
+  return `<div class="lockup">
+    <div class="lk-mark">${logoMark(markHeight, 'var(--brand-amarelo)', { cls: 'lg-draw' })}</div>
+    <div class="lk-word">VOYAGES<br>&amp; IMAGES</div>
+    <div class="lk-role">GUIDE &amp; PHOTOGRAPHER</div>
+    <div class="lk-region">ALSACE <span>|</span> BLACK FOREST</div>
+    <div class="lk-lang">PT <span>|</span> EN</div>
+  </div>`;
 }

@@ -22,9 +22,16 @@ Coupon     {code, pct, until, oncePerPerson, uses:[email]}
 ------------------------------------------------------ */
 
 function _blank() {
-  return { tours: [], rules: [], departures: [], blocks: [], bookings: [], coupons: [],
+  return { tours: [], rules: [], departures: [], blocks: [], bookings: [], coupons: [], seatCounts: [],
            settings: { lang: 'pt', tutorialClient: true, tutorialAdm: true, admName: 'Melissa',
-           whats: '+33682051120', insta: 'melissalsacia', placeholderContact: false } };
+           whats: '+33682051120', insta: 'melissalsacia', placeholderContact: false,
+           /* quem ela é — o cliente vê antes de reservar */
+           photo: '', badge: 'Guide Conférencier · Guides d\'Alsace',
+           base: 'Colmar, Alsácia',
+           bio: {
+             pt: 'Sou brasileira e vivo na Alsácia. Sou guia-conferencista credenciada e fotógrafa — e as duas coisas andam juntas: enquanto conto a história de cada rua, vou registrando você nela.\n\nCaminho por Colmar, Estrasburgo, a Rota dos Vinhos e a Floresta Negra. Em português ou inglês, sem grupo de quarenta pessoas atrás de uma sombrinha.\n\nNo fim do passeio você leva as fotos. Sem cobrança extra, sem pose forçada.',
+             en: 'I am Brazilian and I live in Alsace. I am a licensed guide-lecturer and a photographer — and the two go together: while I tell you the story of each street, I am photographing you in it.\n\nI walk Colmar, Strasbourg, the Wine Route and the Black Forest. In Portuguese or English, with no group of forty behind an umbrella.\n\nYou take the photos home. No extra charge, no forced poses.'
+           } } };
 }
 
 function _seed() {
@@ -120,6 +127,9 @@ function _seed() {
       id: 'demo' + (++n), code: 'VI-' + (2100 + n * 37 % 7800),
       tourId, date, time, name, email, whats, insta, pax, total,
       coupon: null, discount: 0, policy: x.payPolicy, payments,
+      consent: (n % 3 !== 0)
+        ? { ok: true, at: created + 'T10:00:00.000Z', src: 'checkout' }
+        : { ok: false },
       status: 'confirmed', createdAt: created + 'T10:00:00.000Z', origin,
     });
   }
@@ -134,6 +144,22 @@ function clearAll() {
 }
 function restoreDemo() { DB = _seed(); save(); }
 
+/* ---------- migração de ajustes ----------
+   Quem já usa o app tem um DB salvo — e a nuvem também. Sem isto,
+   todo campo novo que a gente criar nasce vazio para eles e a tela
+   quebra em silêncio. Preenche só o que falta; nunca sobrescreve. */
+function fillSettings(s) {
+  const d = _blank().settings;
+  s = s || {};
+  for (const k of Object.keys(d)) {
+    if (s[k] === undefined || s[k] === null || s[k] === '') s[k] = d[k];
+  }
+  /* bio é objeto: garante os dois idiomas */
+  if (typeof s.bio !== 'object' || !s.bio) s.bio = d.bio;
+  else { if (!s.bio.pt) s.bio.pt = d.bio.pt; if (!s.bio.en) s.bio.en = d.bio.en; }
+  return s;
+}
+
 let DB = null;
 function load() {
   try { DB = JSON.parse(localStorage.getItem(DB_KEY)) || null; } catch (e) { DB = null; }
@@ -142,6 +168,7 @@ function load() {
     DB.settings.whats = '+33682051120'; DB.settings.insta = 'melissalsacia';
     DB.settings.placeholderContact = false; save();
   }
+  DB.settings = fillSettings(DB.settings);
   return DB;
 }
 function save() {
@@ -215,9 +242,16 @@ const Cal = {
   },
 
   seatsLeft(tourId, date, time, capacity) {
-    const taken = DB.bookings
+    /* logada: conta pelas reservas. Visitante: usa a contagem pública,
+       que não expõe nome nem telefone de ninguém. */
+    const local = DB.bookings
       .filter(b => b.tourId === tourId && b.date === date && b.time === time && b.status === 'confirmed')
       .reduce((s, b) => s + b.pax, 0);
+    let taken = local;
+    if (Array.isArray(DB.seatCounts) && DB.seatCounts.length) {
+      const row = DB.seatCounts.find(c => c.tourId === tourId && c.date === date && c.time === time);
+      taken = Math.max(local, row ? row.pax : 0);
+    }
     return Math.max(0, capacity - taken);
   },
 };
@@ -246,7 +280,7 @@ const Bookings = {
   get(id) { return DB.bookings.find(b => b.id === id); },
   byCode(code) { return DB.bookings.find(b => b.code === code); },
 
-  create({ tourId, date, time, name, email, whats, insta, pax, coupon, policy, origin }) {
+  create({ tourId, date, time, name, email, whats, insta, pax, coupon, policy, origin, consent }) {
     const tour = Tours.get(tourId);
     const base = tour.priceMode === 'session' ? tour.price : tour.price * pax;
     let discount = 0, couponCode = null;
@@ -259,6 +293,7 @@ const Bookings = {
       id: uid(), code: bookCode(), tourId, date, time,
       name, email, whats, insta: insta || '', pax, total,
       coupon: couponCode, discount, policy,
+      consent: consent ? { ok: true, at: new Date().toISOString(), src: 'checkout' } : { ok: false },
       payments: [], status: 'confirmed',
       createdAt: new Date().toISOString(), origin: origin || 'site',
     };
@@ -314,11 +349,12 @@ const Clients = {
       if (b.status === 'cancelled') continue;
       const key = (b.email || b.whats || b.name).toLowerCase();
       const c = map.get(key) || { name: b.name, email: b.email, whats: b.whats, insta: b.insta,
-                                  tours: 0, spent: 0, last: '', origins: new Set() };
+                                  tours: 0, spent: 0, last: '', origins: new Set(), consent: false, consentAt: '' };
       c.tours += 1;
       c.spent += Bookings.paid(b);
       if (b.date > c.last) c.last = b.date;
       if (b.origin) c.origins.add(b.origin);
+      if (b.consent && b.consent.ok) { c.consent = true; c.consentAt = b.consent.at; }
       if (!c.insta && b.insta) c.insta = b.insta;
       map.set(key, c);
     }

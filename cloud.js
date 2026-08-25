@@ -12,11 +12,13 @@ const SUPA_KEY = 'sb_publishable_oH2MHKj7n9luEj9tnp6VBA_CetadqRi';
 const QUEUE_KEY = 'vi_queue_v1';
 
 function supaFetch(path, opts = {}) {
+  /* logada, fala como ela; deslogado, fala como visitante */
+  const tok = (typeof authToken === 'function' && authToken()) || SUPA_KEY;
   return fetch(SUPA_URL + '/rest/v1/' + path, {
     ...opts,
     headers: {
       apikey: SUPA_KEY,
-      Authorization: 'Bearer ' + SUPA_KEY,
+      Authorization: 'Bearer ' + tok,
       'Content-Type': 'application/json',
       Prefer: opts.method === 'POST' ? 'resolution=merge-duplicates' : 'return=minimal',
       ...(opts.headers || {}),
@@ -77,13 +79,23 @@ let lastBookingIds = null;
 async function cloudPull() {
   try {
     await qFlush();
-    const [stR, bkR] = await Promise.all([
+    const logged = typeof isLoggedIn === 'function' && isLoggedIn();
+    if (logged && typeof authEnsure === 'function') await authEnsure();
+    const [stR, bkR, scR] = await Promise.all([
       supaFetch('appstate?id=eq.1&select=data,updated_at', { headers: { Prefer: '' } }),
-      supaFetch('bookings?select=data&order=created_at.asc', { headers: { Prefer: '' } }),
+      logged ? supaFetch('bookings?select=data&order=created_at.asc', { headers: { Prefer: '' } })
+             : Promise.resolve({ ok: true, json: async () => [] }),
+      /* visitante só enxerga a contagem de lugares, nunca os dados de quem reservou */
+      logged ? Promise.resolve({ ok: true, json: async () => [] })
+             : supaFetch('seat_counts?select=*', { headers: { Prefer: '' } }),
     ]);
     if (!stR.ok || !bkR.ok) return { ok: false };
     const st = (await stR.json())[0];
     const bk = (await bkR.json()).map(r => r.data);
+    if (!logged && scR.ok) {
+      try { DB.seatCounts = (await scR.json()).map(r =>
+        ({ tourId: r.tour_id, date: r.date, time: r.time, pax: +r.pax })); } catch (e) {}
+    }
 
     const cloudEmpty = !st || !st.data || !st.data.tours || !st.data.tours.length;
     if (cloudEmpty) {
@@ -99,13 +111,16 @@ async function cloudPull() {
       tours: st.data.tours || [], rules: st.data.rules || [],
       departures: st.data.departures || [], blocks: st.data.blocks || [],
       coupons: st.data.coupons || [],
-      settings: { ...st.data.settings, lang: keepLang,
-                  tutorialClient: DB.settings.tutorialClient, tutorialAdm: DB.settings.tutorialAdm },
+      /* a nuvem pode ser mais antiga que o app: completa o que faltar */
+      settings: fillSettings({ ...st.data.settings, lang: keepLang,
+                  tutorialClient: DB.settings.tutorialClient, tutorialAdm: DB.settings.tutorialAdm }),
     });
     /* reservas: nuvem + locais que ainda não subiram */
-    const cloudIds = new Set(bk.map(b => b.id));
-    const localOnly = DB.bookings.filter(b => !cloudIds.has(b.id));
-    DB.bookings = bk.concat(localOnly);
+    if (logged) {
+      const cloudIds = new Set(bk.map(b => b.id));
+      const localOnly = DB.bookings.filter(b => !cloudIds.has(b.id));
+      DB.bookings = bk.concat(localOnly);
+    }
     localStorage.setItem(DB_KEY, JSON.stringify(DB));
 
     /* aviso de reserva nova (para a Melissa, no ADM) */

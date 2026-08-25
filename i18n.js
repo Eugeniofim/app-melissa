@@ -13,6 +13,29 @@ const STR = {
   admEntry:    { pt: 'Área da Melissa', en: "Melissa's area" },
   myBooking:   { pt: 'Minha reserva', en: 'My booking' },
 
+  /* quem sou eu */
+  aboutLink:   { pt: 'Quem sou eu', en: 'Get to know me' },
+  aboutLinkSub:{ pt: 'Quem vai te guiar e fotografar', en: 'Who will guide and photograph you' },
+  aboutTitle:  { pt: 'Prazer, sou a Melissa', en: "Hi, I'm Melissa" },
+  aboutBased:  { pt: 'Baseada em', en: 'Based in' },
+  aboutLangs:  { pt: 'Português · Inglês · Francês', en: 'Portuguese · English · French' },
+  aboutCta:    { pt: 'Ver meus passeios', en: 'See my tours' },
+  aboutTalk:   { pt: 'Me chamar no WhatsApp', en: 'Message me on WhatsApp' },
+  aboutMeet:   { pt: 'Vamos caminhar juntos?', en: 'Shall we walk together?' },
+  aboutMeetSub:{ pt: 'Escolha uma data e eu te encontro no ponto combinado.', en: 'Pick a date and I will meet you at the meeting point.' },
+
+  /* ADM — sua história */
+  admAbout:      { pt: 'Sua foto e sua história', en: 'Your photo and your story' },
+  admAboutHelp:  { pt: 'É isto que aparece em “Quem sou eu”. Quem vê o rosto de quem vai guiar reserva mais — e desiste menos.', en: 'This is what shows under “Get to know me”. Guests who see their guide book more, and cancel less.' },
+  admPhoto:      { pt: 'Sua foto', en: 'Your photo' },
+  admPhotoHelp:  { pt: 'Você olhando para a câmera, em um lugar que você guia. Vale uma selfie boa.', en: 'You looking at the camera, somewhere you guide. A good selfie works.' },
+  admBadge:      { pt: 'Sua credencial', en: 'Your credential' },
+  admBase:       { pt: 'Onde você mora', en: 'Where you live' },
+  admBio:        { pt: 'Seu texto', en: 'Your text' },
+  admBioHelp:    { pt: 'Escreva como você fala. Uma linha em branco separa os parágrafos.', en: 'Write the way you speak. A blank line separates paragraphs.' },
+  aboutSaved:    { pt: 'Sua página foi atualizada', en: 'Your page was updated' },
+  admPreview:    { pt: 'Ver como o cliente vê', en: 'See what guests see' },
+
   /* vitrine */
   chooseTour:  { pt: 'Escolha o seu passeio', en: 'Choose your tour' },
   fAll: { pt: 'Todos', en: 'All' }, fWalk: { pt: 'A pé', en: 'Walking' },
@@ -181,6 +204,41 @@ const STR = {
   tPhotoHelp: { pt: 'Escolha uma foto sua. É ela que aparece no card e no topo da página do passeio.', en: 'Pick one of your photos. It shows on the card and at the top of the tour page.' },
   tPhotoOk:   { pt: 'Foto trocada. Salve para publicar.', en: 'Photo changed. Save to publish.' },
   tPhotoBad:  { pt: 'Não consegui ler essa imagem. Tente um JPG ou PNG.', en: 'Could not read that image. Try a JPG or PNG.' },
+
+  /* consentimento de marketing (RGPD) */
+  consentLbl:  { pt: 'Quero receber as novidades da Melissa por e-mail e WhatsApp', en: "I'd like to hear from Melissa by email and WhatsApp" },
+  consentWhy:  { pt: 'Datas novas, promoções e as fotos dos passeios. Sem isso, você só recebe o que é da sua reserva. Pode sair quando quiser.', en: 'New dates, offers and tour photos. Without it you only get what concerns your booking. You can opt out anytime.' },
+  consentYes:  { pt: 'Aceita novidades', en: 'Opted in' },
+  consentNo:   { pt: 'Só reserva', en: 'Booking only' },
+  clCanMail:   { pt: '{n} autorizaram contato', en: '{n} opted in' },
+  clOnlyOptIn: { pt: 'Só quem autorizou', en: 'Opted in only' },
+  clAll:       { pt: 'Todos', en: 'Everyone' },
+  badEmail:    { pt: 'Confira o e-mail — parece que falta alguma coisa.', en: 'Check the email — something looks off.' },
+
+  /* conta da Melissa */
+  loginTitle:  { pt: 'Área da Melissa', en: "Melissa's area" },
+  loginSub:    { pt: 'Entre para ver suas reservas e gerir seus passeios.', en: 'Sign in to see your bookings and manage your tours.' },
+  loginEmail:  { pt: 'Seu e-mail', en: 'Your email' },
+  loginPass:   { pt: 'Sua senha', en: 'Your password' },
+  loginBtn:    { pt: 'Entrar', en: 'Sign in' },
+  loginFirst:  { pt: 'É meu primeiro acesso — criar minha senha', en: 'First time — create my password' },
+  loginBack:   { pt: 'Já tenho senha', en: 'I already have a password' },
+  loginCreate: { pt: 'Criar minha conta', en: 'Create my account' },
+  loginForgot: { pt: 'Esqueci minha senha', en: 'I forgot my password' },
+  loginSent:   { pt: 'Enviei um link para {e}. Abra o e-mail e clique nele.', en: 'I sent a link to {e}. Open your email and click it.' },
+  loginConfirm:{ pt: 'Conta criada! Enviei um e-mail de confirmação para {e}. Clique no link e volte aqui para entrar.', en: 'Account created! I sent a confirmation email to {e}. Click the link and come back to sign in.' },
+  loginWrong:  { pt: 'E-mail ou senha não conferem.', en: "Email or password don't match." },
+  loginWeak:   { pt: 'A senha precisa de pelo menos 8 caracteres.', en: 'Password needs at least 8 characters.' },
+  loginNoEmail:{ pt: 'Escreva o seu e-mail.', en: 'Enter your email.' },
+  loginHi:     { pt: 'Bem-vinda de volta, Melissa.', en: 'Welcome back, Melissa.' },
+  loginOut:    { pt: 'Você saiu. Sua área está trancada.', en: "You're signed out. Your area is locked." },
+  loginWait:   { pt: 'Entrando…', en: 'Signing in…' },
+  loginSafe:   { pt: 'Só você entra aqui. Seus clientes nunca veem esta tela.', en: 'Only you get in here. Your guests never see this screen.' },
+  loginTaken:  { pt: 'Esta área já pertence a outra conta. Fale com o Eugênio.', en: 'This area already belongs to another account.' },
+  protectTitle:{ pt: 'Proteja sua área com uma senha', en: 'Protect your area with a password' },
+  protectWhy:  { pt: 'Hoje qualquer pessoa com o link chega no seu painel. Crie sua conta e só você entra.', en: 'Right now anyone with the link reaches your panel. Create your account so only you get in.' },
+  protectNow:  { pt: 'Criar minha senha agora', en: 'Create my password now' },
+  protectLater:{ pt: 'Agora não', en: 'Not now' },
 
   /* agenda */
   admAgenda:  { pt: 'Agenda', en: 'Calendar' },

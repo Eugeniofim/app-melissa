@@ -4,9 +4,9 @@
    Para publicar uma atualização: subir os arquivos novos e trocar a VERSION. */
 'use strict';
 
-const VERSION = 'vi-v1.6.0';
+const VERSION = 'vi-v1.9.0';
 const CORE = [
-  './', './index.html', './app.js', './store.js', './logo.js', './cloud.js', './i18n.js', './tokens.css',
+  './', './index.html', './app.js', './store.js', './auth.js', './logo.js', './cloud.js', './i18n.js', './tokens.css',
   './manifest.webmanifest', './capa.jpg', './tour-natal.jpg', './tour-estrasburgo.jpg', './tour-vinhedos.jpg', './tour-rota-vinhos.jpg', './tour-floresta.jpg', './icon-192.png', './icon-512.png', './qr-app.png', './og.jpg',
 ];
 

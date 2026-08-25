@@ -19,7 +19,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="tokens.css?v=1.6.0">
+<link rel="stylesheet" href="tokens.css?v=1.9.0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23064c3f'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='%23d9aa0e' font-family='sans-serif' font-weight='700'%3EM%3C/text%3E%3C/svg%3E">
 <style>
 /* ============ base ============ */
@@ -173,6 +173,29 @@ small{color:var(--ink-3)}
 .pprev i{font-style:normal;font-size:22px;color:var(--ink-3)}
 .ppinfo{flex:1;min-width:0}
 .ppinfo input[type=file]{font-size:12px;max-width:100%}
+/* ---------- opt-in ---------- */
+.optin{display:flex;gap:11px;align-items:flex-start;margin-top:14px;padding:12px 13px;
+  border-radius:var(--r);background:var(--surface-2);cursor:pointer}
+.optin input{width:19px;height:19px;flex:none;margin-top:1px;accent-color:var(--accent);cursor:pointer}
+.optin b{display:block;font-size:13px;font-weight:600;line-height:1.35}
+.optin small{display:block;font-size:11.5px;color:var(--ink-3);margin-top:3px;line-height:1.45}
+.optin:has(input:checked){background:var(--accent-wash)}
+/* ---------- login ---------- */
+.loginwrap{min-height:100vh;display:grid;place-items:center;padding:24px;
+  background:linear-gradient(160deg,var(--accent) 0%,#03352b 100%)}
+.logincard{width:min(400px,100%);background:var(--surface);border-radius:var(--r-lg,18px);
+  padding:30px 26px 22px;box-shadow:var(--sh-3);text-align:left}
+.loginlogo{display:flex;justify-content:center;margin-bottom:14px}
+.logincard h1{font-family:var(--f-display);font-size:22px;font-weight:700;text-align:center;
+  letter-spacing:-.02em;margin-bottom:6px}
+.logincard .center{text-align:center}
+.logincard .fld{margin-top:14px;display:block}
+.logincard .cta{margin-top:18px;width:100%}
+.logincard .linkbtn{display:block;width:100%;margin-top:12px;background:none;border:0;
+  color:var(--accent);font:inherit;font-size:13.5px;cursor:pointer;padding:6px}
+.logincard .fine{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);
+  font-size:11.5px;color:var(--ink-3)}
+@media (max-width:420px){.logincard{padding:24px 18px 18px}}
 /* ---------- validação ---------- */
 .fld input.invalid,.fld textarea.invalid{border-color:var(--danger);
   box-shadow:0 0 0 3px color-mix(in oklab,var(--danger) 18%,transparent)}
@@ -242,7 +265,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{
   .pageh{font-size:24px;margin:16px 0 12px}
 }
 /* agenda */
-.agrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:10px}
+.agrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:10px;min-width:0}
 .agrid.head{margin-bottom:2px;gap:5px}
 .agwd{font-family:var(--f-mono);font-size:9px;letter-spacing:.1em;color:var(--ink-3);text-align:center;text-transform:uppercase}
 .agc{aspect-ratio:1;border:0;border-radius:10px;background:var(--surface-2);display:flex;flex-direction:column;
@@ -345,22 +368,163 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{
 .wd.on{background:var(--accent);color:var(--accent-ink)}
 .ruleform{margin-top:8px;padding-top:10px;border-top:1px solid var(--line);font-size:var(--fs-3)}
 .rulesep{border-top:1px solid var(--line);margin:14px 0 10px}
-.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3)}
+/* tabela larga rola dentro do cartão — a página nunca anda de lado.
+   min-width:0 é o que impede o cartão de crescer junto com a tabela. */
+.stage,.two-col,.formgrid,.card{min-width:0}
+.card:has(> .tbl){overflow-x:auto;-webkit-overflow-scrolling:touch}
+.two-col>*,.formgrid>*{min-width:0}
+.tbl{width:100%;min-width:560px;border-collapse:collapse;font-size:var(--fs-3)}
+@media (max-width:640px){
+  .tbl{font-size:12px}
+  .tbl th,.tbl td{padding-left:8px;padding-right:8px}
+}
 .tbl th{text-align:left;font-family:var(--f-mono);font-size:var(--fs-1);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:400;padding:0 10px 8px;border-bottom:1px solid var(--line)}
 .tbl td{padding:9px 10px;border-bottom:1px solid var(--line)}
 .tbl tfoot td{border-bottom:0;padding-top:12px}
 @media(max-width:700px){.tbl{display:block;overflow-x:auto}}
 @media print{.rail,.toast,.coach{display:none!important}.adm{display:block}.stage{padding:0;max-width:none}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+
+/* =========================================================
+   ABERTURA (splash)
+   O colombage se desenha traço a traço enquanto gira em 3D.
+   Ordem: as duas diagonais → as vigas → a travessa → a palavra.
+   Dura 2,1s no total e sai sozinha. Quem já viu na sessão não vê de novo.
+   ========================================================= */
+.splash{position:fixed;inset:0;z-index:999;display:grid;place-items:center;
+  background:var(--brand-verde);
+  /* leve profundidade: um halo quente atrás da marca */
+  background-image:radial-gradient(120% 80% at 50% 38%, #0a6957 0%, #064c3f 46%, #043a30 100%);
+  perspective:1100px;perspective-origin:50% 42%;
+  animation:spOut 620ms var(--ease) 2100ms forwards}
+.splash.gone{display:none}
+
+.sp-stage{text-align:center;transform-style:preserve-3d;
+  animation:spTilt 2000ms var(--ease) both}
+
+/* --- símbolo: gira em 3D e se desenha --- */
+.sp-mark{transform-style:preserve-3d;animation:spMark 1500ms var(--ease) both}
+.sp-mark svg{filter:drop-shadow(0 18px 40px rgba(0,0,0,.45))}
+.s-p{stroke-dasharray:var(--len,600);stroke-dashoffset:var(--len,600);
+  animation:spDraw 620ms var(--ease) both}
+.s-x1{--len:340;animation-delay:180ms}
+.s-x2{--len:340;animation-delay:300ms}
+.s-v1{--len:500;animation-delay:520ms}
+.s-v2{--len:500;animation-delay:600ms}
+.s-h {--len:260;animation-delay:820ms}
+
+/* --- palavra e assinatura --- */
+.sp-word,.sp-role,.sp-region,.sp-lang{color:#fff;animation:spUp 700ms var(--ease) both}
+.sp-word{margin-top:26px;font-family:var(--f-display);font-weight:800;
+  font-size:clamp(26px,7.4vw,40px);line-height:1.03;letter-spacing:-.01em;animation-delay:1020ms}
+.sp-role{margin-top:14px;font-family:var(--f-display);font-weight:700;
+  font-size:clamp(10px,2.7vw,12px);letter-spacing:.2em;color:rgba(255,255,255,.94);animation-delay:1220ms}
+.sp-region{margin-top:5px;font-family:var(--f-ui);font-size:clamp(9.5px,2.5vw,11px);
+  letter-spacing:.19em;color:rgba(255,255,255,.7);animation-delay:1340ms}
+.sp-region i,.sp-lang i{font-style:normal;color:var(--brand-amarelo);margin:0 5px}
+.sp-lang{margin-top:20px;font-family:var(--f-display);font-weight:700;
+  font-size:11px;letter-spacing:.22em;color:rgba(255,255,255,.6);animation-delay:1500ms}
+
+@keyframes spDraw{from{stroke-dashoffset:var(--len,600)}to{stroke-dashoffset:0}}
+/* a marca chega de perfil e assenta de frente */
+@keyframes spMark{
+  0%  {transform:perspective(1100px) rotateY(-72deg) rotateX(12deg) translateZ(-120px) scale(.86);opacity:0}
+  38% {opacity:1}
+  100%{transform:perspective(1100px) rotateY(0) rotateX(0) translateZ(0) scale(1);opacity:1}}
+/* o conjunto todo respira um grau para trás — dá o volume sem enjoar */
+@keyframes spTilt{
+  0%  {transform:rotateX(9deg) translateY(14px)}
+  100%{transform:rotateX(0) translateY(0)}}
+@keyframes spUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes spOut{to{opacity:0;visibility:hidden}}
+
+/* Quem pediu menos movimento vê a marca parada, e por menos tempo. */
+@media (prefers-reduced-motion:reduce){
+  .splash{animation:spOut 300ms linear 900ms forwards}
+  .sp-stage,.sp-mark,.sp-word,.sp-role,.sp-region,.sp-lang{animation:none}
+  .s-p{stroke-dashoffset:0;animation:none}
+}
+
+/* =========================================================
+   QUEM SOU EU
+   Escala real deste projeto: s-4=10 s-7=16 s-8=20 s-9=24 s-10=32 s-11=40 s-14=64
+   ========================================================= */
+.about{max-width:620px;margin:0 auto;padding:0 var(--s-8) var(--s-14)}
+.ab-hero{position:relative;margin:0 calc(var(--s-8) * -1) var(--s-9);
+  border-radius:0 0 var(--r-xl) var(--r-xl);overflow:hidden}
+.ab-photo{width:100%;aspect-ratio:4/5;max-height:60vh;object-fit:cover;object-position:center 20%;
+  display:block;background:var(--surface-2)}
+.ab-photo.none{display:grid;place-items:center;aspect-ratio:4/3;color:var(--ink-3);
+  font-size:var(--fs-3);text-align:center;padding:var(--s-10) var(--s-8);line-height:1.6}
+.ab-cap{position:absolute;left:0;right:0;bottom:0;padding:var(--s-14) var(--s-9) var(--s-9);
+  background:linear-gradient(to top,rgba(4,26,21,.94),rgba(4,26,21,.6) 52%,transparent);color:#fff}
+.ab-cap h1{font-family:var(--f-display);font-weight:800;font-size:var(--fs-7);
+  line-height:1.08;letter-spacing:var(--track-display);color:#fff}
+.ab-badge{display:inline-block;margin-bottom:var(--s-5);padding:5px 11px;
+  border-radius:var(--r-pill);background:var(--brand-amarelo);color:#111;
+  font-family:var(--f-display);font-weight:700;font-size:var(--fs-1);letter-spacing:.1em;text-transform:uppercase}
+.ab-meta{margin-top:var(--s-4);font-size:var(--fs-3);color:rgba(255,255,255,.82);line-height:1.55}
+
+.ab-body p{font-size:var(--fs-4);line-height:1.7;color:var(--ink-2);margin-bottom:var(--s-7)}
+.ab-body p:first-child{font-size:var(--fs-5);line-height:1.55;color:var(--ink)}
+.ab-body p:last-child{margin-bottom:0}
+
+.ab-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s-5);
+  margin-top:var(--s-10);padding:var(--s-8);border-radius:var(--r-lg);background:var(--surface-2)}
+.ab-facts div{min-width:0}
+.ab-facts small{display:block;font-size:var(--fs-1);color:var(--ink-3);
+  letter-spacing:var(--track-label);text-transform:uppercase;margin-bottom:5px}
+.ab-facts b{display:block;font-family:var(--f-display);font-weight:600;font-size:var(--fs-3);
+  color:var(--ink);line-height:1.35}
+@media (max-width:420px){ .ab-facts{grid-template-columns:1fr 1fr} .ab-facts div:last-child{grid-column:1/-1} }
+
+.ab-cta{margin-top:var(--s-10);padding:var(--s-9) var(--s-8);border-radius:var(--r-lg);
+  background:var(--accent-wash);border:1px solid var(--accent-line);text-align:center}
+.ab-cta h3{font-family:var(--f-display);font-weight:700;font-size:var(--fs-6);margin-bottom:var(--s-4)}
+.ab-cta p{font-size:var(--fs-4);color:var(--ink-2);margin-bottom:var(--s-8);line-height:1.55}
+.ab-btns{display:flex;flex-wrap:wrap;gap:var(--s-5);justify-content:center}
+.ab-btns .cta{width:100%}
+
+/* retrato dentro do ADM */
+.ph-edit{display:flex;gap:var(--s-8);align-items:flex-start;flex-wrap:wrap}
+.ph-edit>div{flex:1 1 160px;min-width:0}
+.ph-edit img{width:88px;height:110px;object-fit:cover;object-position:center 20%;
+  border-radius:var(--r);flex:none;background:var(--surface-2)}
+.ph-edit .none{width:88px;height:110px;border-radius:var(--r);background:var(--surface-2);
+  display:grid;place-items:center;color:var(--ink-3);font-size:26px;flex:none}
+  display:grid;place-items:center;color:var(--ink-3);font-size:22px;flex:none}
 </style>
 </head>
 <body>
+
+<!-- ABERTURA — pintada no primeiro quadro, antes do JS.
+     O símbolo se desenha traço a traço, girando em 3D; depois vem a palavra. -->
+<div id="splash" class="splash">
+  <div class="sp-stage">
+    <div class="sp-mark">
+      <svg viewBox="0 0 272 485" width="132" height="235" fill="none"
+           stroke="#d9aa0e" stroke-width="27" stroke-linecap="butt" aria-hidden="true">
+        <path class="s-p s-x1" d="M13.5 0 L258.5 230"/>
+        <path class="s-p s-x2" d="M258.5 0 L13.5 230"/>
+        <path class="s-p s-v1" d="M13.5 0 L13.5 485"/>
+        <path class="s-p s-v2" d="M258.5 0 L258.5 485"/>
+        <path class="s-p s-h"  d="M13.5 278 L258.5 278"/>
+      </svg>
+    </div>
+    <div class="sp-word">VOYAGES<br>&amp; IMAGES</div>
+    <div class="sp-role">GUIDE &amp; PHOTOGRAPHER</div>
+    <div class="sp-region">ALSACE <i>|</i> BLACK FOREST</div>
+    <div class="sp-lang">PT <i>|</i> EN</div>
+  </div>
+</div>
+
 <div id="app"></div>
-<script src="logo.js?v=1.6.0"></script>
-<script src="store.js?v=1.6.0"></script>
-<script src="cloud.js?v=1.6.0"></script>
-<script src="i18n.js?v=1.6.0"></script>
-<script src="app.js?v=1.6.0"></script>
+<script src="auth.js?v=1.9.0"></script>
+<script src="logo.js?v=1.9.0"></script>
+<script src="store.js?v=1.9.0"></script>
+<script src="cloud.js?v=1.9.0"></script>
+<script src="i18n.js?v=1.9.0"></script>
+<script src="app.js?v=1.9.0"></script>
 <script>
 /* PWA: registra o service worker e recarrega sozinho quando sai versão nova */
 if ('serviceWorker' in navigator) {
