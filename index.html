@@ -19,7 +19,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="tokens.css?v=1.5.0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23064c3f'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='%23d9aa0e' font-family='sans-serif' font-weight='700'%3EM%3C/text%3E%3C/svg%3E">
 <style>
 /* ============ base ============ */
@@ -167,6 +167,50 @@ small{color:var(--ink-3)}
 .mini:hover{background:var(--surface-3)}
 .mini.danger{color:var(--danger);background:var(--danger-wash)}
 .mini.ghost{background:transparent;border:1px solid var(--line)}
+.photopick{display:flex;gap:12px;align-items:flex-start;margin-top:6px}
+.pprev{width:104px;height:66px;flex:none;border-radius:10px;background-size:cover;background-position:center;
+  background-color:var(--surface-2);display:grid;place-items:center;border:1px dashed var(--line-2)}
+.pprev i{font-style:normal;font-size:22px;color:var(--ink-3)}
+.ppinfo{flex:1;min-width:0}
+.ppinfo input[type=file]{font-size:12px;max-width:100%}
+/* ---------- vitrine: cards alinhados e com hierarquia ---------- */
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px 64px}
+.tbrand{display:inline-flex;align-items:center;gap:9px;min-width:0}
+.tbrand b{font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:-.01em;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(288px,1fr));gap:18px;align-items:stretch}
+.tourcard{display:flex;flex-direction:column;text-align:left;padding:0;border:0;cursor:pointer;
+  background:var(--surface);border-radius:var(--r-lg,18px);overflow:hidden;box-shadow:var(--sh-1);
+  font:inherit;color:var(--ink);height:100%;
+  transition:transform .22s var(--ease,cubic-bezier(.22,1,.36,1)),box-shadow .22s}
+.tourcard:hover{transform:translateY(-4px);box-shadow:var(--sh-2)}
+.tourcard:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.tourcard .ph{display:block;position:relative;width:100%;aspect-ratio:16/10;background-size:cover;
+  background-position:center;flex:none}
+.tourcard .ph::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(to top,rgba(6,32,26,.34),transparent 46%)}
+.tbadge{position:absolute;left:10px;top:10px;z-index:2;font-family:var(--f-mono);font-size:9px;
+  letter-spacing:.12em;text-transform:uppercase;background:rgba(255,255,255,.94);color:var(--accent);
+  padding:5px 9px;border-radius:100px;font-weight:600}
+.tourcard .bd{display:flex;flex-direction:column;gap:5px;padding:14px 16px 15px;flex:1}
+.tourcard .bd b{font-family:var(--f-display);font-weight:700;font-size:16px;line-height:1.25;
+  letter-spacing:-.015em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  min-height:2.5em}
+.tourcard .meta{font-size:12px;color:var(--ink-3)}
+.cardfoot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:10px}
+.tourcard .pr{font-family:var(--f-display);font-weight:700;font-size:18px;letter-spacing:-.02em;color:var(--accent)}
+.tourcard .pr i{font-style:normal;font-family:var(--f-ui);font-weight:400;font-size:11.5px;color:var(--ink-3);
+  display:block;margin-top:1px;letter-spacing:0}
+.cgo{width:30px;height:30px;flex:none;border-radius:50%;background:var(--accent-wash);color:var(--accent);
+  display:grid;place-items:center;font-size:14px;transition:.2s}
+.tourcard:hover .cgo{background:var(--accent);color:#fff;transform:translateX(2px)}
+.pageh{margin:22px 0 14px}
+@media (max-width:640px){
+  .wrap{padding:0 14px 72px}
+  .cards{grid-template-columns:1fr;gap:14px}
+  .tourcard .ph{aspect-ratio:16/9}
+  .pageh{font-size:24px;margin:16px 0 12px}
+}
 /* agenda */
 .agrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:10px}
 .agrid.head{margin-bottom:2px;gap:5px}
@@ -282,11 +326,11 @@ small{color:var(--ink-3)}
 </head>
 <body>
 <div id="app"></div>
-<script src="logo.js"></script>
-<script src="store.js"></script>
-<script src="cloud.js"></script>
-<script src="i18n.js"></script>
-<script src="app.js"></script>
+<script src="logo.js?v=1.5.0"></script>
+<script src="store.js?v=1.5.0"></script>
+<script src="cloud.js?v=1.5.0"></script>
+<script src="i18n.js?v=1.5.0"></script>
+<script src="app.js?v=1.5.0"></script>
 <script>
 /* PWA: registra o service worker e recarrega sozinho quando sai versão nova */
 if ('serviceWorker' in navigator) {

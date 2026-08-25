@@ -37,6 +37,25 @@ function vcfLink() {
   return 'data:text/vcard;charset=utf-8,' + encodeURIComponent(v);
 }
 
+/* ---------- foto: redimensiona no navegador antes de guardar ---------- */
+function readImageResized(file, maxW = 1100, quality = 0.78) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) return reject(new Error('not image'));
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(1, maxW / img.width);
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
+    img.src = url;
+  });
+}
+
 /* ---------- toast ---------- */
 const toastEl = document.createElement('div');
 toastEl.className = 'toast'; document.body.appendChild(toastEl);
@@ -131,8 +150,6 @@ function viewHub() {
       </button>
       <a class="lk" href="https://instagram.com/${esc(DB.settings.insta)}" target="_blank" rel="noopener"><span class="ic">◎</span><span><b>Instagram</b><small>@${esc(DB.settings.insta)}</small></span><span class="go">→</span></a>
       <a class="lk" href="${waLink(t('waHello'))}" target="_blank" rel="noopener"><span class="ic">✆</span><span><b>${t('whatsapp')}</b></span><span class="go">→</span></a>
-      <button class="lk" data-demo="rev"><span class="ic">★</span><span><b>${t('reviews')}</b><small>4,9 · 128</small></span><span class="go">→</span></button>
-      <a class="lk" href="${vcfLink()}" download="melissa-hallais.vcf"><span class="ic">＋</span><span><b>${t('saveContact')}</b></span><span class="go">→</span></a>
       <button class="adm-entry" id="admEntry">🔒 ${t('admEntry')}</button>
     </div>
   </div>`;
@@ -154,8 +171,8 @@ function viewShowcase() {
   const list = filter === 'all' ? tours : tours.filter(x => x.type === filter || (filter === 'photo' && x.type === 'photo'));
   app.innerHTML = `
   <header class="topbar">
-    <button class="backbtn" id="bk">←</button>
-    <b>Melissa Hallais</b>
+    <button class="backbtn" id="bk" aria-label="${t('back')}">←</button>
+    <span class="tbrand">${logoMark(24, 'var(--brand-amarelo)')}<b>Melissa Hallais</b></span>
     ${langBar('right')}
   </header>
   <main class="wrap">
@@ -167,11 +184,17 @@ function viewShowcase() {
     <div class="cards" id="tourCards">
       ${list.length ? list.map(x => `
         <button class="tourcard" data-id="${x.id}">
-          <span class="ph" style="background-image:url(${esc(x.photo)})"></span>
+          <span class="ph" style="background-image:url(${esc(x.photo)})">
+            <span class="tbadge">${t(TYPE_LABEL[x.type] || 'fWalk')}</span>
+          </span>
           <span class="bd">
             <b>${esc(x.name[LANG] || x.name.pt)}</b>
-            <small>${t('upTo')} ${x.max} ${t('people')} · ${t(x.region === 'alsace' ? 'alsace' : 'blackforest')}</small>
-            <span class="pr">${x.priceMode === 'session' ? eur(x.price) + ' ' + t('perSession') : t('fromPrice') + ' ' + eur(x.price)}</span>
+            <small class="meta">${t(x.region === 'alsace' ? 'alsace' : 'blackforest')} · ${t('upTo')} ${x.max} ${t('people')}</small>
+            <span class="cardfoot">
+              <span class="pr">${x.priceMode === 'session' ? eur(x.price) : eur(x.price)}
+                <i>${x.priceMode === 'session' ? t('perSession') : t('perPerson')}</i></span>
+              <span class="cgo">→</span>
+            </span>
           </span>
         </button>`).join('')
       : `<p class="empty">${t('emptyFilter')}</p>`}
@@ -482,6 +505,15 @@ function admTourEdit(id) {
         <label class="fld">${t('tDesc')}<textarea id="fDescPt">${esc(x.desc.pt)}</textarea><small class="why">${t('tDescHelp')}</small></label>
         <label class="fld">${t('tDescEn')}<textarea id="fDescEn">${esc(x.desc.en)}</textarea></label>
         <label class="fld">${t('tMeeting')}<input id="fMeet" value="${esc(x.meeting)}"></label>
+        <div class="fld">${t('tPhoto')}
+          <div class="photopick">
+            <span class="pprev" id="pPrev" style="background-image:url(${esc(x.photo || '')})">${x.photo ? '' : '<i>+</i>'}</span>
+            <div class="ppinfo">
+              <input type="file" accept="image/*" id="fPhoto">
+              <small class="why">${t('tPhotoHelp')}</small>
+            </div>
+          </div>
+        </div>
       </section>
       <section class="card">
         <div class="frow">
@@ -525,6 +557,16 @@ function admTourEdit(id) {
         </div>
       </section>`}
     </div>`);
+  let newPhoto = null;
+  $('#fPhoto').onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      newPhoto = await readImageResized(f);
+      $('#pPrev').style.backgroundImage = `url(${newPhoto})`;
+      $('#pPrev').innerHTML = '';
+      toast(t('tPhotoOk'));
+    } catch (err) { toast(t('tPhotoBad')); }
+  };
   $('#bkT').onclick = () => go('/adm/tours');
 
   function collect(status) {
@@ -535,7 +577,8 @@ function admTourEdit(id) {
       meeting: $('#fMeet').value.trim(), photo: x.photo,
       price: +$('#fPrice').value || 0, priceMode: $('#fMode').value,
       min: +$('#fMin').value || 1, max: +$('#fMax').value || 1,
-      payPolicy: $('#fPay').value, status,
+      payPolicy: $('#fPay').value,
+      photo: newPhoto || x.photo, status,
     };
   }
   $('#savePub').onclick = () => {

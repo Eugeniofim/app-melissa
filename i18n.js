@@ -170,6 +170,11 @@ const STR = {
   resetDemo:  { pt: 'Recomeçar com dados de exemplo', en: 'Reset with sample data' },
   resetWarn:  { pt: 'Isso apaga tudo que você criou e volta ao exemplo. Fazer isso?', en: 'This deletes everything you created and restores the sample. Do it?' },
 
+  tPhoto:     { pt: 'Foto do passeio', en: 'Tour photo' },
+  tPhotoHelp: { pt: 'Escolha uma foto sua. É ela que aparece no card e no topo da página do passeio.', en: 'Pick one of your photos. It shows on the card and at the top of the tour page.' },
+  tPhotoOk:   { pt: 'Foto trocada. Salve para publicar.', en: 'Photo changed. Save to publish.' },
+  tPhotoBad:  { pt: 'Não consegui ler essa imagem. Tente um JPG ou PNG.', en: 'Could not read that image. Try a JPG or PNG.' },
+
   /* agenda */
   admAgenda:  { pt: 'Agenda', en: 'Calendar' },
   agTitle:    { pt: 'Sua agenda', en: 'Your calendar' },
