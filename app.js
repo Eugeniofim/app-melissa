@@ -12,18 +12,78 @@ const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
 const app = $('#app');
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+/* ---------- assinatura sonora ----------
+   Ela é guia e fotógrafa: três sinos e um obturador. Sintetizado na hora,
+   não é arquivo — não pesa nada e não precisa carregar.
+   O navegador bloqueia som antes de a pessoa tocar na tela; quando isso
+   acontecer a gente simplesmente não toca, em vez de insistir. */
+function assinaturaSonora() {
+  if (localStorage.getItem('vi_som') === 'off') return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  let ctx;
+  try { ctx = new AC(); } catch (e) { return; }
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  if (ctx.state !== 'running') { ctx.close && ctx.close(); return; }
+
+  const t0 = ctx.currentTime + 0.05;
+  const mix = ctx.createGain();
+  mix.gain.value = 0.22;                 /* discreto: assinatura, não trilha */
+  mix.connect(ctx.destination);
+
+  /* --- sino: fundamental + uma quinta acima, decaimento longo --- */
+  const sino = (hz, quando, vol) => {
+    [[hz, vol], [hz * 1.5, vol * 0.28], [hz * 2.02, vol * 0.14]].forEach(([f, v]) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0 + quando);
+      g.gain.exponentialRampToValueAtTime(v, t0 + quando + 0.012);   /* ataque seco */
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + quando + 2.4); /* cauda de sino */
+      o.connect(g); g.connect(mix);
+      o.start(t0 + quando); o.stop(t0 + quando + 2.5);
+    });
+  };
+
+  /* --- obturador: dois estalos curtos de ruído filtrado --- */
+  const obturador = (quando) => {
+    const dur = 0.05, n = Math.floor(ctx.sampleRate * dur);
+    const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 5);
+    [0, 0.028].forEach((atraso, i) => {
+      const src = ctx.createBufferSource(); src.buffer = buf;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = i ? 2600 : 4200; bp.Q.value = 1.4;
+      const g = ctx.createGain(); g.gain.value = i ? 0.30 : 0.42;
+      src.connect(bp); bp.connect(g); g.connect(mix);
+      src.start(t0 + quando + atraso);
+    });
+  };
+
+  /* quintas empilhadas — soa a sino, não a toque de celular.
+     Os tempos acompanham o desenho da marca. */
+  sino(293.66, 0.30, 0.34);   /* ré  — primeira diagonal */
+  sino(440.00, 1.00, 0.30);   /* lá  — as vigas descem   */
+  sino(659.25, 1.60, 0.26);   /* mi  — a travessa cruza  */
+  obturador(2.15);            /* VOYAGES & IMAGES aparece */
+
+  setTimeout(() => { try { ctx.close(); } catch (e) {} }, 6000);
+}
+
 /* ---------- abertura ----------
    Aparece uma vez por sessão. Quem só quer reservar não vê a marca
    três vezes seguidas — e um toque pula na hora. */
 (function splash() {
   const el = document.getElementById('splash');
   if (!el) return;
-  const kill = () => el.remove();
+  let morta = false;
+  const kill = () => { if (!morta) { morta = true; el.remove(); } };
   if (sessionStorage.getItem('vi_seen')) return kill();
   sessionStorage.setItem('vi_seen', '1');
   el.addEventListener('pointerdown', kill);
-  const slow = matchMedia('(prefers-reduced-motion:reduce)').matches ? 1250 : 2760;
-  setTimeout(kill, slow);
+  const curto = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if (!curto) assinaturaSonora();
+  setTimeout(kill, curto ? 1250 : 4750);
 })();
 
 /* ---------- contato (WhatsApp, mapa, agenda, vCard) ---------- */
@@ -1143,6 +1203,14 @@ function admSettings() {
       <p class="why">⚠ ${t('syncNote')}</p>
     </section>
     <section class="card">
+      <h3>${t('sndTitle')}</h3>
+      <p class="why">${t('sndWhy')}</p>
+      <div class="btnrow">
+        <button class="mini" id="sndToggle">${localStorage.getItem('vi_som') === 'off' ? '🔇 ' + t('sndOff') : '🔔 ' + t('sndOn')}</button>
+        <button class="mini" id="sndTest">${t('sndTest')}</button>
+      </div>
+    </section>
+    <section class="card">
       <h3>${t('tutorial')}</h3>
       <button class="mini" id="tutAgain">${t('tutorialOn')}</button>
     </section>
@@ -1194,6 +1262,18 @@ function admSettings() {
       const r = await window.__installEvt.userChoice;
       if (r.outcome === 'accepted') { toast(t('installed')); window.__installEvt = null; }
     } else toast(t('installIos'));
+  };
+  $('#sndToggle').onclick = () => {
+    const off = localStorage.getItem('vi_som') === 'off';
+    localStorage.setItem('vi_som', off ? 'on' : 'off');
+    admSettings();
+  };
+  $('#sndTest').onclick = () => {
+    if (localStorage.getItem('vi_som') === 'off') return toast(t('sndOff'));
+    /* o clique já é o toque que o navegador exige, então aqui costuma tocar */
+    const antes = Date.now();
+    assinaturaSonora();
+    setTimeout(() => { if (Date.now() - antes < 50) toast(t('sndBlocked')); }, 10);
   };
   $('#tutAgain').onclick = () => {
     DB.settings.tutorialAdm = true; DB.settings.tutorialClient = true; save();

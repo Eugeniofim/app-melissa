@@ -57,6 +57,16 @@ const STR = {
   npFail:     { pt: 'Não deu para trocar. O link pode ter expirado — peça outro.',
                 en: 'Could not change it. The link may have expired — request a new one.' },
 
+  /* abertura */
+  sndTitle: { pt: 'Abertura do app', en: 'App intro' },
+  sndWhy:   { pt: 'A marca se desenha com três sinos e o clique do obturador — guia e fotógrafa. Aparece uma vez por visita e um toque pula.',
+              en: 'The mark draws itself with three bells and a shutter click — guide and photographer. Shows once per visit; a tap skips it.' },
+  sndOn:    { pt: 'Som ligado', en: 'Sound on' },
+  sndOff:   { pt: 'Som desligado', en: 'Sound off' },
+  sndTest:  { pt: 'Ouvir', en: 'Play it' },
+  sndBlocked:{ pt: 'O navegador só libera som depois de um toque na tela. Toque em qualquer lugar e ouça de novo.',
+               en: 'Browsers only allow sound after a tap. Tap anywhere and try again.' },
+
   /* página do passeio — roteiro, mapa, incluídos */
   fDuration:  { pt: 'Duração', en: 'Duration' },
   fWalk:      { pt: 'A pé', en: 'On foot' },
