@@ -472,6 +472,19 @@ const ADM_TABS = [
   ['settings', 'admSettings'],
 ];
 
+/* ---- aviso de painel destravado ----
+   Desde que as reservas passaram a ser privadas, quem não está logada
+   não recebe nada da nuvem. Sem este aviso o painel mostraria uma lista
+   vazia como se não houvesse reserva — mentira em silêncio, o pior tipo. */
+function noAuthBanner() {
+  if (typeof isLoggedIn === 'function' && isLoggedIn()) return '';
+  return `<div class="alert bad nolog">
+    <b>⚠ ${t('nlTitle')}</b>
+    <p>${t('nlWhy')}</p>
+    <button class="cta sm" id="goProtect">${t('nlCta')}</button>
+  </div>`;
+}
+
 function admShell(tab, inner) {
   app.innerHTML = `
   <div class="adm">
@@ -484,8 +497,10 @@ function admShell(tab, inner) {
         <button class="nb ghost" id="exitAdm">← ${t('exit')}</button>
       </div>
     </aside>
-    <main class="stage" id="stage">${inner}</main>
+    <main class="stage" id="stage">${noAuthBanner()}${inner}</main>
   </div>`;
+  const nab = $('#goProtect');
+  if (nab) nab.onclick = () => go('/login');
   $$('.nb[data-tab]').forEach(b => b.onclick = () => go('/adm/' + b.dataset.tab));
   $('#viewSite').onclick = () => go('/');
   $('#exitAdm').onclick = async () => {

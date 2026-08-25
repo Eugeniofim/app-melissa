@@ -36,6 +36,12 @@ const STR = {
   aboutSaved:    { pt: 'Sua página foi atualizada', en: 'Your page was updated' },
   admPreview:    { pt: 'Ver como o cliente vê', en: 'See what guests see' },
 
+  /* painel sem login */
+  nlTitle: { pt: 'Suas reservas não estão aparecendo aqui', en: 'Your bookings are not showing here' },
+  nlWhy:   { pt: 'Os dados dos seus clientes são privados: só você, com sua senha, pode vê-los. Enquanto não entrar, este painel mostra apenas o que está guardado neste aparelho — e não as reservas que chegaram pelo site.',
+             en: 'Your guests\' data is private: only you, with your password, can see it. Until you sign in, this panel shows only what is stored on this device — not the bookings that came in through the site.' },
+  nlCta:   { pt: 'Entrar na minha conta', en: 'Sign in to my account' },
+
   /* vitrine */
   chooseTour:  { pt: 'Escolha o seu passeio', en: 'Choose your tour' },
   fAll: { pt: 'Todos', en: 'All' }, fWalk: { pt: 'A pé', en: 'Walking' },
