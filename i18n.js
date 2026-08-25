@@ -62,6 +62,27 @@ const STR = {
   notIncluded:{ pt: 'Não está incluído', en: 'Not included' },
   stopsCount: { pt: 'paradas', en: 'stops' },
 
+  /* editor de roteiro */
+  edRoute:    { pt: 'O roteiro do passeio', en: 'The tour route' },
+  edRouteWhy: { pt: 'É a parte da página que mais convence. Cada parada com horário, uma foto e uma frase sua — do jeito que você contaria pessoalmente.',
+                en: 'This is the part of the page that convinces. Each stop with a time, a photo and a line in your own words.' },
+  edDuration: { pt: 'Quanto dura', en: 'How long it lasts' },
+  edDistance: { pt: 'Quanto se caminha', en: 'How far you walk' },
+  edAddStop:  { pt: 'Adicionar parada', en: 'Add a stop' },
+  edNoStops:  { pt: 'Sem paradas ainda. Adicione a primeira — três ou quatro já mudam a página.',
+                en: 'No stops yet. Add the first — three or four already change the page.' },
+  edTime:     { pt: 'Horário', en: 'Time' },
+  edPlace:    { pt: 'Endereço da parada', en: 'Stop address' },
+  edStopName: { pt: 'Nome da parada', en: 'Stop name' },
+  edStopText: { pt: 'O que acontece ali', en: 'What happens there' },
+  edStopPhoto:{ pt: 'Foto do lugar. Uma sua vale mais que uma da internet.', en: 'Photo of the place. One of yours beats a stock one.' },
+  edUp:       { pt: 'Subir', en: 'Move up' },
+  edDown:     { pt: 'Descer', en: 'Move down' },
+  edRemove:   { pt: 'Remover', en: 'Remove' },
+  edRemoveAsk:{ pt: 'Remover esta parada?', en: 'Remove this stop?' },
+  edIncWhy:   { pt: 'Um item por linha. É o que evita a pergunta "o vin chaud está no preço?" virar desistência.',
+                en: 'One item per line. This is what stops "is the mulled wine included?" from becoming a lost booking.' },
+
   /* vitrine */
   chooseTour:  { pt: 'Escolha o seu passeio', en: 'Choose your tour' },
   fAll: { pt: 'Todos', en: 'All' }, fWalk: { pt: 'A pé', en: 'Walking' },

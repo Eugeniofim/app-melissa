@@ -100,11 +100,26 @@ async function cloudUpdateBooking(b) {
 
 /* ---------- puxar tudo ---------- */
 let lastBookingIds = null;
+let lastStamp = null;
 async function cloudPull() {
   try {
     await qFlush();
     const logged = typeof isLoggedIn === 'function' && isLoggedIn();
     if (logged && typeof authEnsure === 'function') await authEnsure();
+
+    /* Com fotos de parada, o estado passa de 1 MB. Baixar isso a cada 25s
+       queimaria o plano dela e a internet do celular à toa. Primeiro
+       perguntamos só a data da última alteração — se não mudou, paramos aqui. */
+    if (lastStamp && !logged) {
+      try {
+        const hR = await supaFetch('appstate?id=eq.1&select=updated_at', { headers: { Prefer: '' } });
+        if (hR.ok) {
+          const h = (await hR.json())[0];
+          if (h && h.updated_at === lastStamp) return { ok: true, semMudanca: true };
+        }
+      } catch (e) { /* sem rede: segue para o caminho normal */ }
+    }
+
     const [stR, bkR, scR] = await Promise.all([
       supaFetch('appstate?id=eq.1&select=data,updated_at', { headers: { Prefer: '' } }),
       logged ? supaFetch('bookings?select=data&order=created_at.asc', { headers: { Prefer: '' } })
@@ -115,6 +130,7 @@ async function cloudPull() {
     ]);
     if (!stR.ok || !bkR.ok) return { ok: false };
     const st = (await stR.json())[0];
+    if (st) lastStamp = st.updated_at;
     const bk = (await bkR.json()).map(r => r.data);
     if (!logged && scR.ok) {
       try { DB.seatCounts = (await scR.json()).map(r =>

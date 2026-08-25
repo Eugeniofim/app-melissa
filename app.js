@@ -368,10 +368,11 @@ function viewTour(id) {
    mentir. O que ajuda de verdade é o trajeto na ordem — e o mapa de
    verdade, com ruas, a um toque. */
 function miniMap(stops, x) {
-  const pts = stops.filter(p => p.lat && p.lng);
+  const pts = stops.filter(p => p.place || (p.lat && p.lng));
   if (pts.length < 2) return '';
   const L = a => (a && (a[LANG] || a.pt)) || '';
-  const q = p => p.lat + ',' + p.lng;
+  /* endereço digitado pela Melissa vale mais que coordenada: o Maps resolve e mostra o nome */
+  const q = p => encodeURIComponent(p.place || (p.lat + ',' + p.lng));
   const gmaps = 'https://www.google.com/maps/dir/?api=1'
     + '&origin=' + q(pts[0])
     + '&destination=' + q(pts[pts.length - 1])
@@ -682,6 +683,12 @@ function admTours() {
 }
 
 /* ---- criar / editar passeio + calendário ---- */
+/* lista guardada como array vira uma linha por item na caixa de texto */
+function linhas(obj, lang) {
+  const a = obj && (obj[lang] || obj.pt);
+  return Array.isArray(a) ? a.join('\n') : '';
+}
+
 function admTourEdit(id) {
   const isNew = id === 'new';
   const x = isNew
@@ -729,6 +736,30 @@ function admTourEdit(id) {
           <button class="mini" id="saveDraft">${t('saveDraft')}</button>
         </div>
       </section>
+      <section class="card span2">
+        <h3>${t('edRoute')}</h3>
+        <p class="why">${t('edRouteWhy')}</p>
+        <div class="frow">
+          <label class="fld">${t('edDuration')}<input id="fDur" value="${esc(x.duration || '')}" placeholder="2h30"></label>
+          <label class="fld">${t('edDistance')}<input id="fDist" value="${esc(x.distance || '')}" placeholder="3 km"></label>
+        </div>
+        <div id="stopList"></div>
+        <button class="mini" id="addStop">+ ${t('edAddStop')}</button>
+      </section>
+
+      <section class="card span2">
+        <h3>${t('included')}</h3>
+        <p class="why">${t('edIncWhy')}</p>
+        <div class="frow">
+          <label class="fld">${t('included')} (PT)<textarea id="fIncPt" rows="4">${esc(linhas(x.includes, 'pt'))}</textarea></label>
+          <label class="fld">${t('included')} (EN)<textarea id="fIncEn" rows="4">${esc(linhas(x.includes, 'en'))}</textarea></label>
+        </div>
+        <div class="frow">
+          <label class="fld">${t('notIncluded')} (PT)<textarea id="fNincPt" rows="3">${esc(linhas(x.notIncludes, 'pt'))}</textarea></label>
+          <label class="fld">${t('notIncluded')} (EN)<textarea id="fNincEn" rows="3">${esc(linhas(x.notIncludes, 'en'))}</textarea></label>
+        </div>
+      </section>
+
       ${isNew ? '' : `
       <section class="card span2" id="calCard">
         <h3>${t('whenRuns')}</h3>
@@ -756,6 +787,76 @@ function admTourEdit(id) {
         </div>
       </section>`}
     </div>`);
+  /* ---------- roteiro ---------- */
+  let stops = JSON.parse(JSON.stringify(x.stops || []));
+  function drawStops() {
+    const box = $('#stopList');
+    box.innerHTML = stops.length ? stops.map((p, i) => `
+      <div class="stopcard" data-i="${i}">
+        <div class="sctop">
+          <span class="scnum">${i + 1}</span>
+          <div class="scmove">
+            <button class="mini ico" data-up="${i}" ${i === 0 ? 'disabled' : ''} aria-label="${t('edUp')}">↑</button>
+            <button class="mini ico" data-dn="${i}" ${i === stops.length - 1 ? 'disabled' : ''} aria-label="${t('edDown')}">↓</button>
+            <button class="mini ico danger" data-rm="${i}" aria-label="${t('edRemove')}">✕</button>
+          </div>
+        </div>
+        <div class="frow">
+          <label class="fld">${t('edTime')}<input data-f="t" value="${esc(p.t || '')}" placeholder="17h00"></label>
+          <label class="fld">${t('edPlace')}<input data-f="place" value="${esc(p.place || '')}" placeholder="Place des Dominicains, Colmar"></label>
+        </div>
+        <div class="frow">
+          <label class="fld">${t('edStopName')} (PT)<input data-f="npt" value="${esc((p.n && p.n.pt) || '')}"></label>
+          <label class="fld">${t('edStopName')} (EN)<input data-f="nen" value="${esc((p.n && p.n.en) || '')}"></label>
+        </div>
+        <div class="frow">
+          <label class="fld">${t('edStopText')} (PT)<textarea data-f="dpt" rows="3">${esc((p.d && p.d.pt) || '')}</textarea></label>
+          <label class="fld">${t('edStopText')} (EN)<textarea data-f="den" rows="3">${esc((p.d && p.d.en) || '')}</textarea></label>
+        </div>
+        <div class="photopick">
+          <span class="pprev sm" style="background-image:url(${esc(p.ph || '')})">${p.ph ? '' : '<i>+</i>'}</span>
+          <div class="ppinfo">
+            <input type="file" accept="image/*" data-ph="${i}">
+            <small class="why">${t('edStopPhoto')}</small>
+          </div>
+        </div>
+      </div>`).join('') : `<p class="hint">${t('edNoStops')}</p>`;
+
+    /* guarda o que for digitado, sem redesenhar — redesenhar aqui apagaria o texto */
+    $$('[data-f]', box).forEach(el => el.oninput = () => {
+      const i = +el.closest('.stopcard').dataset.i, v = el.value;
+      const p = stops[i];
+      if (el.dataset.f === 't') p.t = v;
+      else if (el.dataset.f === 'place') p.place = v;
+      else { p.n = p.n || {}; p.d = p.d || {};
+        ({ npt: () => p.n.pt = v, nen: () => p.n.en = v,
+           dpt: () => p.d.pt = v, den: () => p.d.en = v })[el.dataset.f](); }
+    });
+    $$('[data-up]', box).forEach(b2 => b2.onclick = () => {
+      const i = +b2.dataset.up; [stops[i - 1], stops[i]] = [stops[i], stops[i - 1]]; drawStops();
+    });
+    $$('[data-dn]', box).forEach(b2 => b2.onclick = () => {
+      const i = +b2.dataset.dn; [stops[i + 1], stops[i]] = [stops[i], stops[i + 1]]; drawStops();
+    });
+    $$('[data-rm]', box).forEach(b2 => b2.onclick = () => {
+      const i = +b2.dataset.rm;
+      if (!confirm(t('edRemoveAsk'))) return;
+      stops.splice(i, 1); drawStops();
+    });
+    $$('[data-ph]', box).forEach(inp => inp.onchange = async (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      try {
+        /* 480px chega para a faixa do roteiro e não incha a sincronização */
+        stops[+inp.dataset.ph].ph = await readImageResized(f, 480, 0.72);
+        inp.closest('.photopick').querySelector('.pprev').style.backgroundImage = `url(${stops[+inp.dataset.ph].ph})`;
+        inp.closest('.photopick').querySelector('.pprev').innerHTML = '';
+        toast(t('tPhotoOk'));
+      } catch (err) { toast(t('tPhotoBad')); }
+    });
+  }
+  drawStops();
+  $('#addStop').onclick = () => { stops.push({ t: '', place: '', n: { pt: '', en: '' }, d: { pt: '', en: '' }, ph: '' }); drawStops(); };
+
   let newPhoto = null;
   $('#fPhoto').onchange = async (e) => {
     const f = e.target.files[0]; if (!f) return;
@@ -778,7 +879,15 @@ function admTourEdit(id) {
       min: +$('#fMin').value || 1, max: +$('#fMax').value || 1,
       payPolicy: $('#fPay').value,
       photo: newPhoto || x.photo, status,
+      duration: $('#fDur').value.trim(), distance: $('#fDist').value.trim(),
+      includes:    { pt: itens('#fIncPt'),  en: itens('#fIncEn')  },
+      notIncludes: { pt: itens('#fNincPt'), en: itens('#fNincEn') },
+      /* joga fora parada sem nome — linha em branco na página do cliente é pior que nada */
+      stops: stops.filter(p => (p.n && p.n.pt || '').trim()),
     };
+  }
+  function itens(sel) {
+    return $(sel).value.split('\n').map(l => l.trim()).filter(Boolean);
   }
   function validate(data) {
     const problems = [];
@@ -1398,7 +1507,7 @@ addEventListener('hashchange', () => {
 
 /* ---------- nuvem ---------- */
 cloudStart((r) => {
-  if (r.bootstrap) return;
+  if (r.bootstrap || r.semMudanca) return;
   if (r.fresh && r.fresh.length && location.hash.startsWith('#/adm')) {
     const b = r.fresh[r.fresh.length - 1];
     toast((LANG === 'pt' ? '🎉 Nova reserva: ' : '🎉 New booking: ') + b.name + ' · ' + eur(b.total));
