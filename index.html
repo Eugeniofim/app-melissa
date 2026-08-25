@@ -167,6 +167,53 @@ small{color:var(--ink-3)}
 .mini:hover{background:var(--surface-3)}
 .mini.danger{color:var(--danger);background:var(--danger-wash)}
 .mini.ghost{background:transparent;border:1px solid var(--line)}
+/* agenda */
+.agrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:10px}
+.agrid.head{margin-bottom:2px;gap:5px}
+.agwd{font-family:var(--f-mono);font-size:9px;letter-spacing:.1em;color:var(--ink-3);text-align:center;text-transform:uppercase}
+.agc{aspect-ratio:1;border:0;border-radius:10px;background:var(--surface-2);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;cursor:pointer;font:inherit;color:var(--ink);transition:.15s}
+.agc.empty{background:transparent;cursor:default}
+.agc b{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.agc.has{background:var(--accent-wash)}
+.agc.today b{color:var(--accent)}
+.agc.on{background:var(--accent);color:#fff}
+.agc.on b{color:#fff}
+.agc:hover:not(.empty){transform:translateY(-1px)}
+.agdots{display:flex;gap:2px}
+.agdots i{width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:.6}
+.agc.on .agdots i{background:#fff;opacity:.9}
+.agdots i.full{background:var(--brand-amarelo);opacity:1}
+.agdots i.low{background:var(--danger);opacity:1}
+.paxlist{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+/* relatórios */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--surface);border-radius:var(--r);padding:14px 15px;box-shadow:var(--sh-1)}
+.kpi small{font-family:var(--f-mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);display:block}
+.kpi b{font-family:var(--f-display);font-size:24px;font-weight:700;letter-spacing:-.02em;display:block;margin-top:6px;font-variant-numeric:tabular-nums}
+.kpi.warn b{color:var(--warn)}
+.chartbox{height:210px;margin-top:10px}
+.chartbox canvas{width:100%;height:100%;display:block}
+.occ{display:inline-block;width:52px;height:6px;border-radius:20px;background:var(--surface-3);overflow:hidden;vertical-align:middle;margin-right:6px}
+.occ i{display:block;height:100%;background:var(--accent);border-radius:20px}
+.orow{display:flex;align-items:center;gap:10px;padding:7px 0}
+.onm{font-size:12.5px;width:88px;flex:none;color:var(--ink-2)}
+.obar{flex:1;height:7px;border-radius:20px;background:var(--surface-3);overflow:hidden}
+.obar i{display:block;height:100%;background:var(--accent);border-radius:20px}
+/* demonstração */
+.demobar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 15px;border-radius:var(--r);
+  background:var(--highlight-wash);margin-bottom:14px}
+.demobar b{font-size:13px}
+.demobar p{font-size:12px;color:var(--ink-2);margin:2px 0 0;flex:1;min-width:200px}
+.vi-logo{display:inline-flex;align-items:center;gap:10px}
+.vi-mark{display:block;flex:none;line-height:0}
+.vi-word b{font-family:var(--f-display);font-weight:800;font-size:13px;line-height:1.02;letter-spacing:.02em;display:block;color:var(--ink)}
+.vi-word small{font-family:var(--f-mono);font-size:8px;letter-spacing:.16em;color:var(--ink-3);display:block;margin-top:3px}
+.vcard .vi-logo{flex-direction:column;gap:12px}
+.vcard .vi-word b{font-size:19px;letter-spacing:.03em;text-align:center}
+.vcard .vi-word small{text-align:center;font-size:9px;margin-top:5px}
+.hub .vi-word b{color:#fff}
+.hub .vi-word small{color:rgba(255,255,255,.72)}
 .qrbox{display:flex;gap:16px;align-items:center;margin-top:12px;flex-wrap:wrap}
 .qrbox img{border:1px solid var(--line);border-radius:var(--r);background:#fff;padding:6px}
 .qrbox b{font-family:var(--f-display)}
@@ -235,6 +282,7 @@ small{color:var(--ink-3)}
 </head>
 <body>
 <div id="app"></div>
+<script src="logo.js"></script>
 <script src="store.js"></script>
 <script src="cloud.js"></script>
 <script src="i18n.js"></script>

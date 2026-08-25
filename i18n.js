@@ -170,6 +170,58 @@ const STR = {
   resetDemo:  { pt: 'Recomeçar com dados de exemplo', en: 'Reset with sample data' },
   resetWarn:  { pt: 'Isso apaga tudo que você criou e volta ao exemplo. Fazer isso?', en: 'This deletes everything you created and restores the sample. Do it?' },
 
+  /* agenda */
+  admAgenda:  { pt: 'Agenda', en: 'Calendar' },
+  agTitle:    { pt: 'Sua agenda', en: 'Your calendar' },
+  agNoDep:    { pt: 'Nenhuma saída neste dia.', en: 'No departures this day.' },
+  agDayOf:    { pt: 'Saídas de {d}', en: 'Departures on {d}' },
+  agLegend:   { pt: 'Os pontos mostram as saídas do dia. Toque num dia para ver quem vem.', en: 'Dots show the day’s departures. Tap a day to see who’s coming.' },
+  agBooked:   { pt: '{n} reservados', en: '{n} booked' },
+  agFree:     { pt: '{n} vagas', en: '{n} spots' },
+  agPrev:     { pt: 'Mês anterior', en: 'Previous month' },
+  agNext:     { pt: 'Próximo mês', en: 'Next month' },
+  agToday:    { pt: 'Hoje', en: 'Today' },
+
+  /* clientes */
+  admClients: { pt: 'Clientes', en: 'Clients' },
+  clTitle:    { pt: 'Sua base de clientes', en: 'Your client base' },
+  clEmpty:    { pt: 'Ainda não há clientes. Eles entram sozinhos quando alguém reserva.', en: 'No clients yet. They appear automatically when someone books.' },
+  clCols:     { pt: ['Cliente', 'Passeios', 'Gasto', 'Último', 'Contato'], en: ['Client', 'Tours', 'Spent', 'Last', 'Contact'] },
+  clTotal:    { pt: '{n} pessoas · {v} no total', en: '{n} people · {v} in total' },
+  clDlCsv:    { pt: 'Baixar lista (CSV)', en: 'Download list (CSV)' },
+  clRepeat:   { pt: 'Voltou {n}×', en: 'Returned {n}×' },
+  clNew:      { pt: 'Primeira vez', en: 'First time' },
+
+  /* relatórios */
+  admReports: { pt: 'Relatórios', en: 'Reports' },
+  rpTitle:    { pt: 'Como foi o período', en: 'How the period went' },
+  rpRevenue:  { pt: 'Recebido', en: 'Received' },
+  rpDeps:     { pt: 'Saídas', en: 'Departures' },
+  rpPax:      { pt: 'Pessoas', en: 'People' },
+  rpTicket:   { pt: 'Média por pessoa', en: 'Average per person' },
+  rpDue:      { pt: 'Ainda a receber', en: 'Still to receive' },
+  rpByMonth:  { pt: 'Recebido mês a mês', en: 'Received month by month' },
+  rpByWeek:   { pt: 'Recebido nas últimas 8 semanas', en: 'Received in the last 8 weeks' },
+  rpByTour:   { pt: 'Desempenho por passeio', en: 'Performance by tour' },
+  rpTourCols: { pt: ['Passeio', 'Saídas', 'Pessoas', 'Ocupação', 'Recebido'], en: ['Tour', 'Departures', 'People', 'Occupancy', 'Received'] },
+  rpOrigin:   { pt: 'De onde vieram as reservas', en: 'Where bookings came from' },
+  rpOriginHelp:{ pt: 'Mostra onde vale investir o seu tempo.', en: 'Shows where your time pays off.' },
+  rpEmpty:    { pt: 'Sem movimento neste período.', en: 'No activity in this period.' },
+  oSite:      { pt: 'Site', en: 'Website' },
+  oInsta:     { pt: 'Instagram', en: 'Instagram' },
+  oWhats:     { pt: 'WhatsApp', en: 'WhatsApp' },
+  oAgency:    { pt: 'Agência', en: 'Agency' },
+  oFriend:    { pt: 'Indicação', en: 'Referral' },
+
+  /* demonstração */
+  demoOn:     { pt: 'Modo demonstração', en: 'Demo mode' },
+  demoWhat:   { pt: 'O app está com passeios e clientes de exemplo para você experimentar tudo funcionando. Quando a Melissa quiser começar de verdade, é só limpar.', en: 'The app has sample tours and clients so you can try everything. When Melissa is ready to start for real, just clear it.' },
+  demoClear:  { pt: 'Limpar tudo e começar do zero', en: 'Clear everything and start fresh' },
+  demoConfirm:{ pt: 'Isto apaga TODOS os passeios, reservas e clientes de exemplo — em todos os aparelhos. Não dá para desfazer. Continuar?', en: 'This deletes ALL sample tours, bookings and clients — on every device. This cannot be undone. Continue?' },
+  demoCleared:{ pt: 'Pronto. App zerado — crie o seu primeiro passeio.', en: 'Done. App is empty — create your first tour.' },
+  demoRestore:{ pt: 'Repor os exemplos', en: 'Restore samples' },
+  demoRestored:{ pt: 'Exemplos repostos.', en: 'Samples restored.' },
+
   /* whatsapp */
   waHello:   { pt: 'Oi Melissa! Vi seu app de passeios e quero saber mais 🙂', en: 'Hi Melissa! I found your tours app and would love to know more 🙂' },
   waSendBooking: { pt: 'Me apresentar no WhatsApp da Melissa', en: 'Say hi on Melissa’s WhatsApp' },

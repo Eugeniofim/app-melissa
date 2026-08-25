@@ -24,11 +24,13 @@ Coupon     {code, pct, until, oncePerPerson, uses:[email]}
 function _blank() {
   return { tours: [], rules: [], departures: [], blocks: [], bookings: [], coupons: [],
            settings: { lang: 'pt', tutorialClient: true, tutorialAdm: true, admName: 'Melissa',
-           whats: '+33612345678', insta: 'melissahallais', placeholderContact: true } };
+           whats: '+33682051120', insta: 'melissalsacia', placeholderContact: false } };
 }
 
 function _seed() {
   const db = _blank();
+  db.demo = true;
+
   db.tours = [
     { id: 't1', type: 'walk', region: 'alsace',
       name: { pt: 'Marchés de Noël · Colmar', en: 'Christmas Markets · Colmar' },
@@ -37,31 +39,108 @@ function _seed() {
       meeting: 'Colmar · Place Unterlinden, em frente ao museu',
       photo: 'capa.jpg', price: 45, priceMode: 'pp', min: 4, max: 14,
       payPolicy: 'split', status: 'seasonal', order: 1 },
-    { id: 't2', type: 'photo', region: 'alsace',
+    { id: 't2', type: 'walk', region: 'alsace',
+      name: { pt: 'Estrasburgo a pé · Petite France', en: 'Strasbourg on foot · Petite France' },
+      desc: { pt: 'A catedral, o relógio astronômico ao meio-dia e os canais da Petite France. Duas horas e meia pelo centro histórico, no seu ritmo.',
+              en: 'The cathedral, the astronomical clock at noon and the canals of Petite France. Two and a half hours through the old town, at your pace.' },
+      meeting: 'Estrasburgo · Place Gutenberg, ao lado da estátua',
+      photo: 'capa.jpg', price: 52, priceMode: 'pp', min: 4, max: 14,
+      payPolicy: 'split', status: 'live', order: 2 },
+    { id: 't3', type: 'photo', region: 'alsace',
       name: { pt: 'Sessão de fotos · Vinhedos', en: 'Photo session · Vineyards' },
       desc: { pt: 'Uma hora de ensaio entre as vinhas do Grand Cru, na luz do fim de tarde. As fotos editadas chegam em até 5 dias.',
               en: 'A one-hour session among the Grand Cru vines in late-afternoon light. Edited photos within 5 days.' },
       meeting: 'Turckheim · portão da vinícola',
       photo: 'capa.jpg', price: 180, priceMode: 'session', min: 1, max: 4,
-      payPolicy: 'full', status: 'live', order: 2 },
+      payPolicy: 'full', status: 'live', order: 3 },
+    { id: 't4', type: 'walk', region: 'alsace',
+      name: { pt: 'Rota dos Vinhos · Riquewihr e Ribeauvillé', en: 'Wine Route · Riquewihr and Ribeauvillé' },
+      desc: { pt: 'Dia inteiro por três vilas da Rota dos Vinhos, com degustação em dois domínios. Transporte incluído.',
+              en: 'A full day through three villages on the Wine Route, with tastings at two estates. Transport included.' },
+      meeting: 'Colmar · estação, saída principal',
+      photo: 'capa.jpg', price: 120, priceMode: 'pp', min: 4, max: 8,
+      payPolicy: 'split', status: 'live', order: 4 },
+    { id: 't5', type: 'bike', region: 'blackforest',
+      name: { pt: 'Bike na Floresta Negra', en: 'Black Forest by bike' },
+      desc: { pt: 'Meio dia de bicicleta pelas trilhas da Floresta Negra, com parada para café e bolo. Bicicleta incluída.',
+              en: 'Half a day cycling the Black Forest trails, with a coffee-and-cake stop. Bike included.' },
+      meeting: 'Freiburg · em frente à estação',
+      photo: 'capa.jpg', price: 78, priceMode: 'pp', min: 2, max: 8,
+      payPolicy: 'full', status: 'draft', order: 5 },
   ];
+
   db.rules = [
-    { id: 'r1', tourId: 't1', weekdays: [2, 4, 6], time: '16:30', capacity: 14,
-      from: '2026-11-24', until: '2026-12-23' },
+    { id: 'r1', tourId: 't1', weekdays: [2, 4, 6], time: '16:30', capacity: 14, from: '2026-11-24', until: '2026-12-23' },
+    { id: 'r2', tourId: 't2', weekdays: [1, 3, 5], time: '10:00', capacity: 14, from: isoToday(), until: addDays(isoToday(), 120) },
+    { id: 'r3', tourId: 't3', weekdays: [0, 6],    time: '18:00', capacity: 4,  from: isoToday(), until: addDays(isoToday(), 120) },
+    { id: 'r4', tourId: 't4', weekdays: [4],       time: '09:00', capacity: 8,  from: isoToday(), until: addDays(isoToday(), 120) },
   ];
+
   db.coupons = [
     { code: 'VOLTA10', pct: 10, until: '2026-12-31', oncePerPerson: true, uses: [] },
+    { code: 'AMIGO15', pct: 15, until: '2026-12-31', oncePerPerson: true, uses: [] },
   ];
+
+  /* ---- clientes e reservas de exemplo (histórico crível) ---- */
+  const people = [
+    ['Camille Bernard',  'camille.bernard@email.fr', '+33 6 21 44 55 10', 'camille.bern',  'site'],
+    ['Sarah Whitfield',  'sarah.w@email.co.uk',      '+44 7700 900431',   '',              'instagram'],
+    ['Markus Klein',     'm.klein@email.de',         '+49 176 5544 221',  'markus.k',      'site'],
+    ['Marcos Duarte',    'marcos.duarte@email.com',  '+55 11 98877 6655', 'marcos.duarte', 'friend'],
+    ['Élodie Rousseau',  'elodie.r@email.fr',        '+33 6 88 12 34 56', '',              'instagram'],
+    ['Hiroshi Mori',     'h.mori@email.jp',          '+81 90 1234 5678',  '',              'agency'],
+    ['Ana Sofía Rivas',  'anasofia@email.es',        '+34 611 223 344',   'anasofia.r',    'whatsapp'],
+    ['Beatriz Nogueira', 'bia.nog@email.com',        '+55 21 99123 4567', 'bia.nog',       'friend'],
+  ];
+  const plan = [
+    /* [pessoa, passeio, dias atrás, pax, quitado?] */
+    [0, 't2', 42, 2, true],  [1, 't2', 35, 2, true],  [2, 't4', 28, 4, true],
+    [3, 't3', 21, 2, true],  [4, 't2', 18, 3, true],  [0, 't4', 14, 2, true],
+    [5, 't2', 10, 2, true],  [6, 't3',  7, 2, true],  [7, 't2',  4, 4, true],
+    [1, 't4', -3, 2, false], [3, 't2', -6, 2, false], [4, 't3', -9, 1, true],
+    [7, 't4', -12, 3, false],
+  ];
+  let n = 0;
+  for (const [pi, tourId, back, pax, settled] of plan) {
+    const [name, email, whats, insta, origin] = people[pi];
+    const x = db.tours.find(z => z.id === tourId);
+    const date = addDays(isoToday(), -back);
+    const rule = db.rules.find(r => r.tourId === tourId);
+    const time = rule ? rule.time : '10:00';
+    const total = x.priceMode === 'session' ? x.price : x.price * pax;
+    const created = addDays(date, -(7 + (n % 9)));
+    const payments = [];
+    if (x.payPolicy === 'split') {
+      payments.push({ amount: Math.round(total / 2), date: created, method: 'card', kind: 'deposit' });
+      if (settled) payments.push({ amount: total - Math.round(total / 2), date: addDays(date, -1), method: 'card', kind: 'balance' });
+    } else {
+      payments.push({ amount: total, date: created, method: n % 3 === 0 ? 'applepay' : 'card', kind: 'full' });
+    }
+    db.bookings.push({
+      id: 'demo' + (++n), code: 'VI-' + (2100 + n * 37 % 7800),
+      tourId, date, time, name, email, whats, insta, pax, total,
+      coupon: null, discount: 0, policy: x.payPolicy, payments,
+      status: 'confirmed', createdAt: created + 'T10:00:00.000Z', origin,
+    });
+  }
   return db;
 }
+
+/* apaga tudo — a Melissa começa do zero */
+function clearAll() {
+  DB = _blank();
+  DB.demo = false;
+  save();
+}
+function restoreDemo() { DB = _seed(); save(); }
 
 let DB = null;
 function load() {
   try { DB = JSON.parse(localStorage.getItem(DB_KEY)) || null; } catch (e) { DB = null; }
   if (!DB || !DB.tours) { DB = _seed(); save(); }
-  if (DB.settings.whats === undefined) {
-    DB.settings.whats = '+33612345678'; DB.settings.insta = 'melissahallais';
-    DB.settings.placeholderContact = true; save();
+  if (DB.settings.whats === undefined || DB.settings.whats === '+33612345678') {
+    DB.settings.whats = '+33682051120'; DB.settings.insta = 'melissalsacia';
+    DB.settings.placeholderContact = false; save();
   }
   return DB;
 }
@@ -226,3 +305,88 @@ const Bookings = {
 };
 
 load();
+
+/* ---------- clientes (derivados das reservas) ---------- */
+const Clients = {
+  all() {
+    const map = new Map();
+    for (const b of DB.bookings) {
+      if (b.status === 'cancelled') continue;
+      const key = (b.email || b.whats || b.name).toLowerCase();
+      const c = map.get(key) || { name: b.name, email: b.email, whats: b.whats, insta: b.insta,
+                                  tours: 0, spent: 0, last: '', origins: new Set() };
+      c.tours += 1;
+      c.spent += Bookings.paid(b);
+      if (b.date > c.last) c.last = b.date;
+      if (b.origin) c.origins.add(b.origin);
+      if (!c.insta && b.insta) c.insta = b.insta;
+      map.set(key, c);
+    }
+    return [...map.values()].sort((a, b) => b.spent - a.spent);
+  },
+};
+
+/* ---------- relatórios ---------- */
+const Reports = {
+  /* receita por mês do ano corrente */
+  byMonth(year) {
+    const out = Array(12).fill(0);
+    for (const b of DB.bookings) {
+      for (const p of b.payments) {
+        if (p.date.slice(0, 4) === String(year)) out[+p.date.slice(5, 7) - 1] += p.amount;
+      }
+    }
+    return out;
+  },
+  /* receita das últimas 8 semanas */
+  byWeek(weeks = 8) {
+    const out = [];
+    let end = isoToday();
+    for (let i = 0; i < weeks; i++) {
+      const start = addDays(end, -6);
+      let sum = 0;
+      for (const b of DB.bookings) {
+        for (const p of b.payments) if (p.date >= start && p.date <= end) sum += p.amount;
+      }
+      out.unshift({ label: start.slice(8) + '/' + start.slice(5, 7), value: sum });
+      end = addDays(start, -1);
+    }
+    return out;
+  },
+  /* desempenho por passeio no intervalo */
+  byTour(fromIso, toIso) {
+    return Tours.all().map(x => {
+      const bs = DB.bookings.filter(b => b.tourId === x.id && b.status !== 'cancelled'
+                                    && b.date >= fromIso && b.date <= toIso);
+      const deps = new Set(bs.map(b => b.date + b.time));
+      const pax = bs.reduce((s, b) => s + b.pax, 0);
+      const revenue = bs.reduce((s, b) => s + Bookings.paid(b), 0);
+      const seats = deps.size * (x.max || 1);
+      return { tour: x, departures: deps.size, pax, revenue,
+               occupancy: seats ? Math.round(pax / seats * 100) : 0 };
+    }).filter(r => r.departures > 0 || r.revenue > 0);
+  },
+  /* de onde vieram as reservas */
+  byOrigin(fromIso, toIso) {
+    const map = {};
+    let total = 0;
+    for (const b of DB.bookings) {
+      if (b.status === 'cancelled' || b.date < fromIso || b.date > toIso) continue;
+      const o = b.origin || 'site';
+      map[o] = (map[o] || 0) + 1; total++;
+    }
+    return Object.entries(map)
+      .map(([k, n]) => ({ origin: k, n, pct: total ? Math.round(n / total * 100) : 0 }))
+      .sort((a, b) => b.n - a.n);
+  },
+  totals(fromIso, toIso) {
+    const bs = DB.bookings.filter(b => b.status !== 'cancelled' && b.date >= fromIso && b.date <= toIso);
+    const revenue = DB.bookings.reduce((s, b) =>
+      s + b.payments.filter(p => p.date >= fromIso && p.date <= toIso).reduce((t, p) => t + p.amount, 0), 0);
+    const pax = bs.reduce((s, b) => s + b.pax, 0);
+    const deps = new Set(bs.map(b => b.tourId + b.date + b.time)).size;
+    const due = bs.reduce((s, b) => s + Bookings.due(b), 0);
+    return { revenue, pax, deps, bookings: bs.length, due,
+             ticket: bs.length ? Math.round(revenue / pax || 0) : 0 };
+  },
+};

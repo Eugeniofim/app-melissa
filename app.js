@@ -120,7 +120,7 @@ function viewHub() {
     <div class="hub-bg" style="background-image:url(capa.jpg)"></div>
     <div class="hub-in">
       <div class="vcard">
-        <div class="logo-mark">M</div>
+        ${logoFull({ mark: 62, color: 'var(--brand-amarelo)' })}
         <h1>Melissa Hallais</h1>
         <p class="role">${t('role')}</p>
         <p class="tagline">${t('tagline')}</p>
@@ -347,9 +347,12 @@ function renderBook() {
 ===================================================== */
 const ADM_TABS = [
   ['today',    'admToday'],
+  ['agenda',   'admAgenda'],
   ['tours',    'admTours'],
   ['bookings', 'admBookings'],
   ['money',    'admMoney'],
+  ['reports',  'admReports'],
+  ['clients',  'admClients'],
   ['coupons',  'admCoupons'],
   ['settings', 'admSettings'],
 ];
@@ -358,7 +361,7 @@ function admShell(tab, inner) {
   app.innerHTML = `
   <div class="adm">
     <aside class="rail">
-      <div class="brand"><span class="logo-mark sm">M</span><div><b>Voyages &amp; Images</b><small>ADM</small></div></div>
+      <div class="brand">${logoFull({ mark: 26, sub: 'ADM' })}</div>
       <nav>${ADM_TABS.map(([id, k]) =>
         `<button class="nb ${tab === id ? 'on' : ''}" data-tab="${id}" id="nb-${id}">${t(k)}</button>`).join('')}</nav>
       <div class="railfoot">
@@ -379,6 +382,9 @@ function viewAdm(tab, arg) {
   else if (tab === 'tours')    admTours();
   else if (tab === 'bookings') admBookings();
   else if (tab === 'money')    admMoney();
+  else if (tab === 'agenda')   admAgenda();
+  else if (tab === 'reports')  admReports();
+  else if (tab === 'clients')  admClients();
   else if (tab === 'coupons')  admCoupons();
   else if (tab === 'settings') admSettings();
   else admToday();
@@ -695,6 +701,15 @@ function admSettings() {
       <h3>${t('language')}</h3>
       ${langBar()}
     </section>
+    ${DB.demo ? `<div class="demobar">
+      <b>🧪 ${t('demoOn')}</b>
+      <p>${t('demoWhat')}</p>
+      <button class="cta sm" id="demoClear">${t('demoClear')}</button>
+    </div>` : `<div class="demobar">
+      <b>${t('demoRestore')}</b>
+      <p>${t('demoWhat')}</p>
+      <button class="mini" id="demoRestore">${t('demoRestore')}</button>
+    </div>`}
     <section class="card">
       <h3>${t('yourContact')}</h3>
       ${DB.settings.placeholderContact ? `<div class="alert warn">⚠ ${t('placeholderWarn')}</div>` : ''}
@@ -733,6 +748,14 @@ function admSettings() {
       <button class="mini danger" id="reset">${t('resetDemo')}</button>
     </section>`);
   bindLang(app);
+  const dc = $('#demoClear');
+  if (dc) dc.onclick = () => {
+    if (!confirm(t('demoConfirm'))) return;
+    clearAll(); cloudPushState();
+    toast(t('demoCleared')); go('/adm/tours');
+  };
+  const dr = $('#demoRestore');
+  if (dr) dr.onclick = () => { restoreDemo(); cloudPushState(); toast(t('demoRestored')); admSettings(); };
   $('#setContactSave').onclick = () => {
     DB.settings.whats = $('#setWhats').value.trim();
     DB.settings.insta = $('#setInsta').value.trim().replace(/^@/, '');
@@ -758,6 +781,227 @@ function admSettings() {
 }
 
 route();
+
+
+/* =====================================================
+   AGENDA — o mês da Melissa
+===================================================== */
+function admAgenda() {
+  const cur = admAgenda._m || isoToday().slice(0, 7);
+  const [Y, M] = cur.split('-').map(Number);
+  const first = `${cur}-01`;
+  const daysIn = new Date(Y, M, 0).getDate();
+  const last = `${cur}-${String(daysIn).padStart(2, '0')}`;
+  const startWd = (new Date(first + 'T12:00:00').getDay() + 6) % 7; // segunda = 0
+
+  /* todas as saídas do mês, de todos os passeios */
+  const deps = [];
+  for (const x of Tours.all()) {
+    for (const d of Cal.departures(x.id, first, last)) {
+      const left = Cal.seatsLeft(x.id, d.date, d.time, d.capacity);
+      deps.push({ ...d, tour: x, left, booked: d.capacity - left });
+    }
+  }
+  const byDay = {};
+  deps.forEach(d => (byDay[d.date] = byDay[d.date] || []).push(d));
+
+  const sel = admAgenda._d && byDay[admAgenda._d] ? admAgenda._d
+            : (Object.keys(byDay).sort()[0] || isoToday());
+  const WD = LANG === 'pt' ? ['seg','ter','qua','qui','sex','sáb','dom'] : ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const MN = LANG === 'pt'
+    ? ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
+    : ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  let cells = '';
+  for (let i = 0; i < startWd; i++) cells += '<span class="agc empty"></span>';
+  for (let d = 1; d <= daysIn; d++) {
+    const iso = `${cur}-${String(d).padStart(2, '0')}`;
+    const list = byDay[iso] || [];
+    const isToday = iso === isoToday();
+    const dots = list.slice(0, 4).map(x =>
+      `<i class="${x.left === 0 ? 'full' : x.left <= 2 ? 'low' : ''}"></i>`).join('');
+    cells += `<button class="agc ${list.length ? 'has' : ''} ${iso === sel ? 'on' : ''} ${isToday ? 'today' : ''}" data-d="${iso}">
+      <b>${d}</b>${list.length ? `<span class="agdots">${dots}</span>` : ''}</button>`;
+  }
+
+  const selList = (byDay[sel] || []).sort((a, b) => a.time.localeCompare(b.time));
+
+  admShell('agenda', `
+    <div class="pagehead"><h1 class="pageh">${t('agTitle')}</h1>
+      <div class="chips">
+        <button class="mini" id="agPrev">←</button>
+        <button class="chip on">${MN[M - 1]} ${Y}</button>
+        <button class="mini" id="agNext">→</button>
+        <button class="mini" id="agNow">${t('agToday')}</button>
+      </div></div>
+    <div class="two-col">
+      <section class="card">
+        <div class="agrid head">${WD.map(w => `<span class="agwd">${w}</span>`).join('')}</div>
+        <div class="agrid" id="agGrid">${cells}</div>
+        <p class="why">${t('agLegend')}</p>
+      </section>
+      <section class="card">
+        <h3>${t('agDayOf', { d: fmtDate(sel) })}</h3>
+        ${selList.length ? selList.map(d => {
+          const bs = DB.bookings.filter(b => b.tourId === d.tour.id && b.date === d.date
+                                        && b.time === d.time && b.status !== 'cancelled');
+          return `<div class="deprow">
+            <div class="tinfo"><b>${d.time} · ${esc(d.tour.name[LANG] || d.tour.name.pt)}</b>
+              <small>${t('agBooked', { n: d.booked })} · ${t('agFree', { n: d.left })}</small></div>
+            ${bs.length ? `<div class="paxlist">${bs.map(b =>
+              `<span class="pill ${Bookings.due(b) > 0 ? 'warn' : 'ok'}">${esc(b.name.split(' ')[0])} ×${b.pax}</span>`).join('')}</div>` : ''}
+          </div>`;
+        }).join('') : `<p class="empty">${t('agNoDep')}</p>`}
+      </section>
+    </div>`);
+
+  const shift = (n) => {
+    const d = new Date(Y, M - 1 + n, 1);
+    admAgenda._m = d.toISOString().slice(0, 7); admAgenda._d = null; admAgenda();
+  };
+  $('#agPrev').onclick = () => shift(-1);
+  $('#agNext').onclick = () => shift(1);
+  $('#agNow').onclick = () => { admAgenda._m = isoToday().slice(0, 7); admAgenda._d = isoToday(); admAgenda(); };
+  $$('#agGrid .agc[data-d]').forEach(c => c.onclick = () => { admAgenda._d = c.dataset.d; admAgenda(); });
+}
+
+/* =====================================================
+   RELATÓRIOS — como foi o período
+===================================================== */
+function admReports() {
+  const mode = admReports._m || 'month';
+  const today = isoToday();
+  const from = mode === 'week' ? addDays(today, -7) : today.slice(0, 8) + '01';
+  const T = Reports.totals(from, today);
+  const tours = Reports.byTour(from, today);
+  const origins = Reports.byOrigin(from, today);
+  const series = mode === 'week' ? Reports.byWeek(8)
+    : Reports.byMonth(+today.slice(0, 4)).map((v, i) => ({
+        label: (LANG === 'pt' ? ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
+                              : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])[i],
+        value: v }));
+  const OLBL = { site: 'oSite', instagram: 'oInsta', whatsapp: 'oWhats', agency: 'oAgency', friend: 'oFriend' };
+
+  admShell('reports', `
+    <div class="pagehead"><h1 class="pageh">${t('rpTitle')}</h1>
+      <div class="chips">
+        <button class="chip ${mode === 'week' ? 'on' : ''}" id="rW">${t('thisWeek')}</button>
+        <button class="chip ${mode === 'month' ? 'on' : ''}" id="rM">${t('thisMonth')}</button>
+      </div></div>
+
+    <div class="kpis">
+      <div class="kpi"><small>${t('rpRevenue')}</small><b>${eur(T.revenue)}</b></div>
+      <div class="kpi"><small>${t('rpDeps')}</small><b>${T.deps}</b></div>
+      <div class="kpi"><small>${t('rpPax')}</small><b>${T.pax}</b></div>
+      <div class="kpi"><small>${t('rpTicket')}</small><b>${eur(T.ticket)}</b></div>
+      <div class="kpi ${T.due > 0 ? 'warn' : ''}"><small>${t('rpDue')}</small><b>${eur(T.due)}</b></div>
+    </div>
+
+    <section class="card">
+      <h3>${mode === 'week' ? t('rpByWeek') : t('rpByMonth')}</h3>
+      <div class="chartbox"><canvas id="repChart"></canvas></div>
+    </section>
+
+    <div class="two-col">
+      <section class="card">
+        <h3>${t('rpByTour')}</h3>
+        ${tours.length ? `<table class="tbl"><thead><tr>${t('rpTourCols').map(c => `<th>${c}</th>`).join('')}</tr></thead>
+        <tbody>${tours.map(r => `<tr>
+          <td>${esc(r.tour.name[LANG] || r.tour.name.pt)}</td>
+          <td class="mono">${r.departures}</td><td class="mono">${r.pax}</td>
+          <td><span class="occ"><i style="width:${Math.min(100, r.occupancy)}%"></i></span> ${r.occupancy}%</td>
+          <td class="mono right">${eur(r.revenue)}</td></tr>`).join('')}</tbody></table>`
+        : `<p class="empty">${t('rpEmpty')}</p>`}
+      </section>
+      <section class="card">
+        <h3>${t('rpOrigin')}</h3>
+        <p class="why">${t('rpOriginHelp')}</p>
+        ${origins.length ? origins.map(o => `<div class="orow">
+          <span class="onm">${t(OLBL[o.origin] || 'oSite')}</span>
+          <span class="obar"><i style="width:${o.pct}%"></i></span>
+          <span class="mono">${o.pct}%</span></div>`).join('')
+        : `<p class="empty">${t('rpEmpty')}</p>`}
+      </section>
+    </div>`);
+
+  $('#rW').onclick = () => { admReports._m = 'week'; admReports(); };
+  $('#rM').onclick = () => { admReports._m = 'month'; admReports(); };
+  drawBars($('#repChart'), series, mode === 'week' ? series.length - 1 : +today.slice(5, 7) - 1);
+}
+
+/* gráfico de barras — sem biblioteca, nas cores da marca */
+function drawBars(cv, series, hi) {
+  if (!cv) return;
+  const draw = () => {
+    const r = cv.getBoundingClientRect(); if (!r.width) return;
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    cv.width = r.width * dpr; cv.height = r.height * dpr;
+    const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+    const W = r.width, H = r.height, pL = 8, pR = 8, pT = 20, pB = 26;
+    const w = W - pL - pR, h = H - pT - pB;
+    const max = Math.max(1, ...series.map(s => s.value)) * 1.15;
+    c.clearRect(0, 0, W, H);
+    c.strokeStyle = css('--line'); c.lineWidth = 1; c.setLineDash([3, 4]);
+    for (let i = 0; i <= 3; i++) { const y = pT + h * (i / 3); c.beginPath(); c.moveTo(pL, y); c.lineTo(W - pR, y); c.stroke(); }
+    c.setLineDash([]);
+    const n = series.length, gap = w / n * 0.36, bw = w / n - gap;
+    const last = (hi === undefined ? n - 1 : hi);
+    series.forEach((s, i) => {
+      const bh = (s.value / max) * h, x = pL + i * (bw + gap) + gap / 2, y = pT + h - bh;
+      c.fillStyle = i === last ? css('--brand-amarelo') : css('--accent');
+      c.globalAlpha = i === last ? 1 : 0.85;
+      c.beginPath(); c.roundRect(x, y, bw, Math.max(bh, 1), [4, 4, 0, 0]); c.fill();
+      c.globalAlpha = 1;
+      c.fillStyle = css('--ink-3'); c.font = '10px ui-monospace, monospace'; c.textAlign = 'center';
+      c.fillText(s.label, x + bw / 2, pT + h + 9);
+      if (i === last && s.value > 0) {
+        c.fillStyle = css('--ink'); c.font = '600 12px system-ui';
+        c.fillText('€ ' + Math.round(s.value), x + bw / 2, y - 7);
+      }
+    });
+    c.textAlign = 'left';
+  };
+  draw(); setTimeout(draw, 60);
+}
+
+/* =====================================================
+   CLIENTES — a base que nasce sozinha
+===================================================== */
+function admClients() {
+  const list = Clients.all();
+  const total = list.reduce((s, c) => s + c.spent, 0);
+  const cols = t('clCols');
+  admShell('clients', `
+    <div class="pagehead"><h1 class="pageh">${t('clTitle')}</h1>
+      <div class="chips">
+        <span class="chip on">${t('clTotal', { n: list.length, v: eur(total) })}</span>
+        <button class="mini" id="clCsv">${t('clDlCsv')}</button>
+      </div></div>
+    <section class="card">
+      ${list.length ? `<table class="tbl"><thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead>
+      <tbody>${list.map(c => `<tr>
+        <td><b>${esc(c.name)}</b><br><small class="mono">${esc(c.email || '')}</small></td>
+        <td>${c.tours > 1 ? `<span class="pill ok">${t('clRepeat', { n: c.tours })}</span>`
+                          : `<span class="pill">${t('clNew')}</span>`}</td>
+        <td class="mono right">${eur(c.spent)}</td>
+        <td class="mono">${c.last ? fmtDate(c.last) : '—'}</td>
+        <td class="tacts">
+          ${c.whats ? `<a class="mini" target="_blank" rel="noopener"
+            href="${waLink(t('waHi', { name: c.name.split(' ')[0], tour: '', when: '' }), c.whats.replace(/\D/g, ''))}">✆</a>` : ''}
+          ${c.email ? `<a class="mini" href="mailto:${esc(c.email)}">✉</a>` : ''}
+          ${c.insta ? `<a class="mini" target="_blank" rel="noopener" href="https://instagram.com/${esc(c.insta.replace(/^@/, ''))}">◎</a>` : ''}
+        </td></tr>`).join('')}</tbody></table>`
+      : `<p class="empty">${t('clEmpty')}</p>`}
+    </section>`);
+  $('#clCsv').onclick = () => {
+    const csv = [cols.join(';')].concat(list.map(c =>
+      [c.name, c.email, c.whats, c.insta || '', c.tours, c.spent, c.last].join(';'))).join('\n');
+    const a2 = document.createElement('a');
+    a2.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
+    a2.download = 'clientes.csv'; a2.click();
+  };
+}
 
 /* ---------- nuvem ---------- */
 cloudStart((r) => {
