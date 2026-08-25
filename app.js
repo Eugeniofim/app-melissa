@@ -143,8 +143,9 @@ function route() {
 /* barra de idioma do cliente */
 function langBar(cls) {
   return `<div class="langs ${cls || ''}">
-    <button data-lang="pt" class="${LANG === 'pt' ? 'on' : ''}">🇧🇷 PT</button>
-    <button data-lang="en" class="${LANG === 'en' ? 'on' : ''}">🇬🇧 EN</button></div>`;
+    <button data-lang="pt" class="${LANG === 'pt' ? 'on' : ''}" lang="pt" aria-label="Português">PT</button>
+    <span class="langsep" aria-hidden="true">|</span>
+    <button data-lang="en" class="${LANG === 'en' ? 'on' : ''}" lang="en" aria-label="English">EN</button></div>`;
 }
 function bindLang(root) {
   $$('[data-lang]', root).forEach(b => b.onclick = () => { setLang(b.dataset.lang); route(); });

@@ -19,7 +19,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="tokens.css?v=1.9.5">
+<link rel="stylesheet" href="tokens.css?v=1.9.6">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23064c3f'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='%23d9aa0e' font-family='sans-serif' font-weight='700'%3EM%3C/text%3E%3C/svg%3E">
 <style>
 /* ============ base ============ */
@@ -60,11 +60,18 @@ small{color:var(--ink-3)}
 .vcard h1{font-size:var(--fs-7)}
 .role{font-family:var(--f-mono);font-size:var(--fs-1);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--highlight-text);margin-top:6px}
 .tagline{font-size:var(--fs-3);color:var(--ink-2);margin-top:10px}
-.langs{display:flex;gap:5px}
+/* PT | EN — a mesma assinatura do logotipo dela. Sem bandeira:
+   idioma não é país (o inglês dela atende alemão, holandês, americano). */
+.langs{display:flex;gap:2px;align-items:center}
 .langs.center{justify-content:center;margin-top:14px;padding-top:13px;border-top:1px solid var(--line)}
 .langs.right{margin-left:auto}
-.langs button{padding:5px 11px;border-radius:var(--r-pill);font-size:var(--fs-2);font-weight:var(--t-strong);background:var(--surface-2);color:var(--ink-3)}
-.langs button.on{background:var(--accent);color:var(--accent-ink)}
+.langs button{padding:5px 12px;border-radius:var(--r-pill);background:transparent;
+  font-family:var(--f-display);font-weight:700;font-size:var(--fs-2);letter-spacing:.1em;
+  color:var(--ink-3);transition:color var(--d-fast),background var(--d-fast)}
+.langs button:hover{color:var(--ink)}
+/* o amarelo é a assinatura da marca; texto escuro em cima dá 8,7:1 */
+.langs button.on{background:var(--highlight);color:var(--highlight-ink)}
+.langsep{color:var(--line-2);font-weight:400;user-select:none}
 .lk{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--r-lg);background:var(--surface);box-shadow:var(--sh-1);text-align:left;transition:transform var(--d-fast) var(--spring),box-shadow var(--d-base)}
 .lk:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}
 .lk .ic{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:var(--surface-2);flex:none;font-size:16px}
@@ -613,12 +620,12 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{
 </div>
 
 <div id="app"></div>
-<script src="auth.js?v=1.9.5"></script>
-<script src="logo.js?v=1.9.5"></script>
-<script src="store.js?v=1.9.5"></script>
-<script src="cloud.js?v=1.9.5"></script>
-<script src="i18n.js?v=1.9.5"></script>
-<script src="app.js?v=1.9.5"></script>
+<script src="auth.js?v=1.9.6"></script>
+<script src="logo.js?v=1.9.6"></script>
+<script src="store.js?v=1.9.6"></script>
+<script src="cloud.js?v=1.9.6"></script>
+<script src="i18n.js?v=1.9.6"></script>
+<script src="app.js?v=1.9.6"></script>
 <script>
 /* PWA: registra o service worker e recarrega sozinho quando sai versão nova */
 if ('serviceWorker' in navigator) {

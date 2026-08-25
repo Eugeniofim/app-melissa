@@ -34,7 +34,7 @@ async function authFetch(path, body) {
 
 /* criar a conta — ela escolhe a senha */
 async function authSignUp(email, password) {
-  const r = await authFetch('signup', { email, password });
+  const r = await authFetch('signup?redirect_to=' + encodeURIComponent(appHome()), { email, password });
   if (!r.ok) return { ok: false, error: r.data.msg || r.data.error_description || r.data.message };
   /* com confirmação de e-mail ligada, ainda não vem sessão */
   if (r.data.access_token) { authSave(sessionFrom(r.data)); return { ok: true, logged: true }; }
@@ -88,8 +88,15 @@ async function authSignOut() {
   authSave(null);
 }
 
+/* Endereço deste app, sem hash e sem query. É para cá que o link
+   do e-mail tem que voltar — dizer isso explicitamente é o que impede
+   o link de cair no Site URL configurado, que pode estar errado. */
+function appHome() {
+  return location.origin + location.pathname.replace(/index\.html$/, '');
+}
+
 async function authReset(email) {
-  const r = await authFetch('recover', { email });
+  const r = await authFetch('recover?redirect_to=' + encodeURIComponent(appHome()), { email });
   return { ok: r.ok, error: r.data.msg || r.data.message };
 }
 
