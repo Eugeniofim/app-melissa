@@ -45,6 +45,18 @@ const STR = {
              en: 'And most important: until you sign in, nothing you edit here is actually saved.' },
   nlNotSaved: { pt: '⚠ Não foi salvo — entre na sua conta primeiro', en: '⚠ Not saved — sign in to your account first' },
 
+  /* nova senha pelo link do e-mail */
+  npTitle:    { pt: 'Escolha sua nova senha', en: 'Choose your new password' },
+  npSub:      { pt: 'O link do e-mail funcionou. Agora é só definir uma senha — pelo menos 8 caracteres.',
+                en: 'The email link worked. Now set a password — at least 8 characters.' },
+  npNew:      { pt: 'Nova senha', en: 'New password' },
+  npAgain:    { pt: 'Repita a senha', en: 'Repeat the password' },
+  npSave:     { pt: 'Salvar e entrar', en: 'Save and sign in' },
+  npMismatch: { pt: 'As duas senhas não são iguais', en: 'The two passwords do not match' },
+  npOk:       { pt: 'Senha trocada. Bem-vinda de volta.', en: 'Password changed. Welcome back.' },
+  npFail:     { pt: 'Não deu para trocar. O link pode ter expirado — peça outro.',
+                en: 'Could not change it. The link may have expired — request a new one.' },
+
   /* página do passeio — roteiro, mapa, incluídos */
   fDuration:  { pt: 'Duração', en: 'Duration' },
   fWalk:      { pt: 'A pé', en: 'On foot' },

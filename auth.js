@@ -93,6 +93,44 @@ async function authReset(email) {
   return { ok: r.ok, error: r.data.msg || r.data.message };
 }
 
+/* --------- link de recuperação de senha ---------
+   O Supabase devolve a sessão no próprio endereço, depois do #.
+   Sem ler isso, quem clica no link do e-mail cai no hub e não
+   acontece nada — que era exatamente o que este app fazia. */
+function authFromHash() {
+  const h = location.hash || '';
+  if (!/access_token=|error_description=/.test(h)) return null;
+  const p = new URLSearchParams(h.replace(/^#\/?/, ''));
+  const limpa = () => history.replaceState(null, '', location.pathname + location.search);
+
+  const erro = p.get('error_description');
+  if (erro) { limpa(); return { erro: decodeURIComponent(erro.replace(/\+/g, ' ')) }; }
+
+  const at = p.get('access_token');
+  if (!at) return null;
+  authSave({ access_token: at, refresh_token: p.get('refresh_token'),
+             expires_at: Date.now() + (+p.get('expires_in') || 3600) * 1000, user: null });
+  const tipo = p.get('type');
+  limpa();
+  return { tipo };
+}
+
+/* Troca a senha usando a sessão que veio do link. */
+async function authSetPassword(pass) {
+  if (!authToken()) return { ok: false, error: 'sem sessão' };
+  try {
+    const r = await fetch(SUPA_URL + '/auth/v1/user', {
+      method: 'PUT',
+      headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + authToken(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pass }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) return { ok: false, error: d.msg || d.message || d.error_description };
+    if (SESSION) { SESSION.user = d; authSave(SESSION); }
+    return { ok: true };
+  } catch (e) { return { ok: false, error: String(e) }; }
+}
+
 /* --------- posse do app: a primeira conta vira a dona --------- */
 async function claimOwnership() {
   if (!isLoggedIn()) return { ok: false };

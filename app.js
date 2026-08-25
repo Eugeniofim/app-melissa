@@ -127,7 +127,8 @@ function route() {
   const h = location.hash.slice(2) || '';
   const p = h.split('/');
   document.documentElement.lang = LANG === 'pt' ? 'pt-BR' : 'en';
-  if (p[0] === 'login')    viewLogin();
+  if (p[0] === 'novasenha') viewNewPass();
+  else if (p[0] === 'login') viewLogin();
   else if (p[0] === 'adm') {
     if (DB.settings.authRequired && !isLoggedIn()) return viewLogin('in');
     viewAdm(p[1] || 'today', p[2]);
@@ -1200,6 +1201,18 @@ function admSettings() {
   $('#reset').onclick = () => { if (confirm(t('resetWarn'))) { resetDemo(); route(); } };
 }
 
+/* ---------- link vindo do e-mail ----------
+   O Supabase entrega a sessão de recuperação no próprio endereço, depois
+   do #. Precisa ser lido ANTES de rotear: o roteador não reconhece esse
+   formato, mandaria para o hub e o token se perderia junto. */
+(function linkDeEmail() {
+  const r = typeof authFromHash === 'function' && authFromHash();
+  if (!r) return;
+  if (r.erro) { setTimeout(() => toast('⚠ ' + r.erro), 500); return; }
+  if (r.tipo === 'recovery') location.hash = '#/novasenha';
+  else if (r.tipo === 'signup') location.hash = '#/adm/today';
+})();
+
 route();
 
 
@@ -1437,6 +1450,42 @@ function admClients() {
 /* =====================================================
    LOGIN DA MELISSA
 ===================================================== */
+/* ---- definir nova senha ----
+   Só se chega aqui pelo link do e-mail, que já trouxe a sessão. */
+function viewNewPass() {
+  app.innerHTML = `
+  <div class="loginwrap">
+    <div class="logincard">
+      <div class="loginlogo">${logoMark(46, 'var(--brand-amarelo)')}</div>
+      <h1>${t('npTitle')}</h1>
+      <p class="why center">${t('npSub')}</p>
+      <label class="fld">${t('npNew')}
+        <input id="npA" type="password" autocomplete="new-password"></label>
+      <label class="fld">${t('npAgain')}
+        <input id="npB" type="password" autocomplete="new-password"></label>
+      <button class="cta" id="npGo">${t('npSave')}</button>
+      <p class="fine center">🔒 ${t('loginSafe')}</p>
+    </div>
+  </div>`;
+  const go2 = $('#npGo');
+  go2.onclick = async () => {
+    const a1 = $('#npA').value, b1 = $('#npB').value;
+    if (a1.length < 8)  { $('#npA').focus(); return toast(t('loginWeak')); }
+    if (a1 !== b1)      { $('#npB').focus(); return toast(t('npMismatch')); }
+    go2.disabled = true; go2.textContent = t('loginWait');
+    const r = await authSetPassword(a1);
+    go2.disabled = false; go2.textContent = t('npSave');
+    if (!r.ok) return toast(r.error || t('npFail'));
+    /* a sessão do link já vale como login: aproveita e assume a posse */
+    const own = await claimOwnership();
+    if (own.taken) { await authSignOut(); return toast(t('loginTaken')); }
+    DB.settings.authRequired = true; save();
+    toast(t('npOk'));
+    go('/adm/today');
+  };
+  $('#npA').focus();
+}
+
 function viewLogin(mode) {
   const m = mode || viewLogin._m || 'in';
   viewLogin._m = m;
@@ -1514,5 +1563,5 @@ cloudStart((r) => {
   }
   /* re-render seguro: nunca por cima de trabalho em andamento */
   if (isBusyEditing()) { pendingSync = true; return; }
-  route();
+route();
 });
