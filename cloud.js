@@ -46,14 +46,33 @@ function statePayload() {
   return { tours: DB.tours, rules: DB.rules, departures: DB.departures,
            blocks: DB.blocks, coupons: DB.coupons, settings: DB.settings };
 }
+/* A trancada do banco devolve HTTP 200 mesmo quando descarta a escrita:
+   quem não é a dona simplesmente não altera nenhuma linha. Se a gente
+   confiar no 200, a Melissa vê "salvo" e perde o trabalho. Por isso
+   pedimos o registro de volta e contamos as linhas. */
+let cloudRejected = false;
+async function patchConta(path, body) {
+  const r = await supaFetch(path, {
+    method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(body),
+  });
+  if (!r.ok) return { ok: false, linhas: 0 };
+  let linhas = 0;
+  try { const j = await r.json(); linhas = Array.isArray(j) ? j.length : 1; } catch (e) { linhas = 1; }
+  return { ok: true, linhas };
+}
+
 let pushT = null;
 function cloudPushState() {
   clearTimeout(pushT);
   pushT = setTimeout(async () => {
     const body = { data: statePayload(), updated_at: new Date().toISOString() };
     try {
-      const r = await supaFetch('appstate?id=eq.1', { method: 'PATCH', body: JSON.stringify(body) });
-      if (!r.ok) qPush({ path: 'appstate?id=eq.1', method: 'PATCH', body });
+      const r = await patchConta('appstate?id=eq.1', body);
+      if (!r.ok) return qPush({ path: 'appstate?id=eq.1', method: 'PATCH', body });
+      if (r.linhas === 0) {                 /* o banco recusou em silêncio */
+        cloudRejected = true;
+        if (typeof onCloudRejected === 'function') onCloudRejected();
+      } else cloudRejected = false;
     } catch (e) { qPush({ path: 'appstate?id=eq.1', method: 'PATCH', body }); }
   }, 700);
 }
@@ -68,10 +87,15 @@ async function cloudPushBooking(b) {
 }
 async function cloudUpdateBooking(b) {
   const body = { data: b };
+  const path = 'bookings?id=eq.' + encodeURIComponent(b.id);
   try {
-    const r = await supaFetch('bookings?id=eq.' + encodeURIComponent(b.id), { method: 'PATCH', body: JSON.stringify(body) });
-    if (!r.ok) qPush({ path: 'bookings?id=eq.' + encodeURIComponent(b.id), method: 'PATCH', body });
-  } catch (e) { qPush({ path: 'bookings?id=eq.' + encodeURIComponent(b.id), method: 'PATCH', body }); }
+    const r = await patchConta(path, body);
+    if (!r.ok) return qPush({ path, method: 'PATCH', body });
+    if (r.linhas === 0) {
+      cloudRejected = true;
+      if (typeof onCloudRejected === 'function') onCloudRejected();
+    }
+  } catch (e) { qPush({ path, method: 'PATCH', body }); }
 }
 
 /* ---------- puxar tudo ---------- */

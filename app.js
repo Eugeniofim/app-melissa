@@ -300,15 +300,60 @@ function viewTour(id) {
   if (!x) return go('/tours');
   const S = viewTour._s = { tour: x, date: null, time: null, cap: 0, pax: x.priceMode === 'session' ? 1 : 2, step: 1, coupon: null, discount: 0, policy: x.payPolicy === 'split' ? 'split' : 'full' };
 
+  const stops = Array.isArray(x.stops) ? x.stops : [];
+  const L = a => (a && (a[LANG] || a.pt)) || '';
+  const lista = a => (Array.isArray(a) ? a : (a && (a[LANG] || a.pt)) || []);
+
   app.innerHTML = `
   <header class="topbar"><button class="backbtn" id="bk" aria-label="${t('back')}">←</button><b>${esc(x.name[LANG] || x.name.pt)}</b>${langBar('right')}</header>
   <div class="hero-sm" style="background-image:url(${esc(x.photo)})"></div>
   <main class="wrap two-col">
     <section>
       <span class="badge">${t('freeCancel')}</span>
-      <p class="desc">${esc(x.desc[LANG] || x.desc.pt)}</p>
+
+      <!-- os quatro números que todo mundo pergunta antes de qualquer outra coisa -->
+      <div class="facts">
+        ${x.duration ? `<div><small>${t('fDuration')}</small><b>${esc(x.duration)}</b></div>` : ''}
+        ${x.distance && x.distance !== '—' ? `<div><small>${t('fWalk')}</small><b>${esc(x.distance)}</b></div>` : ''}
+        <div><small>${t('fGroup')}</small><b>${t('upTo')} ${x.max}</b></div>
+        <div><small>${t('fLang')}</small><b>PT · EN</b></div>
+      </div>
+
+      <p class="desc lead">${esc(x.desc[LANG] || x.desc.pt)}</p>
+
+      ${stops.length ? `
+      <h3 class="h3">${t('itinerary')}</h3>
+      <p class="why">${t('itineraryWhy')}</p>
+      <ol class="route">
+        ${stops.map((p, i) => `
+          <li>
+            <span class="rnum">${i + 1}</span>
+            <div class="rbody">
+              ${p.t ? `<span class="rtime">${esc(p.t)}</span>` : ''}
+              <b>${esc(L(p.n))}</b>
+              <p>${esc(L(p.d))}</p>
+            </div>
+            ${p.ph ? `<span class="rph" style="background-image:url(${esc(p.ph)})" role="img" aria-label="${esc(L(p.n))}"></span>` : ''}
+          </li>`).join('')}
+      </ol>
+
+      ${miniMap(stops, x)}
+      ` : ''}
+
+      <div class="incbox">
+        <div>
+          <h4>${t('included')}</h4>
+          <ul class="inc yes">${lista(x.includes).map(i => `<li>${esc(i)}</li>`).join('')}</ul>
+        </div>
+        ${lista(x.notIncludes).length ? `<div>
+          <h4>${t('notIncluded')}</h4>
+          <ul class="inc no">${lista(x.notIncludes).map(i => `<li>${esc(i)}</li>`).join('')}</ul>
+        </div>` : ''}
+      </div>
+
       <h3 class="h3">${t('whereWeMeet')}</h3>
       <p class="desc">${esc(x.meeting)}</p>
+      <a class="mini" href="${mapLink(x.meeting)}" target="_blank" rel="noopener">${t('openMap')} ↗</a>
     </section>
     <aside class="book" id="book"></aside>
   </main>`;
@@ -316,6 +361,33 @@ function viewTour(id) {
   $('#bk').onclick = () => go('/tours');
   renderBook();
 }
+
+/* ---- o trajeto ----
+   Não desenho um mapa aqui de propósito. Quatro paradas dentro de 600 m
+   viram uma bolinha só numa projeção honesta, e distorcer a escala seria
+   mentir. O que ajuda de verdade é o trajeto na ordem — e o mapa de
+   verdade, com ruas, a um toque. */
+function miniMap(stops, x) {
+  const pts = stops.filter(p => p.lat && p.lng);
+  if (pts.length < 2) return '';
+  const L = a => (a && (a[LANG] || a.pt)) || '';
+  const q = p => p.lat + ',' + p.lng;
+  const gmaps = 'https://www.google.com/maps/dir/?api=1'
+    + '&origin=' + q(pts[0])
+    + '&destination=' + q(pts[pts.length - 1])
+    + (pts.length > 2 ? '&waypoints=' + pts.slice(1, -1).map(q).join('%7C') : '')
+    + '&travelmode=walking';
+  return `
+  <h3 class="h3">${t('mapTitle')}</h3>
+  <div class="mapbox">
+    <ol class="trail">
+      ${pts.map((p, i) => `<li><span class="tnum">${i + 1}</span><b>${esc(L(p.n))}</b></li>`).join('')}
+    </ol>
+    <a class="cta sm wide" href="${gmaps}" target="_blank" rel="noopener">${t('mapOpen')} ↗</a>
+    <p class="why">${t('mapWhy')}</p>
+  </div>`;
+}
+
 
 function renderBook() {
   const S = viewTour._s, x = S.tour, book = $('#book');
@@ -481,8 +553,19 @@ function noAuthBanner() {
   return `<div class="alert bad nolog">
     <b>⚠ ${t('nlTitle')}</b>
     <p>${t('nlWhy')}</p>
+    <p><b>${t('nlWrite')}</b></p>
     <button class="cta sm" id="goProtect">${t('nlCta')}</button>
   </div>`;
+}
+
+/* A nuvem avisa quando uma gravação foi recusada. Um aviso por vez —
+   o sync roda a cada 25s e não pode virar metralhadora de toast. */
+let _rejAviso = 0;
+function onCloudRejected() {
+  const agora = Date.now();
+  if (agora - _rejAviso < 60000) return;
+  _rejAviso = agora;
+  toast(t('nlNotSaved'));
 }
 
 function admShell(tab, inner) {

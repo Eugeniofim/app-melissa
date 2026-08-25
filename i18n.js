@@ -41,6 +41,26 @@ const STR = {
   nlWhy:   { pt: 'Os dados dos seus clientes são privados: só você, com sua senha, pode vê-los. Enquanto não entrar, este painel mostra apenas o que está guardado neste aparelho — e não as reservas que chegaram pelo site.',
              en: 'Your guests\' data is private: only you, with your password, can see it. Until you sign in, this panel shows only what is stored on this device — not the bookings that came in through the site.' },
   nlCta:   { pt: 'Entrar na minha conta', en: 'Sign in to my account' },
+  nlWrite: { pt: 'E o mais importante: enquanto você não entrar, nada do que editar aqui é salvo de verdade.',
+             en: 'And most important: until you sign in, nothing you edit here is actually saved.' },
+  nlNotSaved: { pt: '⚠ Não foi salvo — entre na sua conta primeiro', en: '⚠ Not saved — sign in to your account first' },
+
+  /* página do passeio — roteiro, mapa, incluídos */
+  fDuration:  { pt: 'Duração', en: 'Duration' },
+  fWalk:      { pt: 'A pé', en: 'On foot' },
+  fGroup:     { pt: 'Grupo', en: 'Group' },
+  fLang:      { pt: 'Idiomas', en: 'Languages' },
+  itinerary:  { pt: 'O roteiro, parada a parada', en: 'The route, stop by stop' },
+  itineraryWhy:{ pt: 'Os horários são aproximados — o passeio anda no ritmo do grupo, não do relógio.',
+                 en: 'Times are approximate — the walk follows the group, not the clock.' },
+  mapTitle:   { pt: 'O trajeto, na ordem', en: 'The route, in order' },
+  mapOpen:    { pt: 'Ver o trajeto no mapa', en: 'See the route on the map' },
+  mapWhy:     { pt: 'Abre no seu app de mapas, com as quatro paradas marcadas e o caminho a pé.',
+                en: 'Opens in your maps app, with every stop marked and the walking route.' },
+  openMap:    { pt: 'Ver o ponto de encontro no mapa', en: 'See the meeting point on the map' },
+  included:   { pt: 'Está incluído', en: "What's included" },
+  notIncluded:{ pt: 'Não está incluído', en: 'Not included' },
+  stopsCount: { pt: 'paradas', en: 'stops' },
 
   /* vitrine */
   chooseTour:  { pt: 'Escolha o seu passeio', en: 'Choose your tour' },
