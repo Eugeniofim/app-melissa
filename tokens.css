@@ -67,9 +67,12 @@
   --track-display: -0.025em;
   --track-label:    0.14em;
 
-  /* ---------- ESPAÇO (base 4) ---------- */
-  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px;
-  --s-6:24px; --s-8:32px; --s-10:40px; --s-12:48px; --s-16:64px;
+  /* ---------- ESPAÇO ----------
+     Escala de passo 2 até 16px (a interface é densa), depois passo 8.
+     Regra: use o token mais próximo; não invente valores intermediários. */
+  --s-0:2px;  --s-1:4px;  --s-2:6px;  --s-3:8px;   --s-4:10px;
+  --s-5:12px; --s-6:14px; --s-7:16px; --s-8:20px;  --s-9:24px;
+  --s-10:32px; --s-11:40px; --s-12:48px; --s-14:64px;
 
   /* ---------- FORMA ---------- */
   --r-sm:8px; --r:12px; --r-lg:18px; --r-xl:26px; --r-pill:999px;
@@ -109,4 +112,8 @@
    4. Cinza é legenda, nunca título.
    5. Números sempre em --f-mono com font-variant-numeric: tabular-nums.
    6. Toda cor sai daqui. Hex solto no componente = bug.
+      Exceção única: #fff sobre preenchimento de marca (verde/vinho).
+   7. Espaçamento sai de --s-*. Valor cru em px = dívida a pagar.
+   8. Todo controle clicável precisa de :focus-visible próprio ou herdado.
+   9. Botão só com ícone precisa de aria-label; ícone decorativo, aria-hidden.
    ========================================================= */

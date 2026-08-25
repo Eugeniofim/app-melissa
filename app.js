@@ -146,10 +146,10 @@ function viewHub() {
         ${langBar('center')}
       </div>
       <button class="lk main" id="goTours">
-        <span class="ic">📍</span><span><b>${t('seeTours')}</b><small>${t('seeToursSub')}</small></span><span class="go">→</span>
+        <span class="ic">📍</span><span><b>${t('seeTours')}</b><small>${t('seeToursSub')}</small></span><span class="go" aria-hidden="true">→</span>
       </button>
-      <a class="lk" href="https://instagram.com/${esc(DB.settings.insta)}" target="_blank" rel="noopener"><span class="ic">◎</span><span><b>Instagram</b><small>@${esc(DB.settings.insta)}</small></span><span class="go">→</span></a>
-      <a class="lk" href="${waLink(t('waHello'))}" target="_blank" rel="noopener"><span class="ic">✆</span><span><b>${t('whatsapp')}</b></span><span class="go">→</span></a>
+      <a class="lk" href="https://instagram.com/${esc(DB.settings.insta)}" target="_blank" rel="noopener"><span class="ic">◎</span><span><b>Instagram</b><small>@${esc(DB.settings.insta)}</small></span><span class="go" aria-hidden="true">→</span></a>
+      <a class="lk" href="${waLink(t('waHello'))}" target="_blank" rel="noopener"><span class="ic">✆</span><span><b>${t('whatsapp')}</b></span><span class="go" aria-hidden="true">→</span></a>
       <button class="adm-entry" id="admEntry">🔒 ${t('admEntry')}</button>
     </div>
   </div>`;
@@ -193,7 +193,7 @@ function viewShowcase() {
             <span class="cardfoot">
               <span class="pr">${x.priceMode === 'session' ? eur(x.price) : eur(x.price)}
                 <i>${x.priceMode === 'session' ? t('perSession') : t('perPerson')}</i></span>
-              <span class="cgo">→</span>
+              <span class="cgo" aria-hidden="true">→</span>
             </span>
           </span>
         </button>`).join('')
@@ -213,7 +213,7 @@ function viewTour(id) {
   const S = viewTour._s = { tour: x, date: null, time: null, cap: 0, pax: x.priceMode === 'session' ? 1 : 2, step: 1, coupon: null, discount: 0, policy: x.payPolicy === 'split' ? 'split' : 'full' };
 
   app.innerHTML = `
-  <header class="topbar"><button class="backbtn" id="bk">←</button><b>${esc(x.name[LANG] || x.name.pt)}</b>${langBar('right')}</header>
+  <header class="topbar"><button class="backbtn" id="bk" aria-label="${t('back')}">←</button><b>${esc(x.name[LANG] || x.name.pt)}</b>${langBar('right')}</header>
   <div class="hero-sm" style="background-image:url(${esc(x.photo)})"></div>
   <main class="wrap two-col">
     <section>
@@ -287,7 +287,7 @@ function renderBook() {
         <p class="cbad" id="cbad"></p>
       </details>
       <button class="cta" id="next2">${t('cont')}</button>
-      <button class="linkbtn" id="back1">← ${t('back')}</button>`;
+      <button class="linkbtn" id="back1" aria-label="${t('back')}">← ${t('back')}</button>`;
     $('#mn').onclick = () => { S.pax = Math.max(x.min || 1, S.pax - 1); S.discount = 0; S.coupon = null; renderBook(); };
     $('#pl').onclick = () => {
       if (S.pax >= Math.min(x.max, S.cap || x.max)) return toast(t('maxNote', { n: x.max }));
@@ -319,7 +319,7 @@ function renderBook() {
       <button class="cta" id="payBtn">${S.policy === 'split' && splitAllowed ? t('payNowBtn', { v: eur(half) }) : t('payBtn', { v: eur(total) })}</button>
       <p class="fine">${t('noHidden')}</p>
       <p class="fine demo">${t('demoPay')}</p>
-      <button class="linkbtn" id="back2">← ${t('back')}</button>`;
+      <button class="linkbtn" id="back2" aria-label="${t('back')}">← ${t('back')}</button>`;
     $$('.popt', book).forEach(b => b.onclick = () => {
       /* não re-renderizar: apagaria o que a pessoa já digitou */
       S.policy = b.dataset.p;
@@ -494,7 +494,7 @@ function admTourEdit(id) {
 
   const selOpts = (opts, cur) => opts.map(([v, k]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${t(k)}</option>`).join('');
   admShell('tours', `
-    <button class="linkbtn" id="bkT">← ${t('admTours')}</button>
+    <button class="linkbtn" id="bkT" aria-label="${t('admTours')}">← ${t('admTours')}</button>
     <h1 class="pageh">${isNew ? t('newTour').replace('+ ', '') : esc(x.name.pt)}</h1>
     <div class="formgrid">
       <section class="card">
@@ -872,9 +872,9 @@ function admAgenda() {
   admShell('agenda', `
     <div class="pagehead"><h1 class="pageh">${t('agTitle')}</h1>
       <div class="chips">
-        <button class="mini" id="agPrev">←</button>
+        <button class="mini" id="agPrev" aria-label="${t('agPrev')}">←</button>
         <button class="chip on">${MN[M - 1]} ${Y}</button>
-        <button class="mini" id="agNext">→</button>
+        <button class="mini" id="agNext" aria-label="${t('agNext')}">→</button>
         <button class="mini" id="agNow">${t('agToday')}</button>
       </div></div>
     <div class="two-col">
@@ -1031,9 +1031,10 @@ function admClients() {
         <td class="mono">${c.last ? fmtDate(c.last) : '—'}</td>
         <td class="tacts">
           ${c.whats ? `<a class="mini" target="_blank" rel="noopener"
-            href="${waLink(t('waHi', { name: c.name.split(' ')[0], tour: '', when: '' }), c.whats.replace(/\D/g, ''))}">✆</a>` : ''}
-          ${c.email ? `<a class="mini" href="mailto:${esc(c.email)}">✉</a>` : ''}
-          ${c.insta ? `<a class="mini" target="_blank" rel="noopener" href="https://instagram.com/${esc(c.insta.replace(/^@/, ''))}">◎</a>` : ''}
+            href="${waLink(t('waHi', { name: c.name.split(' ')[0], tour: '', when: '' }), c.whats.replace(/\D/g, ''))}"
+            aria-label="WhatsApp — ${esc(c.name)}" title="WhatsApp">✆</a>` : ''}
+          ${c.email ? `<a class="mini" href="mailto:${esc(c.email)}" aria-label="E-mail — ${esc(c.name)}" title="E-mail">✉</a>` : ''}
+          ${c.insta ? `<a class="mini" target="_blank" rel="noopener" href="https://instagram.com/${esc(c.insta.replace(/^@/, ''))}" aria-label="Instagram — ${esc(c.name)}" title="Instagram">◎</a>` : ''}
         </td></tr>`).join('')}</tbody></table>`
       : `<p class="empty">${t('clEmpty')}</p>`}
     </section>`);
