@@ -574,20 +574,46 @@ function admTourEdit(id) {
       type: $('#fType').value, region: $('#fRegion').value,
       name: { pt: $('#fNamePt').value.trim(), en: $('#fNameEn').value.trim() || $('#fNamePt').value.trim() },
       desc: { pt: $('#fDescPt').value.trim(), en: $('#fDescEn').value.trim() || $('#fDescPt').value.trim() },
-      meeting: $('#fMeet').value.trim(), photo: x.photo,
+      meeting: $('#fMeet').value.trim(),
       price: +$('#fPrice').value || 0, priceMode: $('#fMode').value,
       min: +$('#fMin').value || 1, max: +$('#fMax').value || 1,
       payPolicy: $('#fPay').value,
       photo: newPhoto || x.photo, status,
     };
   }
+  function validate(data) {
+    const problems = [];
+    if (!data.name.pt) problems.push(['fNamePt', t('vName')]);
+    if (!data.desc.pt) problems.push(['fDescPt', t('vDesc')]);
+    if (!data.meeting)  problems.push(['fMeet', t('vMeet')]);
+    if (!(data.price > 0)) problems.push(['fPrice', t('vPrice')]);
+    if (data.min > data.max) problems.push(['fMin', t('vMinMax')]);
+    $$('.fld .err').forEach(e => e.remove());
+    $$('.fld input, .fld textarea').forEach(e => e.classList.remove('invalid'));
+    problems.forEach(([id, msg]) => {
+      const el = $('#' + id); if (!el) return;
+      el.classList.add('invalid');
+      const s = document.createElement('small');
+      s.className = 'err'; s.textContent = msg;
+      el.insertAdjacentElement('afterend', s);
+    });
+    if (problems.length) {
+      const first = $('#' + problems[0][0]);
+      first?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      first?.focus();
+      toast(t('vFix', { n: problems.length }));
+    }
+    return problems.length === 0;
+  }
   $('#savePub').onclick = () => {
     const data = collect('live');
+    if (!validate(data)) return;
     if (!data.name.pt) return toast(LANG === 'pt' ? 'Dê um nome ao passeio.' : 'Give the tour a name.');
     if (isNew) { const nt = Tours.create(data); toast(t('published')); go('/adm/tours/' + nt.id); }
     else { Tours.update(x.id, data); toast(t('published')); go('/adm/tours'); }
   };
   $('#saveDraft').onclick = () => {
+    if (!$('#fNamePt').value.trim()) { $('#fNamePt').classList.add('invalid'); $('#fNamePt').focus(); return toast(t('vName')); }
     const data = collect('draft');
     if (isNew) { const nt = Tours.create(data); go('/adm/tours/' + nt.id); }
     else { Tours.update(x.id, data); go('/adm/tours'); }
@@ -1047,6 +1073,26 @@ function admClients() {
   };
 }
 
+
+/* ---------- proteção contra perda de trabalho ----------
+   A nuvem chega a cada 25s. Se ela chegar enquanto a Melissa preenche
+   um formulário — ou um cliente está no meio do checkout — a tela NÃO
+   pode ser redesenhada. O sync fica pendente e entra assim que der. */
+let pendingSync = false;
+function isBusyEditing() {
+  const h = location.hash;
+  if (document.querySelector('.coach')) return true;                 // tutorial aberto
+  if (h.startsWith('#/tour/') && viewTour._s && viewTour._s.step > 1) return true;  // checkout
+  if (/^#\/adm\/tours\//.test(h)) return true;                      // editando passeio
+  const ae = document.activeElement;
+  if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return true; // digitando
+  return false;
+}
+/* quando o usuário sai do que estava fazendo, aplica o que ficou pendente */
+addEventListener('hashchange', () => {
+  if (pendingSync && !isBusyEditing()) { pendingSync = false; setTimeout(route, 60); }
+});
+
 /* ---------- nuvem ---------- */
 cloudStart((r) => {
   if (r.bootstrap) return;
@@ -1054,8 +1100,7 @@ cloudStart((r) => {
     const b = r.fresh[r.fresh.length - 1];
     toast((LANG === 'pt' ? '🎉 Nova reserva: ' : '🎉 New booking: ') + b.name + ' · ' + eur(b.total));
   }
-  /* re-render seguro: nunca no meio de um formulário de reserva */
-  const h = location.hash;
-  const inCheckout = h.startsWith('#/tour/') && viewTour._s && viewTour._s.step > 1;
-  if (!inCheckout && !document.querySelector('.coach')) route();
+  /* re-render seguro: nunca por cima de trabalho em andamento */
+  if (isBusyEditing()) { pendingSync = true; return; }
+  route();
 });

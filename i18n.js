@@ -170,6 +170,13 @@ const STR = {
   resetDemo:  { pt: 'Recomeçar com dados de exemplo', en: 'Reset with sample data' },
   resetWarn:  { pt: 'Isso apaga tudo que você criou e volta ao exemplo. Fazer isso?', en: 'This deletes everything you created and restores the sample. Do it?' },
 
+  vName:  { pt: 'Dê um nome ao passeio.', en: 'Give the tour a name.' },
+  vDesc:  { pt: 'Escreva o que a pessoa vai viver.', en: 'Describe what guests will experience.' },
+  vMeet:  { pt: 'Diga onde vocês se encontram.', en: 'Say where you meet.' },
+  vPrice: { pt: 'O preço precisa ser maior que zero.', en: 'Price must be greater than zero.' },
+  vMinMax:{ pt: 'O mínimo não pode ser maior que o máximo.', en: 'Minimum cannot exceed maximum.' },
+  vFix:   { pt: 'Faltou preencher {n} campo(s) — marquei em vermelho.', en: '{n} field(s) missing — marked in red.' },
+
   tPhoto:     { pt: 'Foto do passeio', en: 'Tour photo' },
   tPhotoHelp: { pt: 'Escolha uma foto sua. É ela que aparece no card e no topo da página do passeio.', en: 'Pick one of your photos. It shows on the card and at the top of the tour page.' },
   tPhotoOk:   { pt: 'Foto trocada. Salve para publicar.', en: 'Photo changed. Save to publish.' },
