@@ -677,14 +677,14 @@ function renderBook() {
       <h2 class="okh">${t('booked')}</h2>
       <p class="hint center">${t('sentAll')}</p>
       <div class="voucher">
-        <small>${t('yourCode')}</small><div class="code">${b.code}</div>
+        <small>${t('yourCode')}</small><div class="code">${esc(b.code)}</div>
         <p>${fmtDate(b.date)} · ${b.time}</p><p>${esc(x.meeting)}</p>
       </div>
       ${comoPagar(b, x)}
       <a class="cta" style="text-decoration:none;text-align:center" target="_blank" rel="noopener"
          href="${waLink(t('waBookingMsg', { code: b.code, tour: x.name[LANG] || x.name.pt, when: fmtDate(b.date) + ' ' + b.time, name: b.name }))}">✆ ${t('waSendBooking')}</a>
       <div class="okrow">
-        <a class="mini" href="${icsFor(b, x)}" download="${b.code}.ics">${t('addCal')}</a>
+        <a class="mini" href="${icsFor(b, x)}" download="${esc(b.code)}.ics">${t('addCal')}</a>
         <a class="mini" target="_blank" rel="noopener" href="${mapLink(x.meeting)}">${t('seeMap')}</a>
       </div>
       <button class="cta soft" id="again">${t('bookAgain')}</button>`;
@@ -1203,7 +1203,7 @@ function admBookings() {
           /* nada entrou ainda — "sinal pago" seria mentira */
           pill = `<span class="pill warn">${t('waitingPay', { v: eur(due) })}</span>`;
         } else pill = `<span class="pill warn">${t('depositPaid', { v: eur(due) })}</span>`;
-        act = `<button class="mini strong" data-got="${b.id}">${t('gotBalance')}</button>`;
+        act = `<button class="mini strong" data-got="${esc(b.id)}">${t('gotBalance')}</button>`;
       }
       const first = b.name.split(' ')[0];
       const tourName = x ? (x.name[LANG] || x.name.pt) : '';
@@ -1219,9 +1219,9 @@ function admBookings() {
             : '');
       return `<div class="trow">
         <div class="tinfo"><b>${esc(b.name)}</b>
-          <small>${esc(x ? x.name.pt : '?')} · ${fmtDate(b.date)} ${b.time} · ${b.pax}p · <span class="mono">${b.code}</span></small></div>
+          <small>${esc(x ? x.name.pt : '?')} · ${fmtDate(b.date)} ${esc(b.time)} · ${esc(b.pax)}p · <span class="mono">${esc(b.code)}</span></small></div>
         <b class="mono">${eur(b.total)}</b>${pill}
-        <div class="tacts" id="ta-${b.id}">${cobrar}${act}</div>
+        <div class="tacts" id="ta-${esc(b.id)}">${cobrar}${act}</div>
       </div>`;
     }).join('')}</div>`
     : `<div class="emptybox"><p>${t('emptyBookings')}</p></div>`}`);
@@ -1229,7 +1229,7 @@ function admBookings() {
      ela recebeu — o botão antigo cravava "cartão" e o extrato saía mentindo. */
   $$('[data-got]').forEach(btn => btn.onclick = () => {
     const id = btn.dataset.got;
-    const cx = $('#ta-' + id);
+    const cx = document.getElementById('ta-' + id);
     if (!cx) return;
     const formas = [['pix','mPix'],['card','mCard'],['cash','mCash'],['transfer','mTransfer'],['other','mOther']];
     cx.innerHTML = `<span class="howgot">${t('howGot')}:</span>`
