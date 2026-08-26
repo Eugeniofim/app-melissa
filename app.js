@@ -499,7 +499,11 @@ function renderBook() {
       </div>
       <div id="times">${S.date ? timesHtml(byDate[S.date]) : `<p class="hint">${t('pickDate')}</p>`}</div>
       <button class="cta" id="next1" ${S.time ? '' : 'disabled'}>${t('cont')}</button>`
-      : `<p class="empty">${t('noDatesMonth')}</p>`}`;
+      : `<div class="nodates">
+          <p>${t('noDatesYet')}</p>
+          <a class="cta sm wide" target="_blank" rel="noopener"
+             href="${waLink(t('waAskDates', { tour: x.name[LANG] || x.name.pt }))}">${t('askDatesBtn')}</a>
+        </div>`}`;
     $$('.dcell', book).forEach(b => b.onclick = () => { S.date = b.dataset.d; S.time = null; renderBook(); });
     $$('[data-t]', book).forEach(b => b.onclick = () => {
       S.time = b.dataset.t; S.cap = +b.dataset.c;

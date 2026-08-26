@@ -130,6 +130,13 @@ const STR = {
   pickDate:    { pt: 'Escolha uma data', en: 'Pick a date' },
   pickTime:    { pt: 'Agora escolha o horário', en: 'Now pick a time' },
   noDatesMonth:{ pt: 'Nenhuma data neste mês.', en: 'No dates this month.' },
+  /* Sem data, o cliente batia num beco. A propria Melissa escreve nos PDFs
+     "entre em contato para consultar as datas" — entao o beco vira conversa. */
+  noDatesYet: { pt: 'As saídas deste passeio são em datas selecionadas. Me chame que eu te passo as próximas — e seguro seu lugar.',
+                en: 'This tour runs on selected dates. Message me and I will share the next ones — and hold your place.' },
+  askDatesBtn:{ pt: 'Perguntar as datas no WhatsApp', en: 'Ask about dates on WhatsApp' },
+  waAskDates: { pt: 'Oi Melissa! Vi o passeio {tour} no seu app e queria saber as próximas datas 🙂',
+                en: 'Hi Melissa! I saw {tour} on your app and would like to know the next dates 🙂' },
   cont:        { pt: 'Continuar', en: 'Continue' },
   peopleLbl:   { pt: 'Pessoas', en: 'People' },
   maxNote:     { pt: 'Este passeio vai até {n} pessoas. Para um grupo maior, me chame no WhatsApp.', en: 'This tour takes up to {n}. For a bigger group, message me.' },
