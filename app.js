@@ -81,9 +81,13 @@ function assinaturaSonora() {
   if (sessionStorage.getItem('vi_seen')) return kill();
   sessionStorage.setItem('vi_seen', '1');
   el.addEventListener('pointerdown', kill);
-  const curto = matchMedia('(prefers-reduced-motion:reduce)').matches;
-  if (!curto) assinaturaSonora();
-  setTimeout(kill, curto ? 1250 : 4750);
+  /* Antes eu cortava a abertura para 1,25s quando o aparelho pedia menos
+     movimento — quem tem essa opcao ligada no iPhone nao via nada. O tempo
+     agora e o mesmo para todos; o que muda e o giro, tratado no CSS.
+     O som fica de fora: quem pede menos estimulo tambem nao quer barulho. */
+  const menosMovimento = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if (!menosMovimento) assinaturaSonora();
+  setTimeout(kill, 4750);
 })();
 
 /* ---------- contato (WhatsApp, mapa, agenda, vCard) ---------- */
