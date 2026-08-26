@@ -156,10 +156,13 @@ const STR = {
   whatsLbl:    { pt: 'WhatsApp (com DDI)', en: 'WhatsApp (with country code)' },
   whyWhats:    { pt: 'É por aqui que eu te mando o ponto de encontro e aviso se mudar alguma coisa.', en: 'This is how I send you the meeting point and let you know if anything changes.' },
   instaLbl:    { pt: 'Instagram · se quiser, eu marco você nas fotos', en: 'Instagram · optional, so I can tag you in photos' },
-  payFull:     { pt: 'Pagar tudo agora', en: 'Pay in full now' },
-  payFullSub:  { pt: 'Resolve de uma vez.', en: 'Done in one go.' },
-  paySplit:    { pt: 'Metade agora, metade na véspera', en: 'Half now, half the day before' },
-  paySplitSub: { pt: '{half} agora para garantir a vaga. O resto sai do mesmo cartão um dia antes — eu aviso pelo WhatsApp antes de cobrar.', en: "{half} now to hold your spot. The rest comes off the same card one day before — I'll message you before it happens." },
+  /* Dizia "o resto sai do mesmo cartao um dia antes": nao ha cartao salvo, e o
+     prazo do saldo e o do passeio (30 dias, no Natal), nao a vespera. */
+  payFull:     { pt: 'Pagar tudo de uma vez', en: 'Pay in full' },
+  payFullSub:  { pt: 'Resolve numa transferência só.', en: 'Settled in a single transfer.' },
+  paySplit:    { pt: 'Metade agora, metade antes do passeio', en: 'Half now, half before the tour' },
+  paySplitSub: { pt: '{half} para garantir a vaga. O saldo eu combino com você até {d} dias antes do passeio.',
+                 en: '{half} to hold your spot. We settle the rest up to {d} days before the tour.' },
   /* O botao dizia "Pagar 390" e nada era cobrado. Reservar e reservar. */
   payBtn:      { pt: 'Confirmar reserva · {v}', en: 'Confirm booking · {v}' },
   payNowBtn:   { pt: 'Confirmar reserva · sinal de {v}', en: 'Confirm booking · {v} deposit' },
