@@ -1,0 +1,7 @@
+{
+  "name": "app-melissa",
+  "private": true,
+  "scripts": {
+    "test": "node testes/sincronia.test.js"
+  }
+}
