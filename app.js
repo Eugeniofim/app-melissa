@@ -1341,6 +1341,21 @@ function admAgenda() {
   const byDay = {};
   deps.forEach(d => (byDay[d.date] = byDay[d.date] || []).push(d));
 
+  /* As regras de recorrencia so geram saidas para frente. Sem isto, um mes
+     que ja passou aparece vazio mesmo tendo tido gente — o historico dela
+     sumia da agenda. Aqui recuperamos os dias pelas reservas que existem. */
+  Bookings.all()
+    .filter(b => b.status !== 'cancelled' && b.date >= first && b.date <= last)
+    .forEach(b => {
+      const lista = byDay[b.date] = byDay[b.date] || [];
+      if (lista.some(d => d.time === b.time && d.tour && d.tour.id === b.tourId)) return;
+      const x = Tours.get(b.tourId);
+      if (!x) return;
+      const cap = x.max || 0;
+      const left = Cal.seatsLeft(x.id, b.date, b.time, cap);
+      lista.push({ date: b.date, time: b.time, capacity: cap, tour: x, left, booked: cap - left, pastOnly: true });
+    });
+
   const sel = admAgenda._d && byDay[admAgenda._d] ? admAgenda._d
             : (Object.keys(byDay).sort()[0] || isoToday());
   const WD = LANG === 'pt' ? ['seg','ter','qua','qui','sex','sáb','dom'] : ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -1504,6 +1519,15 @@ function drawBars(cv, series, hi) {
 /* =====================================================
    CLIENTES — a base que nasce sozinha
 ===================================================== */
+/* ---------- ícones de contato ----------
+   Antes eram ✆ ✉ ◎ — três círculos cinzas idênticos, indecifráveis a 30px.
+   Agora são desenhos, cada um na cor do seu canal, com o nome ao lado. */
+const ICO = {
+  whats: '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.2 13.8l.9-3A5.9 5.9 0 1 1 5.5 13l-3.3.8Z"/><path d="M6 6.1c.2 1.5 2.4 3.7 3.9 3.9l.9-1 1.3.8-.5 1.1c-1.9.5-5.5-3.1-5-5l1.1-.5.8 1.3-.9.9"/></svg>',
+  mail:  '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.6" y="3.4" width="12.8" height="9.2" rx="1.6"/><path d="m2.2 4.6 5.8 4.4 5.8-4.4"/></svg>',
+  insta: '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.9" y="1.9" width="12.2" height="12.2" rx="3.6"/><circle cx="8" cy="8" r="2.9"/><circle cx="11.6" cy="4.4" r=".95" fill="currentColor" stroke="none"/></svg>',
+};
+
 function admClients() {
   const all = Clients.all();
   const onlyOptIn = admClients._f === 'optin';
@@ -1529,11 +1553,11 @@ function admClients() {
         <td class="mono right">${eur(c.spent)}</td>
         <td class="mono">${c.last ? fmtDate(c.last) : '—'}</td>
         <td class="tacts">
-          ${c.whats ? `<a class="mini" target="_blank" rel="noopener"
+          ${c.whats ? `<a class="ico-btn wa" target="_blank" rel="noopener"
             href="${waLink(t('waHi', { name: c.name.split(' ')[0], tour: '', when: '' }), c.whats.replace(/\D/g, ''))}"
-            aria-label="WhatsApp — ${esc(c.name)}" title="WhatsApp">✆</a>` : ''}
-          ${c.email ? `<a class="mini" href="mailto:${esc(c.email)}" aria-label="E-mail — ${esc(c.name)}" title="E-mail">✉</a>` : ''}
-          ${c.insta ? `<a class="mini" target="_blank" rel="noopener" href="https://instagram.com/${esc(c.insta.replace(/^@/, ''))}" aria-label="Instagram — ${esc(c.name)}" title="Instagram">◎</a>` : ''}
+            aria-label="WhatsApp — ${esc(c.name)}" title="WhatsApp">${ICO.whats}<span>WhatsApp</span></a>` : ''}
+          ${c.email ? `<a class="ico-btn ml" href="mailto:${esc(c.email)}" aria-label="E-mail — ${esc(c.name)}" title="${esc(c.email)}">${ICO.mail}<span>E-mail</span></a>` : ''}
+          ${c.insta ? `<a class="ico-btn ig" target="_blank" rel="noopener" href="https://instagram.com/${esc(c.insta.replace(/^@/, ''))}" aria-label="Instagram — ${esc(c.name)}" title="@${esc(c.insta.replace(/^@/, ''))}">${ICO.insta}<span>Instagram</span></a>` : ''}
         </td></tr>`).join('')}</tbody></table>`
       : `<p class="empty">${t('clEmpty')}</p>`}
     </section>`);

@@ -454,9 +454,14 @@ const Clients = {
 const Reports = {
   /* receita por mês do ano corrente */
   byMonth(year) {
+    /* "Recebido" tem que ser dinheiro que ja entrou. Sem este corte, um saldo
+       agendado para amanha entrava no grafico como recebido hoje — e o total
+       do topo (que so conta ate hoje) discordava do grafico na mesma tela. */
+    const hoje = isoToday();
     const out = Array(12).fill(0);
     for (const b of DB.bookings) {
       for (const p of b.payments) {
+        if (!p.date || p.date > hoje) continue;
         if (p.date.slice(0, 4) === String(year)) out[+p.date.slice(5, 7) - 1] += p.amount;
       }
     }
