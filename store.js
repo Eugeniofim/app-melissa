@@ -28,6 +28,9 @@ function _blank() {
            /* quem ela é — o cliente vê antes de reservar */
            photo: '', badge: 'Guide Conférencier · Guides d\'Alsace',
            base: 'Colmar, Alsácia',
+           /* como o cliente paga. Vazio ate ela preencher no ADM — e enquanto
+              estiver vazio a tela diz a verdade: ela passa os dados no WhatsApp. */
+           pixKey: '', pixName: '', iban: '', ibanName: '', payNote: '',
            bio: {
              pt: 'Sou brasileira e vivo na Alsácia. Sou guia-conferencista credenciada e fotógrafa — e as duas coisas andam juntas: enquanto conto a história de cada rua, vou registrando você nela.\n\nCaminho por Colmar, Estrasburgo, a Rota dos Vinhos e a Floresta Negra. Em português ou inglês, sem grupo de quarenta pessoas atrás de uma sombrinha.\n\nNo fim do passeio você leva as fotos. Sem cobrança extra, sem pose forçada.',
              en: 'I am Brazilian and I live in Alsace. I am a licensed guide-lecturer and a photographer — and the two go together: while I tell you the story of each street, I am photographing you in it.\n\nI walk Colmar, Strasbourg, the Wine Route and the Black Forest. In Portuguese or English, with no group of forty behind an umbrella.\n\nYou take the photos home. No extra charge, no forced poses.'
@@ -370,7 +373,10 @@ const Bookings = {
 
   create({ tourId, date, time, name, email, whats, insta, pax, coupon, policy, origin, consent }) {
     const tour = Tours.get(tourId);
-    const base = tour.priceMode === 'session' ? tour.price : tour.price * pax;
+    /* Tem que ser o MESMO calculo que a tela mostrou. tour.price * pax ignora
+       o preco escalonado (195 para as 3 primeiras, 225 depois) e gravava a
+       reserva abaixo do que a pessoa acabou de ler. */
+    const base = Bookings.precoDe(tour, tourId, date, time, pax).total;
     let discount = 0, couponCode = null;
     if (coupon) {
       const v = Coupons.validate(coupon, email);
@@ -385,10 +391,10 @@ const Bookings = {
       payments: [], status: 'confirmed',
       createdAt: new Date().toISOString(), origin: origin || 'site',
     };
-    /* pagamento simulado — aqui entra o Stripe */
-    const first = policy === 'split' ? Math.round(total / 2) : total;
-    b.payments.push({ amount: first, date: isoToday(), method: 'card',
-                      kind: policy === 'split' ? 'deposit' : 'full' });
+    /* Aqui havia um pagamento inventado: toda reserva nascia marcada como paga
+       no cartao. O painel, o caixa e os relatorios contavam dinheiro que nunca
+       entrou. A reserva nasce sem pagamento nenhum — quem registra e a Melissa,
+       quando o dinheiro cai de verdade. E aqui que o Stripe entra um dia. */
     DB.bookings.push(b);
     if (couponCode) Coupons.consume(couponCode, email);
     localStorage.setItem(DB_KEY, JSON.stringify(DB));

@@ -507,6 +507,33 @@ function miniMap(stops, x) {
 }
 
 
+/* ---- como pagar ----
+   O app nao cobra nada: quem recebe e ela, por Pix ou transferencia. Esta tela
+   mostra so o que ela preencheu no ADM. Sem nada preenchido, diz a verdade
+   em vez de inventar um meio de pagamento. */
+function comoPagar(b, x) {
+  const st = DB.settings || {};
+  const agora = b.policy === 'split' ? Math.round(b.total / 2) : b.total;
+  const saldo = b.total - agora;
+  const linha = (rot, valor, dono) => `
+    <div class="payline">
+      <small>${rot}</small>
+      <div class="crow"><input readonly value="${esc(valor)}"><button class="mini" data-cp="${esc(valor)}">${t('copyBtn')}</button></div>
+      ${dono ? `<small class="who">${t('inNameOf')} ${esc(dono)}</small>` : ''}
+    </div>`;
+  const meios = (st.pixKey ? linha(t('pixLbl'), st.pixKey, st.pixName) : '')
+              + (st.iban ? linha(t('ibanLbl'), st.iban, st.ibanName) : '');
+  return `
+  <div class="paybox">
+    <h3>${t('howPay')}</h3>
+    <p class="paynow"><small>${t('howPayNow')}</small><b>${eur(agora)}</b></p>
+    ${saldo > 0 ? `<p class="due">${t('balanceNote', { v: eur(saldo), d: fmtDate(Bookings.dueDate(b)) })}</p>` : ''}
+    ${meios || `<p class="why">${t('howPayNone')}</p>`}
+    ${st.payNote ? `<p class="why">${esc(st.payNote)}</p>` : ''}
+    ${meios ? `<p class="why">${t('payProof')}</p>` : ''}
+  </div>`;
+}
+
 function renderBook() {
   const S = viewTour._s, x = S.tour, book = $('#book');
   /* Precos vem de Bookings.precoDe: ele sabe quantas vagas baratas restam
@@ -608,8 +635,8 @@ function renderBook() {
         <button class="popt ${S.policy === 'split' ? 'on' : ''}" data-p="split"><b>${t('paySplit')}</b><small>${t('paySplitSub', { half: eur(half) })}</small></button>
       </div>` : ''}
       <button class="cta" id="payBtn">${S.policy === 'split' && splitAllowed ? t('payNowBtn', { v: eur(half) }) : t('payBtn', { v: eur(total) })}</button>
-      <p class="fine">${t('noHidden')}</p>
-      <p class="fine demo">${t('demoPay')}</p>
+      <p class="fine">${cancelaTxt(x)} · ${t('noHidden')}</p>
+      <p class="fine demo">${t('payAfter')}</p>
       <button class="linkbtn" id="back2" aria-label="${t('back')}">← ${t('back')}</button>`;
     $$('.popt', book).forEach(b => b.onclick = () => {
       /* não re-renderizar: apagaria o que a pessoa já digitou */
@@ -645,8 +672,8 @@ function renderBook() {
       <div class="voucher">
         <small>${t('yourCode')}</small><div class="code">${b.code}</div>
         <p>${fmtDate(b.date)} · ${b.time}</p><p>${esc(x.meeting)}</p>
-        ${due > 0 ? `<p class="due">${t('balanceNote', { v: eur(due), d: fmtDate(Bookings.dueDate(b)) })}</p>` : ''}
       </div>
+      ${comoPagar(b, x)}
       <a class="cta" style="text-decoration:none;text-align:center" target="_blank" rel="noopener"
          href="${waLink(t('waBookingMsg', { code: b.code, tour: x.name[LANG] || x.name.pt, when: fmtDate(b.date) + ' ' + b.time, name: b.name }))}">✆ ${t('waSendBooking')}</a>
       <div class="okrow">
@@ -654,6 +681,10 @@ function renderBook() {
         <a class="mini" target="_blank" rel="noopener" href="${mapLink(x.meeting)}">${t('seeMap')}</a>
       </div>
       <button class="cta soft" id="again">${t('bookAgain')}</button>`;
+    $$('[data-cp]', book).forEach(btn => btn.onclick = async () => {
+      try { await navigator.clipboard.writeText(btn.dataset.cp); toast(t('copiedOk')); }
+      catch (e) { const i = btn.previousElementSibling; i.select(); document.execCommand('copy'); toast(t('copiedOk')); }
+    });
     $('#again').onclick = () => go('/tours');
   }
 }
@@ -1161,6 +1192,9 @@ function admBookings() {
         if (dd < today) {
           const days = Math.round((new Date(today) - new Date(dd)) / 864e5);
           pill = `<span class="pill bad">${t('daysLate', { n: days })}</span>`;
+        } else if (Bookings.paid(b) <= 0) {
+          /* nada entrou ainda — "sinal pago" seria mentira */
+          pill = `<span class="pill warn">${t('waitingPay', { v: eur(due) })}</span>`;
         } else pill = `<span class="pill warn">${t('depositPaid', { v: eur(due) })}</span>`;
         act = `<button class="mini strong" data-got="${b.id}">${t('gotBalance')}</button>`;
       }
@@ -1305,6 +1339,20 @@ function admSettings() {
       </div>
     </section>
     <section class="card">
+      <h3>${t('admPay')}</h3>
+      <p class="why">${t('admPayHelp')}</p>
+      <div class="frow">
+        <label class="fld">${t('admPixKey')}<input id="pgPix" value="${esc(DB.settings.pixKey || '')}" placeholder="e-mail, telefone ou chave aleatória"></label>
+        <label class="fld">${t('admPixName')}<input id="pgPixName" value="${esc(DB.settings.pixName || '')}" placeholder="Melissa Hallais"></label>
+      </div>
+      <div class="frow">
+        <label class="fld">${t('admIban')}<input id="pgIban" value="${esc(DB.settings.iban || '')}" placeholder="FR76 …"></label>
+        <label class="fld">${t('admIbanName')}<input id="pgIbanName" value="${esc(DB.settings.ibanName || '')}" placeholder="Melissa Hallais"></label>
+      </div>
+      <label class="fld">${t('admPayNote')}<textarea id="pgNote" rows="3">${esc(DB.settings.payNote || '')}</textarea></label>
+      <button class="cta sm" id="pgSave">${t('saveBtn')}</button>
+    </section>
+    <section class="card">
       <h3>${t('admAbout')}</h3>
       <p class="why">${t('admAboutHelp')}</p>
       <div class="ph-edit">
@@ -1376,6 +1424,15 @@ function admSettings() {
     DB.settings.insta = $('#setInsta').value.trim().replace(/^@/, '');
     DB.settings.placeholderContact = false; save();
     toast(t('contactSaved')); admSettings();
+  };
+  $('#pgSave').onclick = () => {
+    DB.settings.pixKey   = $('#pgPix').value.trim();
+    DB.settings.pixName  = $('#pgPixName').value.trim();
+    DB.settings.iban     = $('#pgIban').value.trim();
+    DB.settings.ibanName = $('#pgIbanName').value.trim();
+    DB.settings.payNote  = $('#pgNote').value.trim();
+    save(); cloudPushState();
+    toast(t('payFieldsSaved'));
   };
   /* foto + história */
   let abNew = null;
