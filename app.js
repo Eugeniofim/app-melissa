@@ -482,6 +482,8 @@ function viewTour(id) {
    viram uma bolinha só numa projeção honesta, e distorcer a escala seria
    mentir. O que ajuda de verdade é o trajeto na ordem — e o mapa de
    verdade, com ruas, a um toque. */
+const MODO_MAPA = { day: 'driving', bike: 'bicycling', walk: 'walking', photo: 'walking', session: 'walking' };
+const MODO_TXT  = { day: 'mapWhyDrive', bike: 'mapWhyBike' };
 function miniMap(stops, x) {
   const pts = stops.filter(p => p.place || (p.lat && p.lng));
   if (pts.length < 2) return '';
@@ -492,7 +494,7 @@ function miniMap(stops, x) {
     + '&origin=' + q(pts[0])
     + '&destination=' + q(pts[pts.length - 1])
     + (pts.length > 2 ? '&waypoints=' + pts.slice(1, -1).map(q).join('%7C') : '')
-    + '&travelmode=walking';
+    + '&travelmode=' + (MODO_MAPA[x && x.type] || 'walking');
   return `
   <h3 class="h3">${t('mapTitle')}</h3>
   <div class="mapbox">
@@ -500,7 +502,7 @@ function miniMap(stops, x) {
       ${pts.map((p, i) => `<li><span class="tnum">${i + 1}</span><b>${esc(L(p.n))}</b></li>`).join('')}
     </ol>
     <a class="cta sm wide" href="${gmaps}" target="_blank" rel="noopener">${t('mapOpen')} ↗</a>
-    <p class="why">${t('mapWhy')}</p>
+    <p class="why">${t(MODO_TXT[x && x.type] || 'mapWhyWalk', { n: pts.length })}</p>
   </div>`;
 }
 

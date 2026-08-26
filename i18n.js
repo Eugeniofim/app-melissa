@@ -77,8 +77,14 @@ const STR = {
                  en: 'Times are approximate — the walk follows the group, not the clock.' },
   mapTitle:   { pt: 'O trajeto, na ordem', en: 'The route, in order' },
   mapOpen:    { pt: 'Ver o trajeto no mapa', en: 'See the route on the map' },
-  mapWhy:     { pt: 'Abre no seu app de mapas, com as quatro paradas marcadas e o caminho a pé.',
-                en: 'Opens in your maps app, with every stop marked and the walking route.' },
+  /* Antes isto dizia "as quatro paradas" e "o caminho a pe" — mentira em
+     qualquer passeio que nao tenha exatamente quatro paradas ou que ande de van. */
+  mapWhyWalk:  { pt: 'Abre no seu app de mapas, com as {n} paradas marcadas e o caminho a pé.',
+                 en: 'Opens in your maps app, with the {n} stops marked and the walking route.' },
+  mapWhyDrive: { pt: 'Abre no seu app de mapas, com as {n} paradas marcadas e o trajeto de carro.',
+                 en: 'Opens in your maps app, with the {n} stops marked and the driving route.' },
+  mapWhyBike:  { pt: 'Abre no seu app de mapas, com as {n} paradas marcadas e o trajeto de bike.',
+                 en: 'Opens in your maps app, with the {n} stops marked and the cycling route.' },
   openMap:    { pt: 'Ver o ponto de encontro no mapa', en: 'See the meeting point on the map' },
   included:   { pt: 'Está incluído', en: "What's included" },
   notIncluded:{ pt: 'Não está incluído', en: 'Not included' },
