@@ -379,6 +379,8 @@ function viewTour(id) {
   <div class="hero-sm" style="background-image:url(${esc(x.photo)})"></div>
   <main class="wrap two-col">
     <section>
+      ${x.tagline && (x.tagline[LANG] || x.tagline.pt)
+        ? `<p class="tagline-tour">${esc(x.tagline[LANG] || x.tagline.pt)}</p>` : ''}
       <span class="badge">${esc(cancelaTxt(x))}</span>
 
       <!-- os quatro números que todo mundo pergunta antes de qualquer outra coisa -->
@@ -424,6 +426,15 @@ function viewTour(id) {
       <h3 class="h3">${t('whereWeMeet')}</h3>
       <p class="desc">${esc(x.meeting)}</p>
       <a class="mini" href="${mapLink(x.meeting)}" target="_blank" rel="noopener">${t('openMap')} ↗</a>
+
+      ${x.min > 1 ? `<p class="minnote">${t('minNote', { n: x.min })}</p>` : ''}
+      ${x.priceNote && (x.priceNote[LANG] || x.priceNote.pt)
+        ? `<p class="pricenote">${esc(x.priceNote[LANG] || x.priceNote.pt)}</p>` : ''}
+
+      ${x.closing && (x.closing[LANG] || x.closing.pt) ? `
+      <div class="closing">
+        <p>${esc(x.closing[LANG] || x.closing.pt)}</p>
+      </div>` : ''}
     </section>
     <aside class="book" id="book"></aside>
   </main>`;
@@ -785,6 +796,8 @@ function admTourEdit(id) {
         <label class="fld">${t('tRegion')}<select id="fRegion">${selOpts([['alsace','alsace'],['blackforest','blackforest']], x.region)}</select></label>
         <label class="fld">${t('tName')}<input id="fNamePt" value="${esc(x.name.pt)}"></label>
         <label class="fld">${t('tNameEn')}<input id="fNameEn" value="${esc(x.name.en)}"></label>
+        <label class="fld">${t('edTagline')}<input id="fTagPt" value="${esc((x.tagline && x.tagline.pt) || '')}" placeholder="Entre vinhedos, castelos e vilarejos iluminados"><small class="why">${t('edTaglineWhy')}</small></label>
+        <label class="fld">${t('edTagline')} (EN)<input id="fTagEn" value="${esc((x.tagline && x.tagline.en) || '')}"></label>
         <label class="fld">${t('tDesc')}<textarea id="fDescPt">${esc(x.desc.pt)}</textarea><small class="why">${t('tDescHelp')}</small></label>
         <label class="fld">${t('tDescEn')}<textarea id="fDescEn">${esc(x.desc.en)}</textarea></label>
         <label class="fld">${t('tMeeting')}<input id="fMeet" value="${esc(x.meeting)}"></label>
@@ -799,15 +812,37 @@ function admTourEdit(id) {
         </div>
       </section>
       <section class="card">
+        <h3>${t('edMoney')}</h3>
         <div class="frow">
           <label class="fld">${t('tPrice')}<input id="fPrice" type="number" value="${x.price}"></label>
           <label class="fld">${t('tPriceMode')}<select id="fMode">${selOpts([['pp','perPerson'],['session','perSession']], x.priceMode)}</select></label>
         </div>
+
+        <div class="rulesep"></div>
+        <b>${t('edEarly')}</b>
+        <p class="why">${t('edEarlyWhy')}</p>
         <div class="frow">
-          <label class="fld">${t('tMin')}<input id="fMin" type="number" value="${x.min}"></label>
+          <label class="fld">${t('edEarlySeats')}<input id="fEarlyN" type="number" min="0" value="${x.earlySeats || 0}" placeholder="3"></label>
+          <label class="fld">${t('edLatePrice')}<input id="fLate" type="number" min="0" value="${x.priceLate || 0}" placeholder="225"></label>
+        </div>
+        <label class="fld">${t('edPriceNote')}<input id="fPNotePt" value="${esc((x.priceNote && x.priceNote.pt) || '')}" placeholder="Valor especial para as primeiras reservas, sujeito a disponibilidade."></label>
+        <label class="fld">${t('edPriceNote')} (EN)<input id="fPNoteEn" value="${esc((x.priceNote && x.priceNote.en) || '')}"></label>
+
+        <div class="rulesep"></div>
+        <b>${t('edGroup')}</b>
+        <div class="frow">
+          <label class="fld">${t('tMin')}<input id="fMin" type="number" value="${x.min}"><small class="why">${t('edMinWhy')}</small></label>
           <label class="fld">${t('tMax')}<input id="fMax" type="number" value="${x.max}"></label>
         </div>
-        <label class="fld">${t('tPay')}<select id="fPay">${selOpts([['full','tPayFull'],['split','tPaySplit']], x.payPolicy)}</select></label>
+
+        <div class="rulesep"></div>
+        <b>${t('edTerms')}</b>
+        <div class="frow">
+          <label class="fld">${t('tPay')}<select id="fPay">${selOpts([['full','tPayFull'],['split','tPaySplit']], x.payPolicy)}</select></label>
+          <label class="fld">${t('edBalanceDays')}<input id="fBalDays" type="number" min="0" value="${x.balanceDays || 1}"><small class="why">${t('edBalanceWhy')}</small></label>
+        </div>
+        <label class="fld">${t('edCancel')}<input id="fCancelPt" value="${esc((x.cancel && x.cancel.pt) || '')}" placeholder="Cancelamento gratis ate 48h antes"><small class="why">${t('edCancelWhy')}</small></label>
+        <label class="fld">${t('edCancel')} (EN)<input id="fCancelEn" value="${esc((x.cancel && x.cancel.en) || '')}"></label>
         <div class="btnrow">
           <button class="cta sm" id="savePub">${t('savePub')}</button>
           <button class="mini" id="saveDraft">${t('saveDraft')}</button>
@@ -835,6 +870,11 @@ function admTourEdit(id) {
           <label class="fld">${t('notIncluded')} (PT)<textarea id="fNincPt" rows="3">${esc(linhas(x.notIncludes, 'pt'))}</textarea></label>
           <label class="fld">${t('notIncluded')} (EN)<textarea id="fNincEn" rows="3">${esc(linhas(x.notIncludes, 'en'))}</textarea></label>
         </div>
+        <div class="rulesep"></div>
+        <b>${t('edClosing')}</b>
+        <p class="why">${t('edClosingWhy')}</p>
+        <label class="fld">PT<textarea id="fClosePt" rows="2">${esc((x.closing && x.closing.pt) || '')}</textarea></label>
+        <label class="fld">EN<textarea id="fCloseEn" rows="2">${esc((x.closing && x.closing.en) || '')}</textarea></label>
       </section>
 
       ${isNew ? '' : `
@@ -957,6 +997,13 @@ function admTourEdit(id) {
       payPolicy: $('#fPay').value,
       photo: newPhoto || x.photo, status,
       duration: $('#fDur').value.trim(), distance: $('#fDist').value.trim(),
+      tagline:   par('#fTagPt', '#fTagEn'),
+      priceNote: par('#fPNotePt', '#fPNoteEn'),
+      cancel:    par('#fCancelPt', '#fCancelEn'),
+      closing:   par('#fClosePt', '#fCloseEn'),
+      earlySeats: +$('#fEarlyN').value || 0,
+      priceLate:  +$('#fLate').value || 0,
+      balanceDays: Math.max(0, +$('#fBalDays').value || 1),
       includes:    { pt: itens('#fIncPt'),  en: itens('#fIncEn')  },
       notIncludes: { pt: itens('#fNincPt'), en: itens('#fNincEn') },
       /* joga fora parada sem nome — linha em branco na página do cliente é pior que nada */
@@ -965,6 +1012,13 @@ function admTourEdit(id) {
   }
   function itens(sel) {
     return $(sel).value.split('\n').map(l => l.trim()).filter(Boolean);
+  }
+  /* par de campos PT/EN: se o ingles ficar vazio, repete o portugues em vez
+     de deixar o cliente estrangeiro sem nada na tela. */
+  function par(selPt, selEn) {
+    const pt = ($(selPt) && $(selPt).value.trim()) || '';
+    const en = ($(selEn) && $(selEn).value.trim()) || '';
+    return { pt, en: en || pt };
   }
   function validate(data) {
     const problems = [];
