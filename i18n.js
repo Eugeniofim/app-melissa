@@ -246,6 +246,14 @@ const STR = {
   mApple:    { pt: 'Apple Pay', en: 'Apple Pay' },
   mOther:    { pt: 'Outro', en: 'Other' },
   cancelSm:  { pt: 'Deixa', en: 'Cancel' },
+
+  /* preco escalonado — quem reserva primeiro paga menos */
+  fromPrice: { pt: 'a partir de', en: 'from' },
+  earlyNote: { pt: 'para as {n} primeiras pessoas desta data · depois {v}',
+               en: 'for the first {n} people on this date · then {v}' },
+  earlyLeft: { pt: 'Ainda restam {n} lugares por este valor', en: '{n} seats left at this price' },
+  earlyGone: { pt: 'As primeiras vagas desta data já foram', en: 'The early seats for this date are gone' },
+  priceSplit:{ pt: '{a} × {va} + {b} × {vb}', en: '{a} × {va} + {b} × {vb}' },
   charged:   { pt: 'Recebido. {v} de {n}.', en: 'Received. {v} from {n}.' },
   cancelled: { pt: 'Cancelada', en: 'Cancelled' },
   msgWhats:  { pt: 'Falar no WhatsApp', en: 'Message on WhatsApp' },

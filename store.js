@@ -398,8 +398,46 @@ const Bookings = {
   },
 
   paid(b)   { return b.payments.reduce((s, p) => s + p.amount, 0); },
+  /* ---------- preco escalonado ----------
+     A Melissa vende as primeiras vagas de cada data mais barato: 195 para
+     os 3 primeiros, 225 depois. O calculo e por DATA, nao por reserva —
+     quem chega quando ja ha 2 vendidos leva 1 barato e o resto caro. */
+  precoDe(x, tourId, date, time, pax) {
+    const cheio = +x.price || 0;
+    const tarde = +x.priceLate || 0;
+    const vagasBaratas = +x.earlySeats || 0;
+    if (x.priceMode === 'session') return { total: cheio, linhas: [{ qtd: 1, valor: cheio }] };
+    if (!tarde || !vagasBaratas) return { total: cheio * pax, linhas: [{ qtd: pax, valor: cheio }] };
+
+    const jaVendidos = Bookings.vendidosEm(tourId, date, time);
+    const baratas = Math.max(0, Math.min(pax, vagasBaratas - jaVendidos));
+    const caras = pax - baratas;
+    const linhas = [];
+    if (baratas) linhas.push({ qtd: baratas, valor: cheio });
+    if (caras)   linhas.push({ qtd: caras,   valor: tarde });
+    return { total: baratas * cheio + caras * tarde, linhas, baratasRestantes: Math.max(0, vagasBaratas - jaVendidos) };
+  },
+
+  /* lugares ja vendidos numa saida — base do preco escalonado e das vagas */
+  vendidosEm(tourId, date, time) {
+    const local = DB.bookings
+      .filter(b => b.tourId === tourId && b.date === date && b.time === time && b.status !== 'cancelled')
+      .reduce((s, b) => s + b.pax, 0);
+    let n = local;
+    if (Array.isArray(DB.seatCounts) && DB.seatCounts.length) {
+      const row = DB.seatCounts.find(c => c.tourId === tourId && c.date === date && c.time === time);
+      if (row) n = Math.max(local, +row.pax);
+    }
+    return n;
+  },
   due(b)    { return Math.max(0, b.total - Bookings.paid(b)); },
-  dueDate(b){ return addDays(b.date, -1); },
+  /* Cada passeio tem seu prazo. O de Natal cobra o saldo 30 dias antes,
+     nao na vespera — usar um numero fixo aqui cobraria tarde demais. */
+  dueDate(b){
+    const x = Tours.get(b.tourId);
+    const dias = (x && +x.balanceDays) || 1;
+    return addDays(b.date, -dias);
+  },
   payBalance(id, method) {
     const b = Bookings.get(id); if (!b) return;
     const due = Bookings.due(b); if (due <= 0) return;

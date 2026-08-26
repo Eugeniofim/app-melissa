@@ -341,7 +341,7 @@ function viewShowcase() {
             <b>${esc(x.name[LANG] || x.name.pt)}</b>
             <small class="meta">${t(x.region === 'alsace' ? 'alsace' : 'blackforest')} · ${t('upTo')} ${x.max} ${t('people')}</small>
             <span class="cardfoot">
-              <span class="pr">${x.priceMode === 'session' ? eur(x.price) : eur(x.price)}
+              <span class="pr">${x.priceLate && x.earlySeats && x.priceMode !== 'session' ? `<u>${t('fromPrice')}</u> ` : ''}${eur(x.price)}
                 <i>${x.priceMode === 'session' ? t('perSession') : t('perPerson')}</i></span>
               <span class="cgo" aria-hidden="true">→</span>
             </span>
@@ -357,6 +357,14 @@ function viewShowcase() {
 }
 
 /* --- página do passeio + fluxo de reserva --- */
+/* A politica de cancelamento e de cada passeio. O de Natal tem sinal NAO
+   reembolsavel — anunciar "cancelamento gratis" ali seria prometer ao
+   cliente o contrario do que a Melissa combinou. */
+function cancelaTxt(x) {
+  const c = x.cancel && (x.cancel[LANG] || x.cancel.pt);
+  return c || t('freeCancel');
+}
+
 function viewTour(id) {
   const x = Tours.get(id);
   if (!x) return go('/tours');
@@ -371,7 +379,7 @@ function viewTour(id) {
   <div class="hero-sm" style="background-image:url(${esc(x.photo)})"></div>
   <main class="wrap two-col">
     <section>
-      <span class="badge">${t('freeCancel')}</span>
+      <span class="badge">${esc(cancelaTxt(x))}</span>
 
       <!-- os quatro números que todo mundo pergunta antes de qualquer outra coisa -->
       <div class="facts">
@@ -454,8 +462,15 @@ function miniMap(stops, x) {
 
 function renderBook() {
   const S = viewTour._s, x = S.tour, book = $('#book');
-  const priceLine = x.priceMode === 'session' ? `${eur(x.price)} <small>${t('perSession')}</small>` : `${eur(x.price)} <small>${t('perPerson')}</small>`;
-  const base = x.priceMode === 'session' ? x.price : x.price * S.pax;
+  /* Precos vem de Bookings.precoDe: ele sabe quantas vagas baratas restam
+     naquela data e divide as pessoas entre os dois valores. */
+  const pr = Bookings.precoDe(x, x.id, S.date, S.time, S.pax);
+  const temEscalonado = !!(x.priceLate && x.earlySeats) && x.priceMode !== 'session';
+  const priceLine = x.priceMode === 'session'
+    ? `${eur(x.price)} <small>${t('perSession')}</small>`
+    : `${eur(x.price)} <small>${t('perPerson')}</small>`
+      + (temEscalonado ? `<em class="pearly">${t('earlyNote', { n: x.earlySeats, v: eur(x.priceLate) })}</em>` : '');
+  const base = pr.total;
   const total = base - S.discount;
 
   if (S.step === 1) {
