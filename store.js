@@ -254,7 +254,12 @@ function fillSettings(s) {
 let DB = null;
 function load() {
   try { DB = JSON.parse(localStorage.getItem(DB_KEY)) || null; } catch (e) { DB = null; }
-  if (!DB || !DB.tours) { DB = _seed(); save(); }
+  /* O app esta em producao. Aparelho novo (ou navegador limpo) tem que
+     comecar VAZIO e receber o que esta na nuvem — nunca publicar um catalogo
+     inventado por cima do dela. Antes isto semeava a demonstracao e o save()
+     empurrava para a nuvem: bastava ela instalar no celular para os passeios
+     reais virarem os ficticios. A demonstracao so volta pelo botao no ADM. */
+  if (!DB || !DB.tours) { DB = _blank(); localStorage.setItem(DB_KEY, JSON.stringify(DB)); }
   if (DB.settings.whats === undefined || DB.settings.whats === '+33612345678') {
     DB.settings.whats = '+33682051120'; DB.settings.insta = 'melissalsacia';
     DB.settings.placeholderContact = false; save();
