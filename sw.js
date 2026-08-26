@@ -4,7 +4,7 @@
    Para publicar uma atualização: subir os arquivos novos e trocar a VERSION. */
 'use strict';
 
-const VERSION = 'vi-v1.15.1';
+const VERSION = 'vi-v1.15.2';
 const CORE = [
   './', './index.html', './app.js', './store.js', './auth.js', './logo.js', './cloud.js', './i18n.js', './tokens.css',
   './manifest.webmanifest', './capa.jpg', './melissa.jpg', './p-t1-1.jpg', './p-t1-2.jpg', './p-t1-3.jpg', './p-t1-4.jpg', './p-t2-1.jpg', './p-t2-2.jpg', './p-t2-3.jpg', './p-t2-4.jpg', './p-t4-1.jpg', './p-t4-2.jpg', './p-t4-3.jpg', './p-t4-4.jpg',

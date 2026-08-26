@@ -317,7 +317,7 @@ function fallbackPhoto(img, html) {
   if (img.complete && img.naturalWidth === 0) swap();
 }
 
-const TYPE_LABEL = { walk: 'fWalk', photo: 'fPhoto', bike: 'fBike' };
+const TYPE_LABEL = { day: 'fDay', walk: 'fWalk', photo: 'fPhoto', session: 'tSession', bike: 'fBike' };
 
 function viewShowcase() {
   const tours = Tours.live();
@@ -332,7 +332,7 @@ function viewShowcase() {
   <main class="wrap">
     <h1 class="pageh">${t('chooseTour')}</h1>
     <div class="chips" id="filters">
-      ${['all', 'walk', 'photo', 'bike'].map(f =>
+      ${['all', 'day', 'walk', 'photo', 'bike'].map(f =>
         `<button class="chip ${filter === f ? 'on' : ''}" data-f="${f}">${t(f === 'all' ? 'fAll' : TYPE_LABEL[f])}</button>`).join('')}
     </div>
     <div class="cards" id="tourCards">
@@ -830,7 +830,7 @@ function admTourEdit(id) {
     <h1 class="pageh">${isNew ? t('newTour').replace('+ ', '') : esc(x.name.pt)}</h1>
     <div class="formgrid">
       <section class="card">
-        <label class="fld">${t('tType')}<select id="fType">${selOpts([['walk','tWalk'],['photo','tPhotoT'],['session','tSession'],['bike','tBike']], x.type)}</select></label>
+        <label class="fld">${t('tType')}<select id="fType">${selOpts([['day','tDay'],['walk','tWalk'],['photo','tPhotoT'],['session','tSession'],['bike','tBike']], x.type)}</select></label>
         <label class="fld">${t('tRegion')}<select id="fRegion">${selOpts([['alsace','alsace'],['blackforest','blackforest']], x.region)}</select></label>
         <label class="fld">${t('tName')}<input id="fNamePt" value="${esc(x.name.pt)}"></label>
         <label class="fld">${t('tNameEn')}<input id="fNameEn" value="${esc(x.name.en)}"></label>
