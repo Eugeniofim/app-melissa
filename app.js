@@ -1760,7 +1760,7 @@ addEventListener('hashchange', () => {
 
 /* ---------- nuvem ---------- */
 cloudStart((r) => {
-  if (r.bootstrap || r.semMudanca) return;
+  if (r.bootstrap || r.semMudanca || r.segurando || r.vazio) return;
   if (r.fresh && r.fresh.length && location.hash.startsWith('#/adm')) {
     const b = r.fresh[r.fresh.length - 1];
     toast((LANG === 'pt' ? '🎉 Nova reserva: ' : '🎉 New booking: ') + b.name + ' · ' + eur(b.total));

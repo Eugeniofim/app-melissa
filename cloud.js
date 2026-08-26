@@ -67,18 +67,32 @@ async function patchConta(path, body) {
   return { ok: true, linhas };
 }
 
+/* ---------- protecao contra perder o que acabou de ser salvo ----------
+   O envio e adiado 700ms para nao disparar a cada tecla. Nesse intervalo a
+   sincronizacao podia chegar, sobrescrever o DB local com o estado ANTIGO
+   da nuvem, e entao o envio adiado publicava justamente esse estado antigo.
+   Resultado: a Melissa adicionava uma data, via "salvo", e a data sumia.
+   Enquanto houver alteracao local nao confirmada, a nuvem nao manda mais. */
+let alteracaoPendente = false;
+function temAlteracaoPendente() { return alteracaoPendente; }
+
 let pushT = null;
 function cloudPushState() {
+  alteracaoPendente = true;              /* marca JA, nao daqui a 700ms */
   clearTimeout(pushT);
   pushT = setTimeout(async () => {
     const body = { data: statePayload(), updated_at: new Date().toISOString() };
     try {
       const r = await patchConta('appstate?id=eq.1', body);
-      if (!r.ok) return qPush({ path: 'appstate?id=eq.1', method: 'PATCH', body });
+      if (!r.ok) { qPush({ path: 'appstate?id=eq.1', method: 'PATCH', body }); return; }
       if (r.linhas === 0) {                 /* o banco recusou em silêncio */
         cloudRejected = true;
         if (typeof onCloudRejected === 'function') onCloudRejected();
-      } else cloudRejected = false;
+        return;                             /* segue pendente: nao foi salvo */
+      }
+      cloudRejected = false;
+      alteracaoPendente = false;            /* agora sim a nuvem tem o que temos */
+      lastStamp = body.updated_at;          /* evita reler o que nos mesmos escrevemos */
     } catch (e) { qPush({ path: 'appstate?id=eq.1', method: 'PATCH', body }); }
   }, 700);
 }
@@ -147,11 +161,19 @@ async function cloudPull() {
 
     const cloudEmpty = !st || !st.data || !st.data.tours || !st.data.tours.length;
     if (cloudEmpty) {
-      /* primeira vez: este aparelho vira a origem */
+      /* Nuvem vazia costuma ser primeira vez — mas tambem acontece logo apos
+         uma limpeza intencional. Se este aparelho tambem esta vazio, nao ha
+         nada a restaurar; sem isto, um celular esquecido aberto ressuscitava
+         tudo que ela tinha acabado de apagar no laptop. */
+      if (!DB.tours.length && !DB.bookings.length) return { ok: true, vazio: true };
       cloudPushState();
       for (const b of DB.bookings) cloudPushBooking(b);
       return { ok: true, bootstrap: true };
     }
+
+    /* Se ha alteracao local esperando subir, a nuvem NAO manda: aplicar o
+       estado remoto aqui apagaria o que a Melissa acabou de fazer. */
+    if (alteracaoPendente) return { ok: true, segurando: true };
 
     /* nuvem manda */
     const keepLang = DB.settings.lang;
