@@ -511,6 +511,13 @@ function miniMap(stops, x) {
    O app nao cobra nada: quem recebe e ela, por Pix ou transferencia. Esta tela
    mostra so o que ela preencheu no ADM. Sem nada preenchido, diz a verdade
    em vez de inventar um meio de pagamento. */
+function prazoSaldo(b, saldo) {
+  const d = Bookings.dueDate(b);
+  return d > isoToday()
+    ? t('balanceNote', { v: eur(saldo), d: fmtDate(d) })
+    : t('balanceSoon', { v: eur(saldo) });
+}
+
 function comoPagar(b, x) {
   const st = DB.settings || {};
   const agora = b.policy === 'split' ? Math.round(b.total / 2) : b.total;
@@ -527,7 +534,7 @@ function comoPagar(b, x) {
   <div class="paybox">
     <h3>${t('howPay')}</h3>
     <p class="paynow"><small>${t('howPayNow')}</small><b>${eur(agora)}</b></p>
-    ${saldo > 0 ? `<p class="due">${t('balanceNote', { v: eur(saldo), d: fmtDate(Bookings.dueDate(b)) })}</p>` : ''}
+    ${saldo > 0 ? `<p class="due">${prazoSaldo(b, saldo)}</p>` : ''}
     ${meios || `<p class="why">${t('howPayNone')}</p>`}
     ${st.payNote ? `<p class="why">${esc(st.payNote)}</p>` : ''}
     ${meios ? `<p class="why">${t('payProof')}</p>` : ''}

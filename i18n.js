@@ -180,6 +180,10 @@ const STR = {
   /* Nao ha cartao salvo: ninguem "cobra" sozinho. Ela avisa e a pessoa paga. */
   balanceNote: { pt: 'O saldo de {v} eu combino com você até {d}.',
                  en: 'We settle the remaining {v} by {d}.' },
+  /* Reserva em cima da hora: o prazo de {balanceDays} dias ja passou. Mostrar
+     uma data no passado como prazo e pior do que nao mostrar data nenhuma. */
+  balanceSoon: { pt: 'O saldo de {v} eu combino com você antes do passeio.',
+                 en: 'We settle the remaining {v} before the tour.' },
 
   /* ---- como pagar ---- */
   howPay:      { pt: 'Como pagar', en: 'How to pay' },
