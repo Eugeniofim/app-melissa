@@ -379,7 +379,8 @@ function viewTour(id) {
   const lista = a => (Array.isArray(a) ? a : (a && (a[LANG] || a.pt)) || []);
 
   app.innerHTML = `
-  <header class="topbar"><button class="backbtn" id="bk" aria-label="${t('back')}">←</button><b>${esc(x.name[LANG] || x.name.pt)}</b>${langBar('right')}</header>
+  <header class="topbar onhero"><button class="backbtn" id="bk" aria-label="${t('back')}">←</button>
+    <span class="tbrand">${logoMark(22, 'var(--brand-amarelo)')}<b>Melissa Hallais</b></span>${langBar('right')}</header>
   <!-- CAPA: como a primeira pagina do PDF dela — imagem cheia, titulo por cima -->
   <div class="tourhero" style="background-image:url(${esc(x.photo)})">
     <div class="thveil"></div>
@@ -405,7 +406,7 @@ function viewTour(id) {
         ${stops.map((p, i) => `
           <li class="stopcardc">
             ${p.ph ? `<span class="scph" style="background-image:url(${esc(p.ph)})" role="img" aria-label="${esc(L(p.n))}"></span>`
-                   : `<span class="scph none"><i>${i + 1}</i></span>`}
+                   : `<span class="scph none" aria-hidden="true"></span>`}
             <div class="scbody">
               <span class="scnum2">${i + 1}</span>
               ${p.t ? `<span class="rtime">${esc(p.t)}</span>` : ''}
