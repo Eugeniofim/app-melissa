@@ -97,13 +97,40 @@ function cloudPushState() {
   }, 700);
 }
 
-/* ---------- reservas ---------- */
+/* ---------- reservas ----------
+   Distinguir "ainda nao subiu" de "foi apagada na nuvem". Sem isso, o
+   merge do cloudPull tratava tudo que faltava na nuvem como pendente e
+   ressuscitava para sempre o que a Melissa apagou. */
+/* Migracao unica: aparelhos que ja estao em uso tem reservas sem a marca.
+   Tratar todas como pendentes manteria os fantasmas para sempre. Reserva
+   com mais de uma hora ja teve tempo de subir — e se de fato nao subiu, a
+   fila (vi_queue_v1) reenvia por conta propria. */
+function migraMarcaDeSincronia() {
+  if (localStorage.getItem('vi_migr_naNuvem') === '1') return;
+  const limite = Date.now() - 3600e3;
+  let mexeu = false;
+  for (const b of DB.bookings) {
+    if (b.naNuvem === undefined) {
+      b.naNuvem = !b.createdAt || new Date(b.createdAt).getTime() < limite;
+      mexeu = true;
+    }
+  }
+  if (mexeu) localStorage.setItem(DB_KEY, JSON.stringify(DB));
+  localStorage.setItem('vi_migr_naNuvem', '1');
+}
+
+function marcaSincronizada(id) {
+  const b = DB.bookings.find(x => x.id === id);
+  if (b && !b.naNuvem) { b.naNuvem = true; localStorage.setItem(DB_KEY, JSON.stringify(DB)); }
+}
+
 async function cloudPushBooking(b) {
   const body = { id: b.id, data: b };
   try {
     const r = await supaFetch('bookings', { method: 'POST', body: JSON.stringify(body) });
     /* 409 = ja existe. Para nos isso e sucesso, nao motivo para reenviar sempre. */
     if (!r.ok && r.status !== 409) { qPush({ path: 'bookings', method: 'POST', body }); return { ok: false }; }
+    marcaSincronizada(b.id);
     return { ok: true };
   } catch (e) { qPush({ path: 'bookings', method: 'POST', body }); return { ok: false }; }
 }
@@ -125,6 +152,7 @@ let lastBookingIds = null;
 let lastStamp = null;
 async function cloudPull() {
   try {
+    migraMarcaDeSincronia();
     await qFlush();
     const logged = typeof isLoggedIn === 'function' && isLoggedIn();
     if (logged && typeof authEnsure === 'function') await authEnsure();
@@ -188,8 +216,11 @@ async function cloudPull() {
     /* reservas: nuvem + locais que ainda não subiram */
     if (logged) {
       const cloudIds = new Set(bk.map(b => b.id));
-      const localOnly = DB.bookings.filter(b => !cloudIds.has(b.id));
-      DB.bookings = bk.concat(localOnly);
+      /* Se a reserva ja confirmou subida e agora nao esta mais la, ela foi
+         APAGADA — nao e pendente. Reinserir seria desfazer a exclusao. */
+      const aindaNaoSubiu = DB.bookings.filter(b => !cloudIds.has(b.id) && !b.naNuvem);
+      bk.forEach(b => { b.naNuvem = true; });
+      DB.bookings = bk.concat(aindaNaoSubiu);
     }
     localStorage.setItem(DB_KEY, JSON.stringify(DB));
 
