@@ -287,6 +287,12 @@ const STR = {
   edClosingWhy:{ pt: 'A última coisa que a pessoa lê antes de decidir. Nos seus PDFs é o "Descubra uma Floresta Negra que só existe no inverno".',
                  en: 'The last thing they read before deciding.' },
   minNote:    { pt: 'Saída confirmada a partir de {n} pessoas.', en: 'Departure confirmed from {n} people.' },
+
+  /* barra fixa de salvar e aviso do calendario */
+  sbNew:  { pt: 'Passeio novo', en: 'New tour' },
+  sbTour: { pt: 'Este passeio', en: 'This tour' },
+  datesAutoSave: { pt: 'As datas são salvas na hora que você adiciona — não precisa apertar Salvar aqui.',
+                   en: 'Dates are saved the moment you add them — no need to press Save here.' },
   charged:   { pt: 'Recebido. {v} de {n}.', en: 'Received. {v} from {n}.' },
   cancelled: { pt: 'Cancelada', en: 'Cancelled' },
   msgWhats:  { pt: 'Falar no WhatsApp', en: 'Message on WhatsApp' },

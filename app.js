@@ -888,6 +888,7 @@ function admTourEdit(id) {
       ${isNew ? '' : `
       <section class="card span2" id="calCard">
         <h3>${t('whenRuns')}</h3>
+        <p class="why autosave">${t('datesAutoSave')}</p>
         <div id="rulesList"></div>
         <div class="ruleform">
           <b>${t('repeats')}</b> <small class="why">${t('repeatsEg')}</small>
@@ -911,6 +912,14 @@ function admTourEdit(id) {
           <button class="mini" id="addOne">+</button>
         </div>
       </section>`}
+    </div>
+
+    <!-- O formulario e longo: os botoes de salvar ficavam la em cima e
+         sumiam da vista. Esta barra acompanha a rolagem. -->
+    <div class="savebar">
+      <span class="sbwhat">${isNew ? t('sbNew') : esc(x.name.pt || t('sbTour'))}</span>
+      <button class="mini" id="saveDraft2">${t('saveDraft')}</button>
+      <button class="cta sm" id="savePub2">${t('savePub')}</button>
     </div>`);
   /* ---------- roteiro ---------- */
   let stops = JSON.parse(JSON.stringify(x.stops || []));
@@ -993,6 +1002,11 @@ function admTourEdit(id) {
     } catch (err) { toast(t('tPhotoBad')); }
   };
   $('#bkT').onclick = () => go('/adm/tours');
+
+  /* a barra fixa reaproveita exatamente os mesmos botoes — sem segunda
+     versao da logica de salvar, que e onde bugs se escondem */
+  $('#savePub2').onclick   = () => $('#savePub').click();
+  $('#saveDraft2').onclick = () => $('#saveDraft').click();
 
   function collect(status) {
     return {
