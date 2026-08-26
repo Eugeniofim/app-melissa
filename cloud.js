@@ -20,7 +20,13 @@ function supaFetch(path, opts = {}) {
       apikey: SUPA_KEY,
       Authorization: 'Bearer ' + tok,
       'Content-Type': 'application/json',
-      Prefer: opts.method === 'POST' ? 'resolution=merge-duplicates' : 'return=minimal',
+      /* Aqui vai um INSERT puro, sem nenhum 'resolution='.
+         Qualquer resolution vira UPSERT, e upsert exige permissao de UPDATE —
+         que desde a trancada e so da dona. Com o upsert, TODA reserva de
+         cliente era recusada pelo banco (42501) e sumia numa fila local:
+         o cliente via "Esta reservado" e a Melissa nunca recebia.
+         Conflito de id vira 409 e e tratado como sucesso mais abaixo. */
+      Prefer: 'return=minimal',
       ...(opts.headers || {}),
     },
   });
@@ -82,8 +88,10 @@ async function cloudPushBooking(b) {
   const body = { id: b.id, data: b };
   try {
     const r = await supaFetch('bookings', { method: 'POST', body: JSON.stringify(body) });
-    if (!r.ok) qPush({ path: 'bookings', method: 'POST', body });
-  } catch (e) { qPush({ path: 'bookings', method: 'POST', body }); }
+    /* 409 = ja existe. Para nos isso e sucesso, nao motivo para reenviar sempre. */
+    if (!r.ok && r.status !== 409) { qPush({ path: 'bookings', method: 'POST', body }); return { ok: false }; }
+    return { ok: true };
+  } catch (e) { qPush({ path: 'bookings', method: 'POST', body }); return { ok: false }; }
 }
 async function cloudUpdateBooking(b) {
   const body = { data: b };

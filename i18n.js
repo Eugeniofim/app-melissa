@@ -152,7 +152,11 @@ const STR = {
   confirming:  { pt: 'Confirmando com o banco…', en: 'Confirming with your bank…' },
   demoPay:     { pt: 'Pagamento de demonstração — nenhum cartão é cobrado.', en: 'Demo payment — no card is charged.' },
   booked:      { pt: 'Está reservado.', en: "You're booked." },
-  sentAll:     { pt: 'Mandei tudo no seu WhatsApp e no e-mail.', en: "I've sent everything to your WhatsApp and email." },
+  /* O app nao envia mensagem nenhuma — nao ha servidor de e-mail nem WhatsApp
+     automatico. Prometer envio deixava o cliente esperando o que nunca chega.
+     O texto agora diz a verdade e aponta a acao que existe: o botao do WhatsApp. */
+  sentAll:     { pt: 'Guarde o código abaixo. Toque no botão verde para me avisar no WhatsApp — assim eu já te confirmo tudo.',
+                 en: 'Keep the code below. Tap the green button to reach me on WhatsApp — I will confirm everything there.' },
   yourCode:    { pt: 'Seu código', en: 'Your code' },
   balanceNote: { pt: 'Faltam {v}, que eu cobro em {d}. Você não precisa fazer nada.', en: '{v} left, charged on {d}. Nothing for you to do.' },
   addCal:      { pt: 'Colocar na minha agenda', en: 'Add to my calendar' },
