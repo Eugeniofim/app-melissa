@@ -380,60 +380,89 @@ function viewTour(id) {
 
   app.innerHTML = `
   <header class="topbar"><button class="backbtn" id="bk" aria-label="${t('back')}">←</button><b>${esc(x.name[LANG] || x.name.pt)}</b>${langBar('right')}</header>
-  <div class="hero-sm" style="background-image:url(${esc(x.photo)})"></div>
-  <main class="wrap two-col">
-    <section>
+  <!-- CAPA: como a primeira pagina do PDF dela — imagem cheia, titulo por cima -->
+  <div class="tourhero" style="background-image:url(${esc(x.photo)})">
+    <div class="thveil"></div>
+    <div class="thin">
+      <h1>${esc(x.name[LANG] || x.name.pt)}</h1>
       ${x.tagline && (x.tagline[LANG] || x.tagline.pt)
-        ? `<p class="tagline-tour">${esc(x.tagline[LANG] || x.tagline.pt)}</p>` : ''}
-      <span class="badge">${esc(cancelaTxt(x))}</span>
+        ? `<p class="thsub">${esc(x.tagline[LANG] || x.tagline.pt)}</p>` : ''}
+      <span class="badge onhero">${esc(cancelaTxt(x))}</span>
+    </div>
+  </div>
 
-      <!-- os quatro números que todo mundo pergunta antes de qualquer outra coisa -->
-      <div class="facts">
-        ${x.duration ? `<div><small>${t('fDuration')}</small><b>${esc(x.duration)}</b></div>` : ''}
-        ${x.distance && x.distance !== '—' ? `<div><small>${t('fWalk')}</small><b>${esc(x.distance)}</b></div>` : ''}
-        <div><small>${t('fGroup')}</small><b>${t('upTo')} ${x.max}</b></div>
-        <div><small>${t('fLang')}</small><b>PT · EN</b></div>
+  <main class="wrap two-col">
+    <section class="tourbody">
+
+      <!-- O PROGRAMA -->
+      <div class="sec">
+        <span class="seclabel">${t('secProgram')}</span>
+        <p class="desc lead">${esc(x.desc[LANG] || x.desc.pt)}</p>
       </div>
 
-      <p class="desc lead">${esc(x.desc[LANG] || x.desc.pt)}</p>
-
       ${stops.length ? `
-      <h3 class="h3">${t('itinerary')}</h3>
-      <p class="why">${t('itineraryWhy')}</p>
-      <ol class="route">
+      <ol class="stopgrid">
         ${stops.map((p, i) => `
-          <li>
-            <span class="rnum">${i + 1}</span>
-            <div class="rbody">
+          <li class="stopcardc">
+            ${p.ph ? `<span class="scph" style="background-image:url(${esc(p.ph)})" role="img" aria-label="${esc(L(p.n))}"></span>`
+                   : `<span class="scph none"><i>${i + 1}</i></span>`}
+            <div class="scbody">
+              <span class="scnum2">${i + 1}</span>
               ${p.t ? `<span class="rtime">${esc(p.t)}</span>` : ''}
               <b>${esc(L(p.n))}</b>
               <p>${esc(L(p.d))}</p>
+              ${p.note ? `<small class="scnote">${esc(L(p.note) || p.note)}</small>` : ''}
             </div>
-            ${p.ph ? `<span class="rph" style="background-image:url(${esc(p.ph)})" role="img" aria-label="${esc(L(p.n))}"></span>` : ''}
           </li>`).join('')}
       </ol>
-
       ${miniMap(stops, x)}
       ` : ''}
 
-      <div class="incbox">
-        <div>
-          <h4>${t('included')}</h4>
-          <ul class="inc yes">${lista(x.includes).map(i => `<li>${esc(i)}</li>`).join('')}</ul>
+      <!-- DATAS E HORARIOS -->
+      <div class="sec">
+        <span class="seclabel">${t('secDates')}</span>
+        <div class="factgrid">
+          <div><small>${t('fLeaves')}</small><b>${esc(x.meeting)}</b>
+            <a class="linkmap" href="${mapLink(x.meeting)}" target="_blank" rel="noopener">${t('openMap')} ↗</a></div>
+          ${x.duration ? `<div><small>${t('fHours')}</small><b>${esc(x.duration)}</b></div>` : ''}
+          <div><small>${t('fGroup')}</small><b>${t('upTo')} ${x.max} ${t('people')}</b>
+            ${x.min > 1 ? `<small class="sub">${t('minNote', { n: x.min })}</small>` : ''}</div>
+          <div><small>${t('fLang')}</small><b>PT · EN</b></div>
         </div>
-        ${lista(x.notIncludes).length ? `<div>
-          <h4>${t('notIncluded')}</h4>
-          <ul class="inc no">${lista(x.notIncludes).map(i => `<li>${esc(i)}</li>`).join('')}</ul>
-        </div>` : ''}
       </div>
 
-      <h3 class="h3">${t('whereWeMeet')}</h3>
-      <p class="desc">${esc(x.meeting)}</p>
-      <a class="mini" href="${mapLink(x.meeting)}" target="_blank" rel="noopener">${t('openMap')} ↗</a>
+      <!-- O QUE INCLUI -->
+      <div class="sec">
+        <span class="seclabel">${t('secIncludes')}</span>
+        <div class="incbox">
+          <div>
+            <h4>${t('included')}</h4>
+            <ul class="inc yes">${lista(x.includes).map(i => `<li>${esc(i)}</li>`).join('')}</ul>
+          </div>
+          ${lista(x.notIncludes).length ? `<div>
+            <h4>${t('notIncluded')}</h4>
+            <ul class="inc no">${lista(x.notIncludes).map(i => `<li>${esc(i)}</li>`).join('')}</ul>
+          </div>` : ''}
+        </div>
+      </div>
 
-      ${x.min > 1 ? `<p class="minnote">${t('minNote', { n: x.min })}</p>` : ''}
-      ${x.priceNote && (x.priceNote[LANG] || x.priceNote.pt)
-        ? `<p class="pricenote">${esc(x.priceNote[LANG] || x.priceNote.pt)}</p>` : ''}
+      <!-- VALOR E RESERVA -->
+      <div class="sec">
+        <span class="seclabel">${t('secPrice')}</span>
+        <div class="pricebox">
+          <div class="pbmain">
+            <b>${eur(x.price)}</b>
+            <small>${x.priceMode === 'session' ? t('perSession') : t('perPerson')}</small>
+            ${x.priceLate && x.earlySeats && x.priceMode !== 'session'
+              ? `<span class="pbearly">${t('earlyNote', { n: x.earlySeats, v: eur(x.priceLate) })}</span>` : ''}
+          </div>
+          <div class="pbterms">
+            <p>${esc(cancelaTxt(x))}</p>
+            ${x.priceNote && (x.priceNote[LANG] || x.priceNote.pt)
+              ? `<small>${esc(x.priceNote[LANG] || x.priceNote.pt)}</small>` : ''}
+          </div>
+        </div>
+      </div>
 
       ${x.closing && (x.closing[LANG] || x.closing.pt) ? `
       <div class="closing">

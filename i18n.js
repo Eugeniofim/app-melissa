@@ -291,6 +291,14 @@ const STR = {
   /* barra fixa de salvar e aviso do calendario */
   sbNew:  { pt: 'Passeio novo', en: 'New tour' },
   sbTour: { pt: 'Este passeio', en: 'This tour' },
+
+  /* secoes da pagina do passeio — os mesmos titulos dos PDFs dela */
+  secProgram:  { pt: 'O programa', en: 'The programme' },
+  secDates:    { pt: 'Datas e horários', en: 'Dates and times' },
+  secIncludes: { pt: 'O que inclui', en: "What's included" },
+  secPrice:    { pt: 'Valor e reserva', en: 'Price and booking' },
+  fLeaves:     { pt: 'Saídas', en: 'Departure' },
+  fHours:      { pt: 'Horário', en: 'Hours' },
   datesAutoSave: { pt: 'As datas são salvas na hora que você adiciona — não precisa apertar Salvar aqui.',
                    en: 'Dates are saved the moment you add them — no need to press Save here.' },
   charged:   { pt: 'Recebido. {v} de {n}.', en: 'Received. {v} from {n}.' },
