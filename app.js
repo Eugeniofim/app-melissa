@@ -364,6 +364,28 @@ function viewShowcase() {
 /* A politica de cancelamento e de cada passeio. O de Natal tem sinal NAO
    reembolsavel — anunciar "cancelamento gratis" ali seria prometer ao
    cliente o contrario do que a Melissa combinou. */
+/* So mostra real para quem esta lendo em portugues: para um cliente frances
+   ou alemao o numero em real e ruido. E se nao houver cotacao, nao aparece
+   nada — inventar um valor seria pior. */
+/* No painel ela precisa VER o efeito da margem antes de salvar, senao esta
+   escolhendo um numero no escuro. */
+function fxResumo() {
+  const taxa = (typeof fxTaxa === 'function') && fxTaxa();
+  if (!taxa) return t('fxSemCotacao');
+  const ex = (DB.tours[0] && +DB.tours[0].price) || 195;
+  return t('fxResumo', { taxa: taxa.toFixed(2).replace('.', ','), eur: eur(ex), brl: brl(emReais(ex)) })
+       + (typeof fxVencida === 'function' && fxVencida() ? ' · ' + t('fxVelha') : '');
+}
+
+function linhaReais(eur) {
+  if (LANG !== 'pt') return '';
+  if (typeof emReais !== 'function') return '';
+  if (!DB.settings || DB.settings.mostrarReais === false) return '';
+  const v = emReais(eur);
+  if (v == null) return '';
+  return `<span class="embrl">${t('aproxBrl', { v: brl(v) })}</span>`;
+}
+
 function cancelaTxt(x) {
   const c = x.cancel && (x.cancel[LANG] || x.cancel.pt);
   return c || t('freeCancel');
@@ -454,6 +476,7 @@ function viewTour(id) {
           <div class="pbmain">
             <b>${eur(x.price)}</b>
             <small>${x.priceMode === 'session' ? t('perSession') : t('perPerson')}</small>
+            ${linhaReais(x.price)}
             ${x.priceLate && x.earlySeats && x.priceMode !== 'session'
               ? `<span class="pbearly">${t('earlyNote', { n: x.earlySeats, v: eur(x.priceLate) })}</span>` : ''}
           </div>
@@ -604,6 +627,7 @@ function renderBook() {
         <div><span>${fmtDate(S.date)} · ${S.time}</span></div>
         ${S.discount ? `<div><span>${t('couponOk', { c: S.coupon })}</span><b>−${eur(S.discount)}</b></div>` : ''}
         <div class="tot"><span>${t('total')}</span><b>${eur(total)}</b></div>
+        ${linhaReais(total)}
       </div>
       <details class="coupon"><summary>${t('haveCoupon')}</summary>
         <div class="crow"><input id="cin" placeholder="VOLTA10"><button class="mini" id="capply">OK</button></div>
@@ -1357,6 +1381,13 @@ function admSettings() {
         <label class="fld">${t('admIbanName')}<input id="pgIbanName" value="${esc(DB.settings.ibanName || '')}" placeholder="Melissa Hallais"></label>
       </div>
       <label class="fld">${t('admPayNote')}<textarea id="pgNote" rows="3">${esc(DB.settings.payNote || '')}</textarea></label>
+      <div class="rulesep"></div>
+      <label class="optin"><input type="checkbox" id="pgFx" ${DB.settings.mostrarReais === false ? '' : 'checked'}>
+        <span><b>${t('admFx')}</b><small>${t('admFxHelp')}</small></span></label>
+      <div class="frow">
+        <label class="fld">${t('admFxMargem')}<input id="pgMargem" type="number" min="0" max="30" step="0.5" value="${esc(DB.settings.fxMargem ?? 4)}"></label>
+        <div class="fld"><small class="why">${fxResumo()}</small></div>
+      </div>
       <button class="cta sm" id="pgSave">${t('saveBtn')}</button>
     </section>
     <section class="card">
@@ -1438,6 +1469,8 @@ function admSettings() {
     DB.settings.iban     = $('#pgIban').value.trim();
     DB.settings.ibanName = $('#pgIbanName').value.trim();
     DB.settings.payNote  = $('#pgNote').value.trim();
+    DB.settings.mostrarReais = $('#pgFx').checked;
+    DB.settings.fxMargem = Math.max(0, Math.min(30, +$('#pgMargem').value || 0));
     save(); cloudPushState();
     toast(t('payFieldsSaved'));
   };
@@ -1867,6 +1900,13 @@ function isBusyEditing() {
 addEventListener('hashchange', () => {
   if (pendingSync && !isBusyEditing()) { pendingSync = false; setTimeout(route, 60); }
 });
+
+/* ---------- cotacao ----------
+   Nao bloqueia o arranque: o app abre com o preco em euro e o valor em real
+   entra quando a cotacao chegar. Se nunca chegar, simplesmente nao aparece. */
+if (typeof fxAtualiza === 'function') {
+  fxAtualiza().then((c) => { if (c && LANG === 'pt' && !isBusyEditing()) route(); });
+}
 
 /* ---------- nuvem ---------- */
 cloudStart((r) => {
