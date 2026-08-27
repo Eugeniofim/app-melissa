@@ -573,7 +573,9 @@ function renderBook() {
   const priceLine = x.priceMode === 'session'
     ? `${eur(x.price)} <small>${t('perSession')}</small>`
     : `${eur(x.price)} <small>${t('perPerson')}</small>`
-      + (temEscalonado ? `<em class="pearly">${t('earlyNote', { n: x.earlySeats, v: eur(x.priceLate) })}</em>` : '');
+      + (temEscalonado ? `<em class="pearly">${t('earlyNote', { n: x.earlySeats, v: eur(x.priceLate) })}</em>` : '')
+      /* e aqui que a pessoa decide — o valor em real precisa estar junto */
+      + linhaReais(x.price);
   const base = pr.total;
   const total = base - S.discount;
 
