@@ -25,7 +25,7 @@
 (function(){try{var t=localStorage.getItem('vi_tema');
 if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="tokens.css?v=1.25.1">
+<link rel="stylesheet" href="tokens.css?v=1.26.0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23064c3f'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='%23FFD23F' font-family='sans-serif' font-weight='700'%3EM%3C/text%3E%3C/svg%3E">
 <style>
 /* ============ base ============ */
@@ -270,9 +270,42 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,
 button:focus-visible,a:focus-visible,[tabindex]:focus-visible{
   outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
 .tourcard:focus-visible,.lk:focus-visible,.agc:focus-visible{outline-offset:3px}
+/* =====================================================
+   CAMADA DE MOVIMENTO
+   Regras que valem para o app inteiro, sem mexer na estrutura.
+   Tudo dentro de no-preference: quem pediu menos movimento no aparelho
+   nao recebe nada disto — a regra de reduzir movimento ja existe abaixo.
+   ===================================================== */
 @media (prefers-reduced-motion:no-preference){
   .tourcard,.lk,.cta,.mini,.chip,.agc{transition-property:transform,box-shadow,background,color,border-color}
+
+  /* 1. Entrada em cascata: os cartoes sobem em sequencia quando a tela troca.
+        O atraso e por posicao, entao a leitura acompanha o movimento. */
+  .cards>*,.tlist>*,.stage>.card,.stopgrid>*{animation:entra 420ms var(--ease) both}
+  .cards>*:nth-child(2),.tlist>*:nth-child(2),.stage>.card:nth-child(2),.stopgrid>*:nth-child(2){animation-delay:55ms}
+  .cards>*:nth-child(3),.tlist>*:nth-child(3),.stage>.card:nth-child(3),.stopgrid>*:nth-child(3){animation-delay:110ms}
+  .cards>*:nth-child(4),.tlist>*:nth-child(4),.stage>.card:nth-child(4),.stopgrid>*:nth-child(4){animation-delay:165ms}
+  .cards>*:nth-child(n+5),.tlist>*:nth-child(n+5),.stage>.card:nth-child(n+5){animation-delay:210ms}
+
+  /* 2. Profundidade real no toque: o cartao inclina na direcao do cursor.
+        perspective no pai + translateZ no filho = volume de verdade,
+        nao sombra fingindo. */
+  .cards,.hub-in{perspective:1100px}
+  .tourcard{transform-style:preserve-3d}
+  .tourcard:hover{transform:translateY(-6px) rotateX(2.5deg) scale(1.012)}
+  .tourcard:active{transform:translateY(-2px) scale(.995);transition-duration:.09s}
+  .lk{transition:transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .lk:hover{transform:translateX(3px)}
+  .lk:active{transform:scale(.985);transition-duration:.09s}
+
+  /* 3. Botao que responde ao dedo. Sem isto o toque no celular parece morto. */
+  .cta:active,.mini:active,.chip:active{transform:scale(.96);transition-duration:.08s}
+
+  /* 4. A tela nova entra deslizando, em vez de aparecer seca. */
+  #app>.stage,#app>.wrap,#app>.hub{animation:trocaTela 320ms var(--ease) both}
 }
+@keyframes entra{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes trocaTela{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 /* ---------- vitrine: cards alinhados e com hierarquia ---------- */
 .wrap{max-width:1120px;margin:0 auto;padding:0 20px 64px}
 .tbrand{display:inline-flex;align-items:center;gap:9px;min-width:0}
@@ -887,14 +920,14 @@ td.tacts{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-item
 </div>
 
 <div id="app"></div>
-<script src="auth.js?v=1.25.1"></script>
-<script src="logo.js?v=1.25.1"></script>
-<script src="fx.js?v=1.25.1"></script>
-<script src="traduz.js?v=1.25.1"></script>
-<script src="store.js?v=1.25.1"></script>
-<script src="cloud.js?v=1.25.1"></script>
-<script src="i18n.js?v=1.25.1"></script>
-<script src="app.js?v=1.25.1"></script>
+<script src="auth.js?v=1.26.0"></script>
+<script src="logo.js?v=1.26.0"></script>
+<script src="fx.js?v=1.26.0"></script>
+<script src="traduz.js?v=1.26.0"></script>
+<script src="store.js?v=1.26.0"></script>
+<script src="cloud.js?v=1.26.0"></script>
+<script src="i18n.js?v=1.26.0"></script>
+<script src="app.js?v=1.26.0"></script>
 <script>
 /* PWA: registra o service worker e recarrega sozinho quando sai versão nova */
 if ('serviceWorker' in navigator) {
