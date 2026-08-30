@@ -191,10 +191,17 @@ async function cloudPull() {
       logged ? Promise.resolve({ ok: true, json: async () => [] })
              : supaFetch('seat_counts?select=*', { headers: { Prefer: '' } }),
     ]);
-    if (!stR.ok || !bkR.ok) return { ok: false };
+    /* Os passeios sao publicos; as reservas sao privadas. Antes, se a busca
+       das reservas falhasse (sessao expirada, por exemplo), a funcao abortava
+       e NAO aplicava nem os passeios — o painel ficava vazio como se ela nao
+       tivesse nada. Uma coisa nao pode derrubar a outra. */
+    if (!stR.ok) return { ok: false };
     const st = (await stR.json())[0];
     if (st) lastStamp = st.updated_at;
-    const bk = (await bkR.json()).map(r => r.data);
+
+    const reservasOk = bkR.ok;
+    let bk = [];
+    if (reservasOk) { try { bk = (await bkR.json()).map(r => r.data); } catch (e) { bk = []; } }
     if (!logged && scR.ok) {
       try { DB.seatCounts = (await scR.json()).map(r =>
         ({ tourId: r.tour_id, date: r.date, time: r.time, pax: +r.pax })); } catch (e) {}
@@ -226,8 +233,10 @@ async function cloudPull() {
       settings: fillSettings({ ...st.data.settings, lang: keepLang,
                   tutorialClient: DB.settings.tutorialClient, tutorialAdm: DB.settings.tutorialAdm }),
     });
-    /* reservas: nuvem + locais que ainda não subiram */
-    if (logged) {
+    /* reservas: nuvem + locais que ainda não subiram.
+       Se a busca das reservas falhou, mantemos as que ja estao no aparelho —
+       apagar por causa de um erro de rede seria pior. */
+    if (logged && reservasOk) {
       const cloudIds = new Set(bk.map(b => b.id));
       /* Se a reserva ja confirmou subida e agora nao esta mais la, ela foi
          APAGADA — nao e pendente. Reinserir seria desfazer a exclusao. */
@@ -239,9 +248,16 @@ async function cloudPull() {
 
     /* aviso de reserva nova (para a Melissa, no ADM) */
     let fresh = [];
-    if (lastBookingIds) fresh = bk.filter(b => !lastBookingIds.has(b.id));
-    lastBookingIds = new Set(bk.map(b => b.id));
-    return { ok: true, fresh };
+    if (reservasOk) {
+      if (lastBookingIds) fresh = bk.filter(b => !lastBookingIds.has(b.id));
+      lastBookingIds = new Set(bk.map(b => b.id));
+    }
+    /* passeios chegaram, reservas nao: ela precisa saber que a sessao caiu */
+    if (logged && !reservasOk) {
+      cloudRejected = true;
+      if (typeof onCloudRejected === 'function') onCloudRejected();
+    }
+    return { ok: true, fresh, semReservas: logged && !reservasOk };
   } catch (e) { return { ok: false }; }
 }
 
