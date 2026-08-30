@@ -221,13 +221,14 @@ function bindLang(root) {
 function viewHub() {
   app.innerHTML = `
   <div class="hub">
-    <div class="hub-bg" style="background-image:url(capa.jpg)"></div>
+    <div class="hub-bg" style="background-image:url(${esc(DB.settings.homePhoto || 'home.jpg')})"></div>
     <div class="hub-in">
       <div class="vcard">
-        ${logoFull({ mark: 62, color: 'var(--brand-amarelo)' })}
-        <h1>Melissa Hallais</h1>
-        <p class="role">${t('role')}</p>
-        <p class="tagline">${t('tagline')}</p>
+        <!-- O logotipo dela ja diz o nome, a profissao e a regiao. Repetir isso
+             em texto embaixo era redundancia; ficou so a frase e o idioma. -->
+        <img class="hub-logo" src="logo-oficial.png" width="701" height="995"
+             alt="Voyages & Images — Melissa Hallais, Guide & Photographer, Alsace | Black Forest">
+        <p class="tagline">${esc(noIdioma(DB.settings.homeText) || t('tagline'))}</p>
         ${langBar('center')}
       </div>
       <button class="lk main" id="goTours">
@@ -384,6 +385,13 @@ function linhaReais(eur) {
   const v = emReais(eur);
   if (v == null) return '';
   return `<span class="embrl">${t('aproxBrl', { v: brl(v) })}</span>`;
+}
+
+/* texto bilingue: {pt,en}. Existia solto dentro de duas funcoes; agora e um so. */
+function noIdioma(a) {
+  if (!a) return '';
+  if (typeof a === 'string') return a;
+  return a[LANG] || a.pt || a.en || '';
 }
 
 function cancelaTxt(x) {
@@ -569,13 +577,19 @@ function renderBook() {
   /* Precos vem de Bookings.precoDe: ele sabe quantas vagas baratas restam
      naquela data e divide as pessoas entre os dois valores. */
   const pr = Bookings.precoDe(x, x.id, S.date, S.time, S.pax);
-  const temEscalonado = !!(x.priceLate && x.earlySeats) && x.priceMode !== 'session';
+  /* Preco escalonado: 195 para as 3 primeiras da data, 225 depois.
+     Enquanto sobra vaga barata, o valor em destaque e 195 e a nota explica.
+     Quando as 3 acabam, anunciar "195, depois 225" vira propaganda enganosa —
+     ninguem mais consegue aquele valor. Ai o destaque passa a ser 225, limpo. */
+  const escalonado = !!(x.priceLate && x.earlySeats) && x.priceMode !== 'session';
+  const sobramBaratas = !S.date || !escalonado || (pr.baratasRestantes ?? x.earlySeats) > 0;
+  const valorEmDestaque = escalonado && !sobramBaratas ? +x.priceLate : +x.price;
   const priceLine = x.priceMode === 'session'
     ? `${eur(x.price)} <small>${t('perSession')}</small>`
-    : `${eur(x.price)} <small>${t('perPerson')}</small>`
-      + (temEscalonado ? `<em class="pearly">${t('earlyNote', { n: x.earlySeats, v: eur(x.priceLate) })}</em>` : '')
-      /* e aqui que a pessoa decide — o valor em real precisa estar junto */
-      + linhaReais(x.price);
+    : `${eur(valorEmDestaque)} <small>${t('perPerson')}</small>`
+      + (escalonado && sobramBaratas
+          ? `<em class="pearly">${t('earlyNote', { n: x.earlySeats, v: eur(x.priceLate) })}</em>` : '')
+      + linhaReais(valorEmDestaque);
   const base = pr.total;
   const total = base - S.discount;
 
@@ -1372,6 +1386,22 @@ function admSettings() {
       </div>
     </section>
     <section class="card">
+      <h3>${t('admHome')}</h3>
+      <p class="why">${t('admHomeHelp')}</p>
+      <div class="ph-edit">
+        <img id="hmThumb" src="${esc(DB.settings.homePhoto || 'home.jpg')}" alt="">
+        <div>
+          <label class="fld">${t('admHomePhoto')}<input type="file" id="hmFoto" accept="image/*"></label>
+        </div>
+      </div>
+      <label class="fld">${t('admHomeText')} (PT)<textarea id="hmTxtPt" rows="2">${esc((DB.settings.homeText && DB.settings.homeText.pt) || '')}</textarea></label>
+      <label class="fld">${t('admHomeText')} (EN)<textarea id="hmTxtEn" rows="2">${esc((DB.settings.homeText && DB.settings.homeText.en) || '')}</textarea></label>
+      <div class="btnrow">
+        <button class="cta sm" id="hmSave">${t('saveBtn')}</button>
+        <button class="mini" id="hmSee">${t('admPreview')}</button>
+      </div>
+    </section>
+    <section class="card">
       <h3>${t('admPay')}</h3>
       <p class="why">${t('admPayHelp')}</p>
       <div class="frow">
@@ -1465,6 +1495,23 @@ function admSettings() {
     DB.settings.placeholderContact = false; save();
     toast(t('contactSaved')); admSettings();
   };
+  /* primeira tela: foto e frase */
+  let hmNova = null;
+  $('#hmFoto').onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    /* 1400px e o mesmo tamanho da foto que ja vem no app — mais que isso so
+       pesa no celular da cliente, porque a imagem fica atras de um cartao. */
+    hmNova = await readImageResized(f, 1400, 0.78);
+    $('#hmThumb').src = hmNova;
+  };
+  $('#hmSave').onclick = () => {
+    if (hmNova) DB.settings.homePhoto = hmNova;
+    DB.settings.homeText = { pt: $('#hmTxtPt').value.trim(), en: $('#hmTxtEn').value.trim() };
+    save(); cloudPushState();
+    toast(t('homeSaved'));
+  };
+  $('#hmSee').onclick = () => go('/');
+
   $('#pgSave').onclick = () => {
     DB.settings.pixKey   = $('#pgPix').value.trim();
     DB.settings.pixName  = $('#pgPixName').value.trim();

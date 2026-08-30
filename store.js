@@ -33,7 +33,9 @@ function _blank() {
            pixKey: '', pixName: '', iban: '', ibanName: '', payNote: '',
            /* margem sobre a cotacao do BCE: cobre o spread de conversao e a
               taxa de quem processa. Sem ela, o euro que chega e menor. */
-           fxMargem: 4, mostrarReais: true,
+           fxMargem: 4, mostrarReais: false,
+           /* a primeira tela: foto de fundo e a frase. Vazio = usa o padrao. */
+           homePhoto: '', homeText: { pt: '', en: '' },
            bio: {
              pt: 'Sou brasileira e vivo na Alsácia. Sou guia-conferencista credenciada e fotógrafa — e as duas coisas andam juntas: enquanto conto a história de cada rua, vou registrando você nela.\n\nCaminho por Colmar, Estrasburgo, a Rota dos Vinhos e a Floresta Negra. Em português ou inglês, sem grupo de quarenta pessoas atrás de uma sombrinha.\n\nNo fim do passeio você leva as fotos. Sem cobrança extra, sem pose forçada.',
              en: 'I am Brazilian and I live in Alsace. I am a licensed guide-lecturer and a photographer — and the two go together: while I tell you the story of each street, I am photographing you in it.\n\nI walk Colmar, Strasbourg, the Wine Route and the Black Forest. In Portuguese or English, with no group of forty behind an umbrella.\n\nYou take the photos home. No extra charge, no forced poses.'
