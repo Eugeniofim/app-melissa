@@ -25,7 +25,7 @@
 (function(){try{var t=localStorage.getItem('vi_tema');
 if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="tokens.css?v=1.26.1">
+<link rel="stylesheet" href="tokens.css?v=1.27.0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23064c3f'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='%23FFD23F' font-family='sans-serif' font-weight='700'%3EM%3C/text%3E%3C/svg%3E">
 <style>
 /* ============ base ============ */
@@ -441,19 +441,28 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{
 .dtbloco.destaque{padding:var(--s-8);border:1px solid var(--line-2);border-radius:var(--r-lg);
   background:var(--surface-2)}
 .dtbloco.destaque .cta.sm{margin-top:var(--s-7)}
-.dtbloco>summary{cursor:pointer;list-style:none;display:flex;flex-direction:column;gap:3px}
+.dtbloco>summary{cursor:pointer;list-style:none;display:grid;
+  grid-template-columns:14px 1fr;column-gap:7px;row-gap:3px;align-items:baseline}
 .dtbloco>summary::-webkit-details-marker{display:none}
-.dtbloco>summary::before{content:"▸ ";color:var(--ink-3)}
-.dtbloco[open]>summary::before{content:"▾ "}
+.dtbloco>summary::before{content:"▸";color:var(--ink-3);grid-column:1;grid-row:1}
+.dtbloco[open]>summary::before{content:"▾"}
+.dtbloco>summary>b{grid-column:2;grid-row:1}
+.dtbloco>summary>small{grid-column:2;grid-row:2}
 .fld.nolabel{font-size:var(--fs-2);color:var(--ink-3);letter-spacing:var(--track-label);
   text-transform:uppercase;margin-top:var(--s-7)}
 .totalgeral{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s-6)}
 .totalgeral b{font-family:var(--f-display);font-size:var(--fs-6)}
 .card>.seclabel{display:block;margin-bottom:var(--s-7)}
-.novares>summary{cursor:pointer;list-style:none;display:flex;flex-direction:column;gap:3px}
+/* A seta precisa ficar AO LADO do titulo. Com flex-direction:column ela
+   virava um item de flex e caia numa linha propria, solta acima do texto.
+   Grade de duas colunas: seta na 1, titulo e explicacao na 2. */
+.novares>summary{cursor:pointer;list-style:none;display:grid;
+  grid-template-columns:14px 1fr;column-gap:7px;row-gap:3px;align-items:baseline}
 .novares>summary::-webkit-details-marker{display:none}
-.novares>summary::before{content:"▸ ";color:var(--ink-3)}
-.novares[open]>summary::before{content:"▾ "}
+.novares>summary::before{content:"▸";color:var(--ink-3);grid-column:1;grid-row:1}
+.novares[open]>summary::before{content:"▾"}
+.novares>summary>b{grid-column:2;grid-row:1}
+.novares>summary>small{grid-column:2;grid-row:2}
 .novares[open]>summary{margin-bottom:var(--s-8);padding-bottom:var(--s-7);border-bottom:1px solid var(--line)}
 .quebra{display:flex;justify-content:space-between;gap:var(--s-6);
   font-size:var(--fs-2);color:var(--ink-2);padding:2px 0}
@@ -470,9 +479,28 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{
 .pill.bad{background:var(--danger-wash);color:var(--danger)}
 .pill.n{background:var(--neutral-wash);color:var(--neutral)}
 .tlist{display:flex;flex-direction:column;gap:8px}
-.trow{display:flex;align-items:center;gap:13px;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh-1);padding:11px 15px;flex-wrap:wrap}
+/* Antes era flex com wrap: como a etiqueta de situacao passou a ter duas
+   linhas, cada reserva ficava com uma altura e os botoes pulavam de lugar.
+   Em grade, as quatro colunas se alinham entre todas as linhas da lista. */
+.trow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,auto) auto;
+  align-items:center;gap:10px 16px;background:var(--surface);border-radius:var(--r-lg);
+  box-shadow:var(--sh-1);padding:13px 16px}
+.trow>.mono{font-family:var(--f-display);font-weight:700;font-size:var(--fs-5);
+  text-align:right;white-space:nowrap}
+@media(max-width:860px){
+  /* no celular a linha vira bloco: dados, depois valor e situacao lado a
+     lado, e os botoes ocupando a largura toda embaixo */
+  .trow{grid-template-columns:1fr auto}
+  .trow>.tinfo{grid-column:1/-1}
+  .trow>.pill{grid-column:2;justify-self:end}
+  .trow>.tacts{grid-column:1/-1;justify-content:flex-start;flex-wrap:wrap}
+}
 .trow .ph.sm{width:52px;height:40px;border-radius:var(--r-sm);background-size:cover;background-position:center;flex:none}
-.tinfo{flex:1;min-width:150px}
+/* min-width:150px vinha do layout antigo em flex. Dentro da grade ele impede
+   a coluna de encolher, e o texto longo do passeio invadia a coluna do valor.
+   min-width:0 e o que deixa o texto quebrar dentro da propria coluna. */
+.tinfo{min-width:0}
+.tinfo small{overflow-wrap:anywhere}
 .tinfo b{display:block;font-size:var(--fs-4)}
 .tinfo small{display:block;margin-top:2px}
 .tacts{display:flex;gap:6px;align-items:center}
@@ -923,14 +951,14 @@ td.tacts{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-item
 </div>
 
 <div id="app"></div>
-<script src="auth.js?v=1.26.1"></script>
-<script src="logo.js?v=1.26.1"></script>
-<script src="fx.js?v=1.26.1"></script>
-<script src="traduz.js?v=1.26.1"></script>
-<script src="store.js?v=1.26.1"></script>
-<script src="cloud.js?v=1.26.1"></script>
-<script src="i18n.js?v=1.26.1"></script>
-<script src="app.js?v=1.26.1"></script>
+<script src="auth.js?v=1.27.0"></script>
+<script src="logo.js?v=1.27.0"></script>
+<script src="fx.js?v=1.27.0"></script>
+<script src="traduz.js?v=1.27.0"></script>
+<script src="store.js?v=1.27.0"></script>
+<script src="cloud.js?v=1.27.0"></script>
+<script src="i18n.js?v=1.27.0"></script>
+<script src="app.js?v=1.27.0"></script>
 <script>
 /* PWA: registra o service worker e recarrega sozinho quando sai versão nova */
 if ('serviceWorker' in navigator) {
