@@ -11,10 +11,17 @@ const SUPA_URL = 'https://kqphzdowtjcewazikzyn.supabase.co';
 const SUPA_KEY = 'sb_publishable_oH2MHKj7n9luEj9tnp6VBA_CetadqRi';
 const QUEUE_KEY = 'vi_queue_v1';
 
+/* Sem prazo maximo, uma requisicao pendurada trava o app inteiro: foi isso
+   que fez o login demorar um minuto. 12s e generoso ate para 3G ruim. */
+const REDE_TIMEOUT = 12000;
+
 function supaFetch(path, opts = {}) {
   /* logada, fala como ela; deslogado, fala como visitante */
   const tok = (typeof authToken === 'function' && authToken()) || SUPA_KEY;
+  const ctrl = new AbortController();
+  const corta = setTimeout(() => ctrl.abort(), REDE_TIMEOUT);
   return fetch(SUPA_URL + '/rest/v1/' + path, {
+    signal: ctrl.signal,
     ...opts,
     headers: {
       apikey: SUPA_KEY,
@@ -29,7 +36,7 @@ function supaFetch(path, opts = {}) {
       Prefer: 'return=minimal',
       ...(opts.headers || {}),
     },
-  });
+  }).finally(() => clearTimeout(corta));
 }
 
 /* ---------- fila offline ---------- */

@@ -2210,8 +2210,17 @@ function viewLogin(mode) {
        Antes o app marcava a configuracao e salvava — e salvar empurra para a
        nuvem. Num aparelho sem dados, isso abria o painel vazio e ainda corria
        o risco de publicar o vazio por cima do que estava la. */
+    /* Espera a nuvem, mas so ate 4 segundos. Se demorar mais, abre o painel
+       assim mesmo — a busca continua em segundo plano e a tela se atualiza
+       sozinha quando chegar. Antes isto esperava sem limite: era o login
+       de um minuto. */
     busy(true);
-    try { await cloudPull(); } catch (e) {}
+    try {
+      await Promise.race([
+        cloudPull(),
+        new Promise((r) => setTimeout(r, 4000)),
+      ]);
+    } catch (e) {}
     busy(false);
 
     DB.settings.authRequired = true;
