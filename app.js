@@ -388,6 +388,18 @@ function linhaReais(eur) {
 }
 
 /* texto bilingue: {pt,en}. Existia solto dentro de duas funcoes; agora e um so. */
+/* Claro, escuro, ou seguindo o aparelho. Guardado no proprio aparelho:
+   e preferencia de quem olha, nao dado do negocio. */
+function temaAtual() {
+  try { return localStorage.getItem('vi_tema') || 'auto'; } catch (e) { return 'auto'; }
+}
+function aplicaTema(v) {
+  try { if (v === 'auto') localStorage.removeItem('vi_tema'); else localStorage.setItem('vi_tema', v); } catch (e) {}
+  const raiz = document.documentElement;
+  if (v === 'auto') raiz.removeAttribute('data-theme');
+  else raiz.setAttribute('data-theme', v);
+}
+
 function noIdioma(a) {
   if (!a) return '';
   if (typeof a === 'string') return a;
@@ -1660,6 +1672,14 @@ function admSettings() {
       <p class="why">⚠ ${t('syncNote')}</p>
     </section>
     <section class="card">
+      <h3>${t('temaTit')}</h3>
+      <p class="why">${t('temaHelp')}</p>
+      <div class="chips" id="temaChips">
+        ${[['auto','temaAuto'],['light','temaClaro'],['dark','temaEscuro']].map(([v,k]) =>
+          `<button class="chip ${temaAtual() === v ? 'on' : ''}" data-tema="${v}">${t(k)}</button>`).join('')}
+      </div>
+    </section>
+    <section class="card">
       <h3>${t('sndTitle')}</h3>
       <p class="why">${t('sndWhy')}</p>
       <div class="btnrow">
@@ -1705,6 +1725,12 @@ function admSettings() {
     toast(t('homeSaved'));
   };
   $('#hmSee').onclick = () => go('/');
+
+  $$('[data-tema]').forEach(b => b.onclick = () => {
+    aplicaTema(b.dataset.tema);
+    $$('[data-tema]').forEach(z => z.classList.toggle('on', z === b));
+    toast(t('temaSalvo'));
+  });
 
   $('#pgSave').onclick = () => {
     DB.settings.pixKey   = $('#pgPix').value.trim();

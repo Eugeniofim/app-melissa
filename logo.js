@@ -9,7 +9,7 @@
 const LOGO_VB = { w: 272, h: 485 };
 
 /* símbolo — para ícones, selos e a abertura */
-function logoMark(height = 40, color = '#d9aa0e', opts = {}) {
+function logoMark(height = 40, color = '#FFD23F', opts = {}) {
   const w = Math.round(height * LOGO_VB.w / LOGO_VB.h);
   const cls = opts.cls ? ` class="${opts.cls}"` : '';
   return `<svg${cls} viewBox="0 0 272 485" width="${w}" height="${height}"
