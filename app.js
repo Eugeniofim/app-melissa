@@ -784,6 +784,7 @@ const ADM_TABS = [
   ['reports',  'admReports'],
   ['clients',  'admClients'],
   ['coupons',  'admCoupons'],
+  ['look',     'temaTit'],
   ['settings', 'admSettings'],
 ];
 
@@ -845,6 +846,7 @@ function viewAdm(tab, arg) {
   else if (tab === 'reports')  admReports();
   else if (tab === 'clients')  admClients();
   else if (tab === 'coupons')  admCoupons();
+  else if (tab === 'look')     admAparencia();
   else if (tab === 'settings') admSettings();
   else admToday();
 }
@@ -1580,6 +1582,31 @@ function admCoupons() {
 }
 
 /* ---- Ajustes ---- */
+/* Aparencia ganhou tela propria na barra lateral: estava enterrada dentro
+   de Ajustes, junto com coisas que nao tem nada a ver. */
+function admAparencia() {
+  const opcao = (v, k, desc) => `
+    <button class="lookcard ${temaAtual() === v ? 'on' : ''}" data-tema="${v}">
+      <span class="lookprev ${v}"><i></i><i></i><i></i></span>
+      <b>${t(k)}</b><small>${desc}</small>
+    </button>`;
+  admShell('look', `
+    <h1 class="pageh">${t('temaTit')}</h1>
+    <p class="why">${t('temaHelp')}</p>
+    <section class="card">
+      <div class="lookgrid">
+        ${opcao('auto',  'temaAuto',   t('temaAutoSub'))}
+        ${opcao('light', 'temaClaro',  t('temaClaroSub'))}
+        ${opcao('dark',  'temaEscuro', t('temaEscuroSub'))}
+      </div>
+    </section>`);
+  $$('[data-tema]').forEach(b => b.onclick = () => {
+    aplicaTema(b.dataset.tema);
+    $$('[data-tema]').forEach(z => z.classList.toggle('on', z === b));
+    toast(t('temaSalvo'));
+  });
+}
+
 function admSettings() {
   admShell('settings', `
     <h1 class="pageh">${t('admSettings')}</h1>
@@ -1687,14 +1714,6 @@ function admSettings() {
       <p class="why">⚠ ${t('syncNote')}</p>
     </section>
     <section class="card">
-      <h3>${t('temaTit')}</h3>
-      <p class="why">${t('temaHelp')}</p>
-      <div class="chips" id="temaChips">
-        ${[['auto','temaAuto'],['light','temaClaro'],['dark','temaEscuro']].map(([v,k]) =>
-          `<button class="chip ${temaAtual() === v ? 'on' : ''}" data-tema="${v}">${t(k)}</button>`).join('')}
-      </div>
-    </section>
-    <section class="card">
       <h3>${t('sndTitle')}</h3>
       <p class="why">${t('sndWhy')}</p>
       <div class="btnrow">
@@ -1740,12 +1759,6 @@ function admSettings() {
     toast(t('homeSaved'));
   };
   $('#hmSee').onclick = () => go('/');
-
-  $$('[data-tema]').forEach(b => b.onclick = () => {
-    aplicaTema(b.dataset.tema);
-    $$('[data-tema]').forEach(z => z.classList.toggle('on', z === b));
-    toast(t('temaSalvo'));
-  });
 
   $('#pgSave').onclick = () => {
     DB.settings.pixKey   = $('#pgPix').value.trim();

@@ -25,7 +25,7 @@
 (function(){try{var t=localStorage.getItem('vi_tema');
 if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="tokens.css?v=1.27.1">
+<link rel="stylesheet" href="tokens.css?v=1.28.0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23064c3f'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='%23FFD23F' font-family='sans-serif' font-weight='700'%3EM%3C/text%3E%3C/svg%3E">
 <style>
 /* ============ base ============ */
@@ -450,6 +450,34 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{
 .dtbloco>summary>small{grid-column:2;grid-row:2}
 .fld.nolabel{font-size:var(--fs-2);color:var(--ink-3);letter-spacing:var(--track-label);
   text-transform:uppercase;margin-top:var(--s-7)}
+/* ---- escolha de aparencia ----
+   Cada opcao mostra uma previa real das cores, para ela ver o resultado
+   antes de aplicar em vez de escolher por adivinhacao. */
+.lookgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--s-8)}
+.lookcard{display:flex;flex-direction:column;align-items:flex-start;gap:var(--s-5);
+  padding:var(--s-8);border:2px solid var(--line);border-radius:var(--r-lg);
+  background:var(--surface);cursor:pointer;font:inherit;color:var(--ink);text-align:left;
+  transition:border-color .18s var(--ease),transform .18s var(--ease)}
+.lookcard:hover{transform:translateY(-2px)}
+.lookcard.on{border-color:var(--accent)}
+.lookcard b{font-family:var(--f-display);font-size:var(--fs-4)}
+.lookcard small{color:var(--ink-3);font-size:var(--fs-2)}
+.lookprev{display:flex;gap:4px;width:100%;height:44px;padding:7px;border-radius:var(--r-md);
+  align-items:flex-end;border:1px solid var(--line)}
+.lookprev i{display:block;flex:1;border-radius:3px}
+.lookprev.light{background:#FBF8F3}
+.lookprev.light i:nth-child(1){height:100%;background:#064c3f}
+.lookprev.light i:nth-child(2){height:64%;background:#FFD23F}
+.lookprev.light i:nth-child(3){height:40%;background:#E8E0D3}
+.lookprev.dark{background:#0E1512}
+.lookprev.dark i:nth-child(1){height:100%;background:#4FB89B}
+.lookprev.dark i:nth-child(2){height:64%;background:#FFD23F}
+.lookprev.dark i:nth-child(3){height:40%;background:#25332D}
+/* automatico: metade clara, metade escura */
+.lookprev.auto{background:linear-gradient(105deg,#FBF8F3 0 50%,#0E1512 50% 100%)}
+.lookprev.auto i:nth-child(1){height:100%;background:#064c3f}
+.lookprev.auto i:nth-child(2){height:64%;background:#FFD23F}
+.lookprev.auto i:nth-child(3){height:40%;background:#25332D}
 .totalgeral{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s-6)}
 .totalgeral b{font-family:var(--f-display);font-size:var(--fs-6)}
 .card>.seclabel{display:block;margin-bottom:var(--s-7)}
@@ -951,14 +979,14 @@ td.tacts{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-item
 </div>
 
 <div id="app"></div>
-<script src="auth.js?v=1.27.1"></script>
-<script src="logo.js?v=1.27.1"></script>
-<script src="fx.js?v=1.27.1"></script>
-<script src="traduz.js?v=1.27.1"></script>
-<script src="store.js?v=1.27.1"></script>
-<script src="cloud.js?v=1.27.1"></script>
-<script src="i18n.js?v=1.27.1"></script>
-<script src="app.js?v=1.27.1"></script>
+<script src="auth.js?v=1.28.0"></script>
+<script src="logo.js?v=1.28.0"></script>
+<script src="fx.js?v=1.28.0"></script>
+<script src="traduz.js?v=1.28.0"></script>
+<script src="store.js?v=1.28.0"></script>
+<script src="cloud.js?v=1.28.0"></script>
+<script src="i18n.js?v=1.28.0"></script>
+<script src="app.js?v=1.28.0"></script>
 <script>
 /* PWA: registra o service worker e recarrega sozinho quando sai versão nova */
 if ('serviceWorker' in navigator) {
