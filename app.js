@@ -1337,6 +1337,34 @@ function admBookings() {
   const today = isoToday();
   admShell('bookings', `
     <h1 class="pageh">${t('admBookings')}</h1>
+    <details class="card novares">
+      <summary><b>${t('novaResTit')}</b><small class="why">${t('novaResSub')}</small></summary>
+      <div class="frow">
+        <label class="fld">${t('nrPasseio')}<select id="nrTour">${Tours.all().map(tt =>
+          `<option value="${esc(tt.id)}">${esc(tt.name[LANG] || tt.name.pt)}</option>`).join('')}</select></label>
+        <label class="fld">${t('nrPessoas')}<input id="nrPax" type="number" min="1" value="2"></label>
+      </div>
+      <div class="frow">
+        <label class="fld">${t('nrData')}<input id="nrData" type="date"></label>
+        <label class="fld">${t('nrHora')}<input id="nrHora" value="09:00"></label>
+      </div>
+      <div class="frow">
+        <label class="fld">${t('nrNome')}<input id="nrNome" placeholder="Maria Silva"></label>
+        <label class="fld">${t('nrWhats')}<input id="nrWhats" placeholder="+55 11 ..."></label>
+      </div>
+      <label class="fld">${t('nrEmail')}<input id="nrEmail" type="email"></label>
+      <div class="frow">
+        <label class="fld">${t('nrValor')}<input id="nrValor" type="number" min="0" step="1"></label>
+        <label class="fld">${t('nrRecebido')}<input id="nrRecebido" type="number" min="0" step="1" value="0"></label>
+      </div>
+      <p class="why">${t('nrValorAuto')}</p>
+      <label class="fld">${t('nrComo')}<select id="nrComo">
+        <option value="">${t('nrNada')}</option>
+        ${[['pix','mPix'],['transfer','mTransfer'],['cash','mCash'],['card','mCard'],['other','mOther']]
+          .map(([v, k]) => `<option value="${v}">${t(k)}</option>`).join('')}
+      </select></label>
+      <button class="cta sm" id="nrSalvar">${t('nrSalvar')}</button>
+    </details>
     ${list.length ? `<div class="tlist">${list.map(b => {
       const x = Tours.get(b.tourId);
       const due = Bookings.due(b);
@@ -1363,6 +1391,42 @@ function admBookings() {
       </div>`;
     }).join('')}</div>`
     : `<div class="emptybox"><p>${t('emptyBookings')}</p></div>`}`);
+  /* ---- lancamento manual ---- */
+  const nrRecalcula = () => {
+    const tt = Tours.get($('#nrTour').value);
+    const pax = +$('#nrPax').value || 1;
+    const d = $('#nrData').value, h = $('#nrHora').value;
+    if (!tt) return;
+    /* mesmo calculo do checkout, inclusive o preco escalonado da data */
+    const pr = Bookings.precoDe(tt, tt.id, d, h, pax);
+    $('#nrValor').value = pr.total;
+  };
+  ['#nrTour', '#nrPax', '#nrData', '#nrHora'].forEach(sel => {
+    const el = $(sel); if (el) el.addEventListener('change', nrRecalcula);
+  });
+  if ($('#nrData')) { $('#nrData').value = isoToday(); nrRecalcula(); }
+
+  $('#nrSalvar').onclick = () => {
+    const nome = $('#nrNome').value.trim();
+    if (!nome) { $('#nrNome').focus(); return toast(t('nrFaltaNome')); }
+    const tourId = $('#nrTour').value, data = $('#nrData').value, hora = $('#nrHora').value.trim();
+    if (!data) { $('#nrData').focus(); return toast(t('nrFaltaData')); }
+    const pax = +$('#nrPax').value || 1;
+    /* nao deixa estourar a lotacao da saida — a agenda tem que continuar honesta */
+    const tt = Tours.get(tourId);
+    const livres = Cal.seatsLeft(tourId, data, hora, tt ? tt.max : pax);
+    if (Number.isFinite(livres) && pax > livres) return toast(t('nrSemVaga', { n: Math.max(0, livres) }));
+
+    Bookings.criarManual({
+      tourId, date: data, time: hora, name: nome,
+      whats: $('#nrWhats').value.trim(), email: $('#nrEmail').value.trim(),
+      pax, total: +$('#nrValor').value || 0,
+      recebido: +$('#nrRecebido').value || 0, metodo: $('#nrComo').value || 'other',
+    });
+    toast(t('nrFeita'));
+    admBookings();
+  };
+
   /* Dar baixa move dinheiro no extrato. Antes de gravar, perguntamos COMO
      ela recebeu — o botão antigo cravava "cartão" e o extrato saía mentindo. */
   $$('[data-got]').forEach(btn => btn.onclick = () => {

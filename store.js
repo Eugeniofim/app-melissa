@@ -416,6 +416,29 @@ const Bookings = {
     return b;
   },
 
+  /* Reserva fechada fora do app (WhatsApp, Instagram, na rua). A Melissa
+     informa o que combinou e quanto ja recebeu — nada e inventado aqui. */
+  criarManual({ tourId, date, time, name, whats, email, pax, total, recebido, metodo }) {
+    const b = {
+      id: uid(), code: bookCode(), tourId, date, time,
+      name, email: email || '', whats: whats || '', insta: '',
+      pax: +pax || 1, total: Math.max(0, +total || 0),
+      coupon: null, discount: 0, policy: 'full',
+      consent: { ok: false },
+      payments: [], status: 'confirmed',
+      createdAt: new Date().toISOString(), origin: 'manual',
+    };
+    const val = Math.max(0, Math.min(+recebido || 0, b.total));
+    if (val > 0) {
+      b.payments.push({ amount: val, date: isoToday(), method: metodo || 'other',
+                        kind: val >= b.total ? 'full' : 'deposit' });
+    }
+    DB.bookings.push(b);
+    localStorage.setItem(DB_KEY, JSON.stringify(DB));
+    if (typeof cloudPushBooking === 'function') cloudPushBooking(b);
+    return b;
+  },
+
   paid(b)   { return b.payments.reduce((s, p) => s + p.amount, 0); },
   /* ---------- preco escalonado ----------
      A Melissa vende as primeiras vagas de cada data mais barato: 195 para
