@@ -5,7 +5,7 @@ const SERVE=[__dirname+'/..', __dirname+'/../serve'].find(d=>fs.existsSync(d+'/c
 let falhas=0; const casos=[]; const t=(n,f)=>casos.push([n,f]);
 
 function amb({reservasFalham=false, logada=true}={}){
-  const ctx={console,JSON,Date,Math,Number,Object,Array,String,Set,setTimeout,clearTimeout,
+  const ctx={console,JSON,AbortController,Date,Math,Number,Object,Array,String,Set,setTimeout,clearTimeout,
     localStorage:{_d:{},getItem(k){return this._d[k]??null},setItem(k,v){this._d[k]=v},removeItem(k){delete this._d[k]}},
     fetch: async(u)=>{
       const s=String(u);

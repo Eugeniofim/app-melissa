@@ -9,7 +9,7 @@ const src=fs.readFileSync(SERVE+'/app.js','utf8');
 const ini=src.indexOf('const PGTO_BRASIL');
 const fim=src.indexOf('function admMoney()');
 assert.ok(ini>0 && fim>ini, 'nao achei destinoPgto no app.js');
-const ctx={console}; vm.createContext(ctx); vm.runInContext(src.slice(ini,fim),ctx);
+const ctx={AbortController,console}; vm.createContext(ctx); vm.runInContext(src.slice(ini,fim),ctx);
 const dest=(m)=>vm.runInContext(`destinoPgto(${JSON.stringify(m)})`,ctx);
 
 console.log('extrato: para onde vai cada pagamento');

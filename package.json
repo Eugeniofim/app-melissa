@@ -2,6 +2,6 @@
   "name": "app-melissa",
   "private": true,
   "scripts": {
-    "test": "node testes/sincronia.test.js"
+    "test": "sh testes/todos.sh"
   }
 }

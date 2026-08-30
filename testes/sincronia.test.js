@@ -18,7 +18,7 @@ async function rodar(){
 }
 
 function ambiente(bookingsLocais, respostaNuvem){
-  const ctx={console, fetch: async(u)=>({ok:true,status:200,json:async()=>{
+  const ctx={console, AbortController, fetch: async(u)=>({ok:true,status:200,json:async()=>{
     if(String(u).includes('bookings?select=data')) return respostaNuvem.map(b=>({data:b}));
     if(String(u).includes('appstate')) return [{data:{tours:[{id:'x'}],rules:[],departures:[],blocks:[],coupons:[],settings:{}},updated_at:'2026-01-01'}];
     return [];
@@ -59,7 +59,7 @@ t('reserva recem-criada que ainda nao subiu NAO some', ()=>{
 /* Aparelho novo nao pode publicar catalogo nenhum: quem manda e a nuvem. */
 t('aparelho novo comeca vazio e NAO empurra estado para a nuvem', async ()=>{
   const escritas=[];
-  const ctx={console, JSON, Date, Math, Object, Array, String, Number, Set, setTimeout, clearTimeout,
+  const ctx={console, JSON,AbortController, Date, Math, Object, Array, String, Number, Set, setTimeout, clearTimeout,
     localStorage:{_d:{},getItem(k){return this._d[k]??null},setItem(k,v){this._d[k]=v},removeItem(k){delete this._d[k]}},
     fetch: async(u,o)=>{ escritas.push((o&&o.method)||'GET'); return {ok:true,status:200,json:async()=>[]}; }};
   ctx.window=ctx; vm.createContext(ctx);

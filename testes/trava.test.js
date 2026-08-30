@@ -8,7 +8,7 @@ assert.ok(i>0 && f>i, 'nao achei a trava');
 let falhas=0; const t=(n,fn)=>{try{fn();console.log('  ok  '+n)}catch(e){falhas++;console.log('  FALHA '+n+'\n       '+e.message)}};
 
 function ctxNovo(){
-  const ctx={Date, console}; vm.createContext(ctx);
+  const ctx={AbortController,Date, console}; vm.createContext(ctx);
   vm.runInContext(src.slice(i,f)+'\nfunction temAlteracaoPendente(){return alteracaoPendente}',ctx);
   return ctx;
 }

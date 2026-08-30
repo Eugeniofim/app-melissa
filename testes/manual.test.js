@@ -4,7 +4,7 @@ const SERVE=[__dirname+'/..', __dirname+'/../serve'].find(d=>fs.existsSync(d+'/s
 let falhas=0; const casos=[]; const t=(n,f)=>casos.push([n,f]);
 
 function amb(){
-  const ctx={console,JSON,Date,Math,Number,Object,Array,String,Set,
+  const ctx={console,JSON,AbortController,Date,Math,Number,Object,Array,String,Set,
     localStorage:{_d:{},getItem(k){return this._d[k]??null},setItem(k,v){this._d[k]=v},removeItem(k){delete this._d[k]}}};
   vm.createContext(ctx); vm.runInContext(fs.readFileSync(SERVE+'/store.js','utf8'),ctx);
   vm.runInContext(`load();
