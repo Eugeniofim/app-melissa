@@ -226,8 +226,11 @@ function viewHub() {
       <div class="vcard">
         <!-- O logotipo dela ja diz o nome, a profissao e a regiao. Repetir isso
              em texto embaixo era redundancia; ficou so a frase e o idioma. -->
-        <img class="hub-logo" src="logo-oficial.png" width="701" height="995"
+        <!-- Duas versoes do mesmo logotipo: o texto e preto e sumiria no tema
+             escuro. O CSS mostra a certa; o simbolo amarelo e o mesmo nos dois. -->
+        <img class="hub-logo p-claro" src="logo-oficial.png" width="701" height="995"
              alt="Voyages & Images — Melissa Hallais, Guide & Photographer, Alsace | Black Forest">
+        <img class="hub-logo p-escuro" src="logo-oficial-escuro.png" width="701" height="995" alt="" aria-hidden="true">
         <p class="tagline">${esc(noIdioma(DB.settings.homeText) || t('tagline'))}</p>
         ${langBar('center')}
       </div>
