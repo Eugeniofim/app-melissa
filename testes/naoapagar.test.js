@@ -50,5 +50,25 @@ t('com passeios no aparelho, publicar volta a funcionar', async()=>{
   assert.ok(c.__escritas.length>0, 'depois de sincronizar, ela tem que conseguir salvar');
 });
 
+t('a FILA tambem nao pode reenviar catalogo vazio', async()=>{
+  const c=amb();
+  /* simula uma fila que ficou com um envio de catalogo vazio */
+  vm.runInContext(`localStorage.setItem('vi_queue_v1', JSON.stringify([
+    {path:'appstate?id=eq.1', method:'PATCH', body:{data:{tours:[],rules:[],departures:[]}}}
+  ]));`,c);
+  await vm.runInContext('qFlush()',c);
+  const enviou = c.__escritas.some(e=>e.includes('PATCH'));
+  assert.strictEqual(enviou,false,'a fila reenviou catalogo vazio: '+JSON.stringify(c.__escritas));
+});
+
+t('a fila AINDA reenvia um catalogo com passeios', async()=>{
+  const c=amb();
+  vm.runInContext(`localStorage.setItem('vi_queue_v1', JSON.stringify([
+    {path:'appstate?id=eq.1', method:'PATCH', body:{data:{tours:[{id:'natal-fn'}],rules:[]}}}
+  ]));`,c);
+  await vm.runInContext('qFlush()',c);
+  assert.ok(c.__escritas.some(e=>e.includes('PATCH')), 'envio legitimo nao pode ser descartado');
+});
+
 (async()=>{for(const [n,f] of casos){try{await f();console.log('  ok  '+n)}catch(e){falhas++;console.log('  FALHA '+n+'\n       '+e.message)}}
 console.log(falhas?`\n${falhas} FALHA(S)`:'\ntudo passou');process.exit(falhas?1:0)})();

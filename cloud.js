@@ -39,6 +39,13 @@ async function qFlush() {
   const q = qAll(); if (!q.length) return;
   const rest = [];
   for (const job of q) {
+    /* A fila reenvia o que ficou pendente — mas sem passar pela trava do
+       cloudPushState. Um envio de catalogo vazio guardado aqui apagaria os
+       passeios dela na primeira vez que a rede voltasse. Descarta. */
+    if (job.path && job.path.startsWith('appstate')) {
+      const t = job.body && job.body.data && job.body.data.tours;
+      if (!t || !t.length) continue;
+    }
     try {
       const r = await supaFetch(job.path, { method: job.method, body: JSON.stringify(job.body) });
       if (!r.ok && r.status !== 409) rest.push(job);
