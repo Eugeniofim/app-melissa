@@ -33,7 +33,10 @@ function _blank() {
            pixKey: '', pixName: '', iban: '', ibanName: '', payNote: '',
            /* margem sobre a cotacao do BCE: cobre o spread de conversao e a
               taxa de quem processa. Sem ela, o euro que chega e menor. */
-           fxMargem: 4, mostrarReais: false,
+           /* A Melissa pediu para tirar a cotacao da tela. A chave antiga
+              (mostrarReais) ficou 'true' na nuvem; usar um nome novo desliga
+              na hora para todo mundo, sem depender de ela abrir o app. */
+           fxMargem: 4, exibirCotacao: false,
            /* a primeira tela: foto de fundo e a frase. Vazio = usa o padrao. */
            homePhoto: '', homeText: { pt: '', en: '' },
            bio: {

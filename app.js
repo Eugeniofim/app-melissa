@@ -381,7 +381,7 @@ function fxResumo() {
 function linhaReais(eur) {
   if (LANG !== 'pt') return '';
   if (typeof emReais !== 'function') return '';
-  if (!DB.settings || DB.settings.mostrarReais === false) return '';
+  if (!DB.settings || !DB.settings.exibirCotacao) return '';
   const v = emReais(eur);
   if (v == null) return '';
   return `<span class="embrl">${t('aproxBrl', { v: brl(v) })}</span>`;
@@ -1414,7 +1414,7 @@ function admSettings() {
       </div>
       <label class="fld">${t('admPayNote')}<textarea id="pgNote" rows="3">${esc(DB.settings.payNote || '')}</textarea></label>
       <div class="rulesep"></div>
-      <label class="optin"><input type="checkbox" id="pgFx" ${DB.settings.mostrarReais === false ? '' : 'checked'}>
+      <label class="optin"><input type="checkbox" id="pgFx" ${DB.settings.exibirCotacao ? 'checked' : ''}>
         <span><b>${t('admFx')}</b><small>${t('admFxHelp')}</small></span></label>
       <div class="frow">
         <label class="fld">${t('admFxMargem')}<input id="pgMargem" type="number" min="0" max="30" step="0.5" value="${esc(DB.settings.fxMargem ?? 4)}"></label>
@@ -1518,7 +1518,7 @@ function admSettings() {
     DB.settings.iban     = $('#pgIban').value.trim();
     DB.settings.ibanName = $('#pgIbanName').value.trim();
     DB.settings.payNote  = $('#pgNote').value.trim();
-    DB.settings.mostrarReais = $('#pgFx').checked;
+    DB.settings.exibirCotacao = $('#pgFx').checked;
     DB.settings.fxMargem = Math.max(0, Math.min(30, +$('#pgMargem').value || 0));
     save(); cloudPushState();
     toast(t('payFieldsSaved'));
