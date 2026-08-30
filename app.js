@@ -96,8 +96,20 @@ function waLink(text, num) {
   return 'https://wa.me/' + (num || waNum()) + (text ? '?text=' + encodeURIComponent(text) : '');
 }
 function mapLink(q) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q); }
+/* O campo de horario e livre de proposito: a Melissa escreve "09h",
+   "09h30" ou "10:00 as 18h" — e essa ultima diz mais ao cliente do que
+   um horario seco. Mas o arquivo de calendario exige HHMMSS, e
+   "10:00 as 18h" gerava um .ics quebrado. Aqui a gente extrai o inicio. */
+function horaInicio(txt) {
+  const m = String(txt || '').match(/(\d{1,2})\s*(?::|h|H)\s*(\d{2})?/);
+  if (!m) return '09:00';
+  const h = Math.min(23, parseInt(m[1], 10) || 0);
+  const min = Math.min(59, parseInt(m[2] || '0', 10) || 0);
+  return String(h).padStart(2, '0') + ':' + String(min).padStart(2, '0');
+}
+
 function icsFor(b, x) {
-  const dt = b.date.replace(/-/g, '') + 'T' + b.time.replace(':', '') + '00';
+  const dt = b.date.replace(/-/g, '') + 'T' + horaInicio(b.time).replace(':', '') + '00';
   const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//VoyagesImages//PT', 'BEGIN:VEVENT',
     'UID:' + b.code + '@voyages-images', 'DTSTART:' + dt,
     'SUMMARY:' + (x.name[LANG] || x.name.pt) + ' — Melissa Hallais',
