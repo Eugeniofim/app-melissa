@@ -88,8 +88,17 @@ function seguraNuvem() {
 }
 function temAlteracaoPendente() { return alteracaoPendente; }
 
+/* So depois de uma leitura bem-sucedida da nuvem sabemos o que ela tem.
+   Antes disso, o que esta neste aparelho nao e fonte de verdade. */
+let nuvemJaCarregada = false;
+
 let pushT = null;
 function cloudPushState() {
+  /* TRAVA CONTRA PERDA TOTAL
+     Aparelho sem passeio nenhum + nuvem ainda nao lida = navegador recem
+     limpo, nao "ela apagou tudo". Publicar isso apagaria o catalogo dela.
+     Depois que a nuvem foi lida uma vez, ela pode apagar de verdade. */
+  if (!nuvemJaCarregada && !DB.tours.length) return;
   if (!alteracaoPendente) pendenteDesde = Date.now();
   alteracaoPendente = true;              /* marca JA, nao daqui a 700ms */
   clearTimeout(pushT);
@@ -245,6 +254,7 @@ async function cloudPull() {
       DB.bookings = bk.concat(aindaNaoSubiu);
     }
     localStorage.setItem(DB_KEY, JSON.stringify(DB));
+    nuvemJaCarregada = true;   /* agora sim sabemos o que a nuvem tem */
 
     /* aviso de reserva nova (para a Melissa, no ADM) */
     let fresh = [];

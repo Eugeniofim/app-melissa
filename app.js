@@ -2204,8 +2204,18 @@ function viewLogin(mode) {
     if (!r.ok) { mostraErro(traduzErro(r.error)); return; }
     if (r.needsConfirm) return toast(t('loginConfirm', { e: email }));
     const own = await claimOwnership();
-    if (own.taken) { await authSignOut(); return toast(t('loginTaken')); }
-    DB.settings.authRequired = true; save();
+    if (own.taken) { await authSignOut(); mostraErro(t('loginTaken')); return; }
+
+    /* PRIMEIRO buscar, DEPOIS abrir o painel.
+       Antes o app marcava a configuracao e salvava — e salvar empurra para a
+       nuvem. Num aparelho sem dados, isso abria o painel vazio e ainda corria
+       o risco de publicar o vazio por cima do que estava la. */
+    busy(true);
+    try { await cloudPull(); } catch (e) {}
+    busy(false);
+
+    DB.settings.authRequired = true;
+    localStorage.setItem('vi_db_v1', JSON.stringify(DB));   /* grava aqui, sem empurrar */
     toast(t('loginHi'));
     go('/adm/today');
   };
