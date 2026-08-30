@@ -232,6 +232,11 @@ const STR = {
   enVer:       { pt: 'Ver e ajustar o inglês', en: 'View and edit the English' },
   enTraduzindo:{ pt: 'Traduzindo para o inglês…', en: 'Translating to English…' },
   enPronto:    { pt: 'Inglês traduzido', en: 'English translated' },
+  /* O minimo dela ("nao saio com menos de 3") e informacao, nao trava:
+     antes um casal simplesmente nao conseguia reservar. */
+  minAviso:    { pt: 'A saída acontece a partir de {n} pessoas. Pode reservar — eu aviso se faltar gente.',
+                 en: 'The tour runs from {n} people. Go ahead and book — I will let you know if we are short.' },
+  linhaPreco:  { pt: '{qtd} × {valor}', en: '{qtd} × {valor}' },
   enFalhou:    { pt: 'Não consegui traduzir agora — o inglês anterior foi mantido. Salvo assim mesmo?',
                  en: 'Could not translate right now — the previous English was kept. Save anyway?' },
   addCal:      { pt: 'Colocar na minha agenda', en: 'Add to my calendar' },

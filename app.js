@@ -642,8 +642,11 @@ function renderBook() {
       <div class="sums">
         <div><span>${fmtDate(S.date)} · ${S.time}</span></div>
         ${S.discount ? `<div><span>${t('couponOk', { c: S.coupon })}</span><b>−${eur(S.discount)}</b></div>` : ''}
+        ${(pr.linhas && pr.linhas.length > 1) ? pr.linhas.map(l =>
+          `<div class="quebra"><span>${t('linhaPreco', { qtd: l.qtd, valor: eur(l.valor) })}</span><b>${eur(l.qtd * l.valor)}</b></div>`).join('') : ''}
         <div class="tot"><span>${t('total')}</span><b>${eur(total)}</b></div>
         ${linhaReais(total)}
+        ${(x.min > 1 && S.pax < x.min) ? `<p class="why">${t('minAviso', { n: x.min })}</p>` : ''}
       </div>
       <details class="coupon"><summary>${t('haveCoupon')}</summary>
         <div class="crow"><input id="cin" placeholder="VOLTA10"><button class="mini" id="capply">OK</button></div>
@@ -651,7 +654,13 @@ function renderBook() {
       </details>
       <button class="cta" id="next2">${t('cont')}</button>
       <button class="linkbtn" id="back1" aria-label="${t('back')}">← ${t('back')}</button>`;
-    $('#mn').onclick = () => { S.pax = Math.max(x.min || 1, S.pax - 1); S.discount = 0; S.coupon = null; renderBook(); };
+    /* Antes o piso era x.min (3 nos passeios dela): apertar "menos" com 2
+       pessoas SUBIA para 3, e um casal nao conseguia reservar de jeito nenhum.
+       O minimo dela e a regra de saida, nao o tamanho minimo de uma reserva. */
+    $('#mn').onclick = () => {
+      if (S.pax <= 1) return;
+      S.pax = S.pax - 1; S.discount = 0; S.coupon = null; renderBook();
+    };
     $('#pl').onclick = () => {
       if (S.pax >= Math.min(x.max, S.cap || x.max)) return toast(t('maxNote', { n: x.max }));
       S.pax++; S.discount = 0; S.coupon = null; renderBook();
