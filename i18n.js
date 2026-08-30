@@ -285,6 +285,13 @@ const STR = {
   temaAutoSub: { pt: 'Segue o aparelho de quem abrir', en: 'Follows each device' },
   temaClaroSub:{ pt: 'Sempre claro', en: 'Always light' },
   temaEscuroSub:{ pt: 'Sempre escuro', en: 'Always dark' },
+  /* ---- puxar tudo de novo ---- */
+  ressyncTit:  { pt: 'O app está mostrando algo errado?', en: 'Is the app showing something wrong?' },
+  ressyncHelp: { pt: 'Apaga o que está guardado neste aparelho e busca tudo de novo do servidor. Seus passeios e reservas não se perdem — eles ficam no servidor, não aqui.',
+                 en: 'Clears what is stored on this device and fetches everything again from the server. Your tours and bookings are not lost — they live on the server, not here.' },
+  ressyncBtn:  { pt: 'Puxar tudo do servidor', en: 'Fetch everything from the server' },
+  ressyncPerg: { pt: 'Buscar tudo de novo do servidor? Nada é apagado no servidor.',
+                 en: 'Fetch everything from the server again? Nothing is deleted on the server.' },
   enFalhou:    { pt: 'Não consegui traduzir agora — o inglês anterior foi mantido. Salvo assim mesmo?',
                  en: 'Could not translate right now — the previous English was kept. Save anyway?' },
   addCal:      { pt: 'Colocar na minha agenda', en: 'Add to my calendar' },

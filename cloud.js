@@ -74,10 +74,23 @@ async function patchConta(path, body) {
    Resultado: a Melissa adicionava uma data, via "salvo", e a data sumia.
    Enquanto houver alteracao local nao confirmada, a nuvem nao manda mais. */
 let alteracaoPendente = false;
+let pendenteDesde = 0;
+/* A trava existe para proteger o que ela ACABOU de digitar. Mas antes ela so
+   era liberada quando um envio dava certo — e se o envio falhasse de vez
+   (deslogada, sem rede, recusa do banco) o aparelho ignorava a nuvem PARA
+   SEMPRE e ficava exibindo uma copia velha. Depois de um minuto, ou o envio
+   funcionou ou nao vai funcionar: mostrar o estado real vale mais. */
+const PENDENTE_MAX = 60e3;
+function seguraNuvem() {
+  if (!alteracaoPendente) return false;
+  if (Date.now() - pendenteDesde > PENDENTE_MAX) return false;
+  return true;
+}
 function temAlteracaoPendente() { return alteracaoPendente; }
 
 let pushT = null;
 function cloudPushState() {
+  if (!alteracaoPendente) pendenteDesde = Date.now();
   alteracaoPendente = true;              /* marca JA, nao daqui a 700ms */
   clearTimeout(pushT);
   pushT = setTimeout(async () => {
@@ -201,7 +214,7 @@ async function cloudPull() {
 
     /* Se ha alteracao local esperando subir, a nuvem NAO manda: aplicar o
        estado remoto aqui apagaria o que a Melissa acabou de fazer. */
-    if (alteracaoPendente) return { ok: true, segurando: true };
+    if (seguraNuvem()) return { ok: true, segurando: true };
 
     /* nuvem manda */
     const keepLang = DB.settings.lang;

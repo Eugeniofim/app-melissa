@@ -1726,6 +1726,11 @@ function admSettings() {
       <button class="mini" id="tutAgain">${t('tutorialOn')}</button>
     </section>
     <section class="card">
+      <h3>${t('ressyncTit')}</h3>
+      <p class="why">${t('ressyncHelp')}</p>
+      <button class="cta sm" id="ressync">${t('ressyncBtn')}</button>
+    </section>
+    <section class="card">
       <button class="mini danger" id="reset">${t('resetDemo')}</button>
     </section>`);
   bindLang(app);
@@ -1759,6 +1764,22 @@ function admSettings() {
     toast(t('homeSaved'));
   };
   $('#hmSee').onclick = () => go('/');
+
+  /* Quando o aparelho fica com uma copia velha, isto resolve sem ela precisar
+     mexer em configuracao de navegador. So apaga o que esta AQUI. */
+  $('#ressync').onclick = async () => {
+    if (!confirm(t('ressyncPerg'))) return;
+    try {
+      const chaves = await caches.keys();
+      await Promise.all(chaves.map(k => caches.delete(k)));
+    } catch (e) {}
+    try {
+      localStorage.removeItem('vi_db_v1');
+      localStorage.removeItem('vi_queue_v1');
+      localStorage.removeItem('vi_migr_naNuvem');
+    } catch (e) {}
+    location.reload();
+  };
 
   $('#pgSave').onclick = () => {
     DB.settings.pixKey   = $('#pgPix').value.trim();
