@@ -262,6 +262,18 @@ const STR = {
   nrFaltaNome: { pt: 'Escreva o nome da pessoa.', en: 'Write the person name.' },
   nrFaltaData: { pt: 'Escolha a data.', en: 'Pick the date.' },
   nrSemVaga:   { pt: 'Não cabe: só restam {n} vagas nessa saída.', en: 'Does not fit: only {n} seats left on that departure.' },
+  /* ---- extrato separado ----
+     O que entra na conta europeia vai para o contador na Franca. Pix cai no
+     Brasil e nao entra nessa contabilidade. Separado, ela manda um so. */
+  exEuropa:    { pt: 'Conta europeia · vai para o contador', en: 'European account · goes to the accountant' },
+  exBrasil:    { pt: 'Pix Brasil · fora da contabilidade francesa', en: 'Pix Brazil · outside the French books' },
+  exRegra:     { pt: 'Pix entra como Brasil. Dinheiro, transferência e cartão entram como conta europeia.',
+                 en: 'Pix counts as Brazil. Cash, transfer and card count as the European account.' },
+  exNadaEuro:  { pt: 'Nada recebido em conta europeia neste período.', en: 'Nothing received in the European account for this period.' },
+  exNadaBr:    { pt: 'Nenhum Pix neste período.', en: 'No Pix in this period.' },
+  exCsvCont:   { pt: 'CSV do contador', en: 'Accountant CSV' },
+  exCsvTudo:   { pt: 'CSV completo', en: 'Full CSV' },
+  exTotalGeral:{ pt: 'Total recebido no período', en: 'Total received in the period' },
   enFalhou:    { pt: 'Não consegui traduzir agora — o inglês anterior foi mantido. Salvo assim mesmo?',
                  en: 'Could not translate right now — the previous English was kept. Save anyway?' },
   addCal:      { pt: 'Colocar na minha agenda', en: 'Add to my calendar' },

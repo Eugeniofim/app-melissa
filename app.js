@@ -1452,6 +1452,14 @@ const METODO = { pix: 'mPix', card: 'mCard', cash: 'mCash', transfer: 'mTransfer
 function formaPg(m) { return METODO[m] ? t(METODO[m]) : (m || '—'); }
 
 /* ---- Extrato ---- */
+/* Para onde o dinheiro caiu. Pix e conta brasileira e nao entra na
+   contabilidade francesa; todo o resto entra na conta europeia dela.
+   Regra unica e visivel — se um dia surgir outro meio brasileiro, muda aqui. */
+const PGTO_BRASIL = ['pix'];
+function destinoPgto(metodo) {
+  return PGTO_BRASIL.includes(String(metodo || '').toLowerCase()) ? 'brasil' : 'europa';
+}
+
 function admMoney() {
   const mode = admMoney._m || 'month';
   const today = isoToday();
@@ -1460,36 +1468,60 @@ function admMoney() {
   const total = rows.reduce((s, r) => s + r.amount, 0);
   const KIND = { full: 'kindFull', deposit: 'kindDep', balance: 'kindBal' };
   const cols = t('stCols');
+  const europa = rows.filter(r => destinoPgto(r.method) === 'europa');
+  const brasil = rows.filter(r => destinoPgto(r.method) === 'brasil');
+  const soma = (a) => a.reduce((s, r) => s + r.amount, 0);
+
+  const tabela = (lista, vazio) => lista.length
+    ? `<table class="tbl"><thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead>
+       <tbody>${lista.map(r => {
+         const x = Tours.get(r.tourId);
+         return `<tr><td class="mono">${r.date}</td><td>${esc(r.client)}</td>
+           <td>${esc(x ? (x.name[LANG] || x.name.pt) : '?')}</td>
+           <td>${t(KIND[r.kind])}</td><td>${formaPg(r.method)}</td>
+           <td class="mono right">${eur(r.amount)}</td></tr>`;
+       }).join('')}</tbody>
+       <tfoot><tr><td colspan="5"><b>${t('received')}</b></td>
+         <td class="mono right"><b>${eur(soma(lista))}</b></td></tr></tfoot></table>`
+    : `<p class="empty">${vazio}</p>`;
   admShell('money', `
     <div class="pagehead"><h1 class="pageh">${t('stTitle')}</h1>
       <div class="chips">
         <button class="chip ${mode === 'week' ? 'on' : ''}" id="mW">${t('thisWeek')}</button>
         <button class="chip ${mode === 'month' ? 'on' : ''}" id="mM">${t('thisMonth')}</button>
-        <button class="mini" id="dlCsv">${t('dlCsv')}</button>
+        <button class="mini" id="dlCont">${t('exCsvCont')}</button>
+        <button class="mini" id="dlCsv">${t('exCsvTudo')}</button>
         <button class="mini" id="prn">${t('print')}</button>
       </div></div>
+    <p class="why">${t('exRegra')}</p>
     <section class="card">
-      ${rows.length ? `<table class="tbl"><thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead>
-      <tbody>${rows.map(r => {
-        const x = Tours.get(r.tourId);
-        return `<tr><td class="mono">${r.date}</td><td>${esc(r.client)}</td><td>${esc(x ? x.name.pt : '?')}</td>
-          <td>${t(KIND[r.kind])}</td><td>${formaPg(r.method)}</td><td class="mono right">${eur(r.amount)}</td></tr>`;
-      }).join('')}</tbody>
-      <tfoot><tr><td colspan="5"><b>${t('received')}</b></td><td class="mono right"><b>${eur(total)}</b></td></tr></tfoot></table>`
-      : `<p class="empty">${t('stEmpty')}</p>`}
-    </section>`);
+      <span class="seclabel">${t('exEuropa')}</span>
+      ${tabela(europa, t('exNadaEuro'))}
+    </section>
+    <section class="card">
+      <span class="seclabel">${t('exBrasil')}</span>
+      ${tabela(brasil, t('exNadaBr'))}
+    </section>
+    ${rows.length ? `<section class="card totalgeral">
+      <span>${t('exTotalGeral')}</span><b class="mono">${eur(total)}</b>
+    </section>` : ''}`);
   $('#mW').onclick = () => { admMoney._m = 'week'; admMoney(); };
   $('#mM').onclick = () => { admMoney._m = 'month'; admMoney(); };
   $('#prn').onclick = () => print();
-  $('#dlCsv').onclick = () => {
-    const csv = [cols.join(';')].concat(rows.map(r => {
+  /* O contador francês recebe só o que caiu na conta europeia. */
+  const baixaCsv = (lista, nome) => {
+    const csv = [cols.join(';')].concat(lista.map(r => {
       const x = Tours.get(r.tourId);
-      return [r.date, r.client, x ? x.name.pt : '', t(KIND[r.kind]), formaPg(r.method), r.amount].join(';');
+      return [r.date, r.client, x ? (x.name[LANG] || x.name.pt) : '',
+              t(KIND[r.kind]), formaPg(r.method), r.amount].join(';');
     })).join('\n');
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
-    a.download = 'extrato.csv'; a.click();
+    a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = nome; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   };
+  $('#dlCont').onclick = () => baixaCsv(europa, 'extrato-contador-' + from + '-a-' + today + '.csv');
+  $('#dlCsv').onclick  = () => baixaCsv(rows,   'extrato-completo-' + from + '-a-' + today + '.csv');
 }
 
 /* ---- Cupons ---- */
