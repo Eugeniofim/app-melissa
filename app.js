@@ -101,7 +101,7 @@ function icsFor(b, x) {
   const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//VoyagesImages//PT', 'BEGIN:VEVENT',
     'UID:' + b.code + '@voyages-images', 'DTSTART:' + dt,
     'SUMMARY:' + (x.name[LANG] || x.name.pt) + ' — Melissa Hallais',
-    'LOCATION:' + x.meeting.replace(/,/g, '\\,'),
+    'LOCATION:' + noIdioma(x.meeting).replace(/,/g, '\\,'),
     'DESCRIPTION:' + (LANG === 'pt' ? 'Código ' : 'Code ') + b.code,
     'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
   return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
@@ -453,8 +453,8 @@ function viewTour(id) {
       <div class="sec">
         <span class="seclabel">${t('secDates')}</span>
         <div class="factgrid">
-          <div><small>${t('fLeaves')}</small><b>${esc(x.meeting)}</b>
-            <a class="linkmap" href="${mapLink(x.meeting)}" target="_blank" rel="noopener">${t('openMap')} ↗</a></div>
+          <div><small>${t('fLeaves')}</small><b>${esc(noIdioma(x.meeting))}</b>
+            <a class="linkmap" href="${mapLink(noIdioma(x.meeting))}" target="_blank" rel="noopener">${t('openMap')} ↗</a></div>
           ${x.duration ? `<div><small>${t('fHours')}</small><b>${esc(x.duration)}</b></div>` : ''}
           <div><small>${t('fGroup')}</small><b>${t('upTo')} ${x.max} ${t('people')}</b>
             ${x.min > 1 ? `<small class="sub">${t('minNote', { n: x.min })}</small>` : ''}</div>
@@ -718,14 +718,14 @@ function renderBook() {
       <p class="hint center">${t('sentAll')}</p>
       <div class="voucher">
         <small>${t('yourCode')}</small><div class="code">${esc(b.code)}</div>
-        <p>${fmtDate(b.date)} · ${b.time}</p><p>${esc(x.meeting)}</p>
+        <p>${fmtDate(b.date)} · ${b.time}</p><p>${esc(noIdioma(x.meeting))}</p>
       </div>
       ${comoPagar(b, x)}
       <a class="cta" style="text-decoration:none;text-align:center" target="_blank" rel="noopener"
          href="${waLink(t('waBookingMsg', { code: b.code, tour: x.name[LANG] || x.name.pt, when: fmtDate(b.date) + ' ' + b.time, name: b.name }))}">✆ ${t('waSendBooking')}</a>
       <div class="okrow">
         <a class="mini" href="${icsFor(b, x)}" download="${esc(b.code)}.ics">${t('addCal')}</a>
-        <a class="mini" target="_blank" rel="noopener" href="${mapLink(x.meeting)}">${t('seeMap')}</a>
+        <a class="mini" target="_blank" rel="noopener" href="${mapLink(noIdioma(x.meeting))}">${t('seeMap')}</a>
       </div>
       <button class="cta soft" id="again">${t('bookAgain')}</button>`;
     $$('[data-cp]', book).forEach(btn => btn.onclick = async () => {
@@ -899,7 +899,7 @@ function admTourEdit(id) {
   const isNew = id === 'new';
   const x = isNew
     ? { type: 'walk', region: 'alsace', name: { pt: '', en: '' }, desc: { pt: '', en: '' },
-        meeting: '', photo: 'capa.jpg', price: 45, priceMode: 'pp', min: 2, max: 12,
+        meeting: { pt: '', en: '' }, photo: 'capa.jpg', price: 45, priceMode: 'pp', min: 2, max: 12,
         payPolicy: 'split', status: 'draft' }
     : Tours.get(id);
   if (!x) return go('/adm/tours');
@@ -920,7 +920,8 @@ function admTourEdit(id) {
         <label class="fld campo-en">${t('edTagline')} (EN)<input id="fTagEn" value="${esc((x.tagline && x.tagline.en) || '')}"></label>
         <label class="fld">${t('tDesc')}<textarea id="fDescPt">${esc(x.desc.pt)}</textarea><small class="why">${t('tDescHelp')}</small></label>
         <label class="fld campo-en">${t('tDescEn')}<textarea id="fDescEn">${esc(x.desc.en)}</textarea></label>
-        <label class="fld">${t('tMeeting')}<input id="fMeet" value="${esc(x.meeting)}"></label>
+        <label class="fld">${t('tMeeting')}<input id="fMeetPt" value="${esc(noIdioma(x.meeting))}"></label>
+        <label class="fld campo-en">${t('tMeeting')} (EN)<input id="fMeetEn" value="${esc((x.meeting && x.meeting.en) || '')}"></label>
         <div class="fld">${t('tPhoto')}
           <div class="photopick">
             <span class="pprev" id="pPrev" style="background-image:url(${esc(x.photo || '')})">${x.photo ? '' : '<i>+</i>'}</span>
@@ -1143,7 +1144,7 @@ function admTourEdit(id) {
       type: $('#fType').value, region: $('#fRegion').value,
       name: { pt: $('#fNamePt').value.trim(), en: $('#fNameEn').value.trim() || $('#fNamePt').value.trim() },
       desc: { pt: $('#fDescPt').value.trim(), en: $('#fDescEn').value.trim() || $('#fDescPt').value.trim() },
-      meeting: $('#fMeet').value.trim(),
+      meeting: par('#fMeetPt', '#fMeetEn'),
       price: +$('#fPrice').value || 0, priceMode: $('#fMode').value,
       min: +$('#fMin').value || 1, max: +$('#fMax').value || 1,
       payPolicy: $('#fPay').value,
@@ -1179,7 +1180,7 @@ function admTourEdit(id) {
     const problems = [];
     if (!data.name.pt) problems.push(['fNamePt', t('vName')]);
     if (!data.desc.pt) problems.push(['fDescPt', t('vDesc')]);
-    if (!data.meeting)  problems.push(['fMeet', t('vMeet')]);
+    if (!data.meeting.pt) problems.push(['fMeetPt', t('vMeet')]);
     if (!(data.price > 0)) problems.push(['fPrice', t('vPrice')]);
     if (data.min > data.max) problems.push(['fMin', t('vMinMax')]);
     $$('.fld .err').forEach(e => e.remove());
@@ -1207,6 +1208,7 @@ function admTourEdit(id) {
     const mapa = {
       fNamePt: 'fNameEn', fTagPt: 'fTagEn', fDescPt: 'fDescEn',
       fPNotePt: 'fPNoteEn', fCancelPt: 'fCancelEn', fIncPt: 'fIncEn', fNincPt: 'fNincEn',
+      fMeetPt: 'fMeetEn',
     };
     const campos = {};
     for (const [pt, en] of Object.entries(mapa)) {
