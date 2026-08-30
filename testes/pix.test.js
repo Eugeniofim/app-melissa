@@ -66,5 +66,24 @@ t('cada campo declara o proprio tamanho corretamente', ()=>{
   assert.strictEqual(c.substr(fim,4), '6304', 'o bloco do CRC nao esta no lugar');
 });
 
+t('CNPJ com pontuacao vira so digitos (e o que o banco espera)', ()=>{
+  assert.strictEqual(chama('pixChaveLimpa','58.728.880/0001-05'),'58728880000105');
+});
+t('CPF com pontuacao tambem', ()=>{
+  assert.strictEqual(chama('pixChaveLimpa','123.456.789-00'),'12345678900');
+});
+t('e-mail como chave fica intacto', ()=>{
+  assert.strictEqual(chama('pixChaveLimpa','guide@melissahallais.com'),'guide@melissahallais.com');
+});
+t('chave aleatoria fica intacta', ()=>{
+  const k='a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+  assert.strictEqual(chama('pixChaveLimpa',k),k);
+});
+t('o CNPJ dela gera um codigo com CRC valido', ()=>{
+  const c=vm.runInContext("pixCopiaECola({chave:'58.728.880/0001-05',nome:'MELISSA HALLAIS',cidade:'SAO PAULO',valor:1315,txid:'VI4732'})",ctx);
+  assert.ok(c.includes('5872888000010'), 'CNPJ nao entrou limpo: '+c);
+  assert.strictEqual(chama('pixCrc',c.slice(0,-4)), c.slice(-4));
+});
+
 console.log(falhas?`\n${falhas} FALHA(S)`:'\ntudo passou');
 process.exit(falhas?1:0);

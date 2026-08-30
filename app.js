@@ -599,6 +599,7 @@ function comoPagar(b, x) {
     <div class="pixbox">
       <b class="pixtit">${t('pixTit')}</b>
       <p class="pixvalor">${t('pixValor', { brl: brl.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 }), eur: eur(agora) })}</p>
+      ${(typeof qrSvg === 'function') ? `<div class="pixqr">${qrSvg(codigoPix, { tamanho: 190, alt: t('pixTit') })}</div>` : ''}
       <p class="why">${t('pixComo')}</p>
       <textarea class="pixcod" id="pixCod" readonly rows="3">${esc(codigoPix)}</textarea>
       <button class="cta sm" data-cp="${esc(codigoPix)}">${t('pixCopiar')}</button>

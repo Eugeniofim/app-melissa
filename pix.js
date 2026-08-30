@@ -47,8 +47,19 @@ function pixTxid(codigo) {
 
 /* Monta o copia e cola.
    valor em reais (número). Sem valor, o cliente digita — evitamos isso. */
-function pixCopiaECola({ chave, nome, cidade, valor, txid }) {
+/* CPF e CNPJ entram no codigo so com digitos: a Melissa digita
+   "58.728.880/0001-05" e o banco espera "58728880000105". Telefone vira
+   +55...; e-mail e chave aleatoria vao como estao. */
+function pixChaveLimpa(chave) {
   const k = String(chave || '').trim();
+  if (!k) return '';
+  const so = k.replace(/[^0-9]/g, '');
+  if (/^[0-9.\-/]+$/.test(k) && (so.length === 11 || so.length === 14)) return so;
+  return k;
+}
+
+function pixCopiaECola({ chave, nome, cidade, valor, txid }) {
+  const k = pixChaveLimpa(chave);
   if (!k) return null;
 
   const conta = pixCampo('00', 'br.gov.bcb.pix') + pixCampo('01', k);
