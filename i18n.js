@@ -290,6 +290,19 @@ const STR = {
   ressyncHelp: { pt: 'Apaga o que está guardado neste aparelho e busca tudo de novo do servidor. Seus passeios e reservas não se perdem — eles ficam no servidor, não aqui.',
                  en: 'Clears what is stored on this device and fetches everything again from the server. Your tours and bookings are not lost — they live on the server, not here.' },
   ressyncBtn:  { pt: 'Puxar tudo do servidor', en: 'Fetch everything from the server' },
+  /* ---- erros de login em portugues, na tela, sem sumir ----
+     Antes o motivo aparecia num aviso passageiro e em ingles cru
+     ("Invalid login credentials"). Quem tentava entrar nao via por que falhou. */
+  lgErrSenha:  { pt: 'E-mail ou senha não conferem. Confira e tente de novo.',
+                 en: 'Email or password do not match. Check and try again.' },
+  lgErrConfirm:{ pt: 'Falta confirmar o e-mail. Procure a mensagem de confirmação na sua caixa de entrada.',
+                 en: 'You still need to confirm your email. Look for the confirmation message in your inbox.' },
+  lgErrMuitas: { pt: 'Muitas tentativas seguidas. Espere alguns minutos e tente de novo.',
+                 en: 'Too many attempts in a row. Wait a few minutes and try again.' },
+  lgErrRede:   { pt: 'Não consegui falar com o servidor. Verifique sua internet.',
+                 en: 'Could not reach the server. Check your connection.' },
+  lgEsqueci:   { pt: 'Se não lembra a senha, use "Esqueci minha senha" aqui embaixo.',
+                 en: 'If you do not remember it, use "I forgot my password" below.' },
   ressyncPerg: { pt: 'Buscar tudo de novo do servidor? Nada é apagado no servidor.',
                  en: 'Fetch everything from the server again? Nothing is deleted on the server.' },
   enFalhou:    { pt: 'Não consegui traduzir agora — o inglês anterior foi mantido. Salvo assim mesmo?',

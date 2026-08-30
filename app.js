@@ -2164,6 +2164,7 @@ function viewLogin(mode) {
         <input id="lgEmail" type="email" autocomplete="email" inputmode="email" placeholder="melissa@exemplo.com"></label>
       <label class="fld">${t('loginPass')}
         <input id="lgPass" type="password" autocomplete="${m === 'up' ? 'new-password' : 'current-password'}"></label>
+      <p class="lgerro" id="lgErro" hidden></p>
       <button class="cta" id="lgGo">${m === 'up' ? t('loginCreate') : t('loginBtn')}</button>
       <button class="linkbtn center" id="lgSwap">${m === 'up' ? t('loginBack') : t('loginFirst')}</button>
       ${m === 'in' ? `<button class="linkbtn center" id="lgForgot">${t('loginForgot')}</button>` : ''}
@@ -2174,14 +2175,33 @@ function viewLogin(mode) {
 
   const busy = (on) => { const b = $('#lgGo'); b.disabled = on; b.textContent = on ? t('loginWait') : (m === 'up' ? t('loginCreate') : t('loginBtn')); };
 
+  /* O motivo da falha fica NA TELA ate ela resolver, em portugues.
+     Aviso que some em 3 segundos, escrito em ingles pelo servidor, nao ajuda. */
+  const mostraErro = (txt) => {
+    const e = $('#lgErro'); if (!e) return;
+    e.textContent = txt; e.hidden = !txt;
+  };
+  const traduzErro = (bruto) => {
+    const b = String(bruto || '').toLowerCase();
+    if (b.includes('invalid login') || b.includes('invalid credentials')) return t('lgErrSenha') + ' ' + t('lgEsqueci');
+    if (b.includes('not confirmed') || b.includes('email not confirmed')) return t('lgErrConfirm');
+    if (b.includes('rate') || b.includes('too many')) return t('lgErrMuitas');
+    if (b.includes('failed to fetch') || b.includes('networkerror')) return t('lgErrRede');
+    return bruto || t('loginWrong');
+  };
+
   $('#lgGo').onclick = async () => {
     const email = $('#lgEmail').value.trim(), pass = $('#lgPass').value;
     if (!email) { $('#lgEmail').focus(); return toast(t('loginNoEmail')); }
     if (m === 'up' && pass.length < 8) { $('#lgPass').focus(); return toast(t('loginWeak')); }
+    mostraErro('');
     busy(true);
-    const r = m === 'up' ? await authSignUp(email, pass) : await authSignIn(email, pass);
+    let r;
+    /* sem try/catch, uma falha de rede deixava o botao travado em "Entrando..." */
+    try { r = m === 'up' ? await authSignUp(email, pass) : await authSignIn(email, pass); }
+    catch (e) { r = { ok: false, error: 'failed to fetch' }; }
     busy(false);
-    if (!r.ok) return toast(r.error || t('loginWrong'));
+    if (!r.ok) { mostraErro(traduzErro(r.error)); return; }
     if (r.needsConfirm) return toast(t('loginConfirm', { e: email }));
     const own = await claimOwnership();
     if (own.taken) { await authSignOut(); return toast(t('loginTaken')); }
