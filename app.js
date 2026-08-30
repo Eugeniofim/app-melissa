@@ -586,7 +586,26 @@ function comoPagar(b, x) {
       <div class="crow"><input readonly value="${esc(valor)}"><button class="mini" data-cp="${esc(valor)}">${t('copyBtn')}</button></div>
       ${dono ? `<small class="who">${t('inNameOf')} ${esc(dono)}</small>` : ''}
     </div>`;
-  const meios = (st.pixKey ? linha(t('pixLbl'), st.pixKey, st.pixName) : '')
+  /* Pix com o valor ja embutido: o cliente cola no banco e paga, sem digitar
+     valor nenhum (era onde ele errava). Precisa de chave, nome e cidade — o
+     padrao exige os tres — e de cotacao, para converter o euro em real. */
+  const brl = (typeof pixValorEmReais === 'function') ? pixValorEmReais(agora) : null;
+  const codigoPix = (typeof pixDisponivel === 'function' && pixDisponivel() && brl)
+    ? pixCopiaECola({ chave: st.pixKey, nome: st.pixName, cidade: st.pixCity,
+                      valor: brl, txid: b.code })
+    : null;
+
+  const blocoPix = codigoPix ? `
+    <div class="pixbox">
+      <b class="pixtit">${t('pixTit')}</b>
+      <p class="pixvalor">${t('pixValor', { brl: brl.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 }), eur: eur(agora) })}</p>
+      <p class="why">${t('pixComo')}</p>
+      <textarea class="pixcod" id="pixCod" readonly rows="3">${esc(codigoPix)}</textarea>
+      <button class="cta sm" data-cp="${esc(codigoPix)}">${t('pixCopiar')}</button>
+    </div>` : '';
+
+  const meios = blocoPix
+              + (st.pixKey && !codigoPix ? linha(t('pixLbl'), st.pixKey, st.pixName) : '')
               + (st.iban ? linha(t('ibanLbl'), st.iban, st.ibanName) : '');
   return `
   <div class="paybox">
@@ -1654,7 +1673,11 @@ function admSettings() {
       <p class="why">${t('admPayHelp')}</p>
       <div class="frow">
         <label class="fld">${t('admPixKey')}<input id="pgPix" value="${esc(DB.settings.pixKey || '')}" placeholder="e-mail, telefone ou chave aleatória"></label>
-        <label class="fld">${t('admPixName')}<input id="pgPixName" value="${esc(DB.settings.pixName || '')}" placeholder="Melissa Hallais"></label>
+        <label class="fld">${t('admPixName')}<input id="pgPixName" value="${esc(DB.settings.pixName || '')}" placeholder="MELISSA HALLAIS"></label>
+      </div>
+      <div class="frow">
+        <label class="fld">${t('admPixCity')}<input id="pgPixCity" value="${esc(DB.settings.pixCity || '')}" placeholder="SAO PAULO"></label>
+        <div class="fld"><small class="why">${t('admPixHelp')}</small></div>
       </div>
       <div class="frow">
         <label class="fld">${t('admIban')}<input id="pgIban" value="${esc(DB.settings.iban || '')}" placeholder="FR76 …"></label>
@@ -1784,6 +1807,7 @@ function admSettings() {
   $('#pgSave').onclick = () => {
     DB.settings.pixKey   = $('#pgPix').value.trim();
     DB.settings.pixName  = $('#pgPixName').value.trim();
+    DB.settings.pixCity  = $('#pgPixCity').value.trim();
     DB.settings.iban     = $('#pgIban').value.trim();
     DB.settings.ibanName = $('#pgIbanName').value.trim();
     DB.settings.payNote  = $('#pgNote').value.trim();

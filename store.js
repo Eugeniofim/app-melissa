@@ -30,7 +30,9 @@ function _blank() {
            base: 'Colmar, Alsácia',
            /* como o cliente paga. Vazio ate ela preencher no ADM — e enquanto
               estiver vazio a tela diz a verdade: ela passa os dados no WhatsApp. */
-           pixKey: '', pixName: '', iban: '', ibanName: '', payNote: '',
+           /* pixName e pixCity sao exigidos pelo padrao do BR Code:
+              sem eles o banco recusa o codigo. */
+           pixKey: '', pixName: '', pixCity: '', iban: '', ibanName: '', payNote: '',
            /* margem sobre a cotacao do BCE: cobre o spread de conversao e a
               taxa de quem processa. Sem ela, o euro que chega e menor. */
            /* A Melissa pediu para tirar a cotacao da tela. A chave antiga
