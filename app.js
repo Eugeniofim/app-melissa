@@ -913,11 +913,13 @@ function admTourEdit(id) {
         <label class="fld">${t('tType')}<select id="fType">${selOpts([['day','tDay'],['walk','tWalk'],['photo','tPhotoT'],['session','tSession'],['bike','tBike']], x.type)}</select></label>
         <label class="fld">${t('tRegion')}<select id="fRegion">${selOpts([['alsace','alsace'],['blackforest','blackforest']], x.region)}</select></label>
         <label class="fld">${t('tName')}<input id="fNamePt" value="${esc(x.name.pt)}"></label>
-        <label class="fld">${t('tNameEn')}<input id="fNameEn" value="${esc(x.name.en)}"></label>
+        <label class="optin enswitch"><input type="checkbox" id="verEn">
+          <span><b>${t('enVer')}</b><small>${t('enAuto')}</small></span></label>
+        <label class="fld campo-en">${t('tNameEn')}<input id="fNameEn" value="${esc(x.name.en)}"></label>
         <label class="fld">${t('edTagline')}<input id="fTagPt" value="${esc((x.tagline && x.tagline.pt) || '')}" placeholder="Entre vinhedos, castelos e vilarejos iluminados"><small class="why">${t('edTaglineWhy')}</small></label>
-        <label class="fld">${t('edTagline')} (EN)<input id="fTagEn" value="${esc((x.tagline && x.tagline.en) || '')}"></label>
+        <label class="fld campo-en">${t('edTagline')} (EN)<input id="fTagEn" value="${esc((x.tagline && x.tagline.en) || '')}"></label>
         <label class="fld">${t('tDesc')}<textarea id="fDescPt">${esc(x.desc.pt)}</textarea><small class="why">${t('tDescHelp')}</small></label>
-        <label class="fld">${t('tDescEn')}<textarea id="fDescEn">${esc(x.desc.en)}</textarea></label>
+        <label class="fld campo-en">${t('tDescEn')}<textarea id="fDescEn">${esc(x.desc.en)}</textarea></label>
         <label class="fld">${t('tMeeting')}<input id="fMeet" value="${esc(x.meeting)}"></label>
         <div class="fld">${t('tPhoto')}
           <div class="photopick">
@@ -944,7 +946,7 @@ function admTourEdit(id) {
           <label class="fld">${t('edLatePrice')}<input id="fLate" type="number" min="0" value="${x.priceLate || 0}" placeholder="225"></label>
         </div>
         <label class="fld">${t('edPriceNote')}<input id="fPNotePt" value="${esc((x.priceNote && x.priceNote.pt) || '')}" placeholder="Valor especial para as primeiras reservas, sujeito a disponibilidade."></label>
-        <label class="fld">${t('edPriceNote')} (EN)<input id="fPNoteEn" value="${esc((x.priceNote && x.priceNote.en) || '')}"></label>
+        <label class="fld campo-en">${t('edPriceNote')} (EN)<input id="fPNoteEn" value="${esc((x.priceNote && x.priceNote.en) || '')}"></label>
 
         <div class="rulesep"></div>
         <b>${t('edGroup')}</b>
@@ -960,7 +962,7 @@ function admTourEdit(id) {
           <label class="fld">${t('edBalanceDays')}<input id="fBalDays" type="number" min="0" value="${x.balanceDays || 1}"><small class="why">${t('edBalanceWhy')}</small></label>
         </div>
         <label class="fld">${t('edCancel')}<input id="fCancelPt" value="${esc((x.cancel && x.cancel.pt) || '')}" placeholder="Cancelamento gratis ate 48h antes"><small class="why">${t('edCancelWhy')}</small></label>
-        <label class="fld">${t('edCancel')} (EN)<input id="fCancelEn" value="${esc((x.cancel && x.cancel.en) || '')}"></label>
+        <label class="fld campo-en">${t('edCancel')} (EN)<input id="fCancelEn" value="${esc((x.cancel && x.cancel.en) || '')}"></label>
         <div class="btnrow">
           <button class="cta sm" id="savePub">${t('savePub')}</button>
           <button class="mini" id="saveDraft">${t('saveDraft')}</button>
@@ -982,11 +984,11 @@ function admTourEdit(id) {
         <p class="why">${t('edIncWhy')}</p>
         <div class="frow">
           <label class="fld">${t('included')} (PT)<textarea id="fIncPt" rows="4">${esc(linhas(x.includes, 'pt'))}</textarea></label>
-          <label class="fld">${t('included')} (EN)<textarea id="fIncEn" rows="4">${esc(linhas(x.includes, 'en'))}</textarea></label>
+          <label class="fld campo-en">${t('included')} (EN)<textarea id="fIncEn" rows="4">${esc(linhas(x.includes, 'en'))}</textarea></label>
         </div>
         <div class="frow">
           <label class="fld">${t('notIncluded')} (PT)<textarea id="fNincPt" rows="3">${esc(linhas(x.notIncludes, 'pt'))}</textarea></label>
-          <label class="fld">${t('notIncluded')} (EN)<textarea id="fNincEn" rows="3">${esc(linhas(x.notIncludes, 'en'))}</textarea></label>
+          <label class="fld campo-en">${t('notIncluded')} (EN)<textarea id="fNincEn" rows="3">${esc(linhas(x.notIncludes, 'en'))}</textarea></label>
         </div>
         <div class="rulesep"></div>
         <b>${t('edClosing')}</b>
@@ -999,28 +1001,39 @@ function admTourEdit(id) {
       <section class="card span2" id="calCard">
         <h3>${t('whenRuns')}</h3>
         <p class="why autosave">${t('datesAutoSave')}</p>
-        <div id="rulesList"></div>
-        <div class="ruleform">
-          <b>${t('repeats')}</b> <small class="why">${t('repeatsEg')}</small>
-          <div class="wdrow" id="wdRow">${t('wd').map((w, i) => `<button class="wd" data-w="${i}">${w}</button>`).join('')}</div>
-          <div class="frow">
-            <label class="fld">${t('timeLbl')}<input id="rTime" value="16:30"></label>
-            <label class="fld">${t('seats')}<input id="rCap" type="number" value="${x.max}"></label>
-          </div>
-          <div class="frow">
-            <label class="fld">${t('fromLbl')}<input id="rFrom" type="date" value="${isoToday()}"></label>
-            <label class="fld">${t('untilLbl')}<input id="rUntil" type="date" value="${addDays(isoToday(), 60)}"></label>
-          </div>
-          <button class="mini" id="addRule">${t('addRule')}</button>
+
+        <div class="dtbloco">
+          <span class="seclabel">${t('dtMarcadas')}</span>
+          <div id="rulesList"></div>
         </div>
-        <div class="rulesep"></div>
-        <b>${t('oneOff')}</b>
-        <div class="frow">
-          <label class="fld"><input id="oDate" type="date" value="${addDays(isoToday(), 7)}"></label>
-          <label class="fld"><input id="oTime" value="10:00"></label>
-          <label class="fld"><input id="oCap" type="number" value="${x.max}"></label>
-          <button class="mini" id="addOne">+</button>
+
+        <div class="dtbloco destaque">
+          <span class="seclabel">${t('dtAdicionar')}</span>
+          <div class="frow">
+            <label class="fld">${t('dtDia')}<input id="oDate" type="date" value="${addDays(isoToday(), 7)}"></label>
+            <label class="fld">${t('dtHora')}<input id="oTime" value="10:00" placeholder="09:00"></label>
+            <label class="fld">${t('dtVagas')}<input id="oCap" type="number" min="1" value="${x.max}"></label>
+          </div>
+          <button class="cta sm" id="addOne">${t('dtBotao')}</button>
         </div>
+
+        <details class="dtbloco">
+          <summary><b>${t('dtRepetir')}</b><small class="why">${t('dtRepetirOpc')}</small></summary>
+          <div class="ruleform">
+            <label class="fld nolabel">${t('dtEscolhaDia')}</label>
+            <div class="wdrow" id="wdRow">${t('wd').map((w, i) => `<button class="wd" data-w="${i}">${w}</button>`).join('')}</div>
+            <div class="frow">
+              <label class="fld">${t('dtHora')}<input id="rTime" value="16:30"></label>
+              <label class="fld">${t('dtVagas')}<input id="rCap" type="number" min="1" value="${x.max}"></label>
+            </div>
+            <label class="fld nolabel">${t('dtPeriodo')}</label>
+            <div class="frow">
+              <label class="fld">${t('fromLbl')}<input id="rFrom" type="date" value="${isoToday()}"></label>
+              <label class="fld">${t('untilLbl')}<input id="rUntil" type="date" value="${addDays(isoToday(), 60)}"></label>
+            </div>
+            <button class="mini" id="addRule">${t('addRule')}</button>
+          </div>
+        </details>
       </section>`}
     </div>
 
@@ -1051,11 +1064,11 @@ function admTourEdit(id) {
         </div>
         <div class="frow">
           <label class="fld">${t('edStopName')} (PT)<input data-f="npt" value="${esc((p.n && p.n.pt) || '')}"></label>
-          <label class="fld">${t('edStopName')} (EN)<input data-f="nen" value="${esc((p.n && p.n.en) || '')}"></label>
+          <label class="fld campo-en">${t('edStopName')} (EN)<input data-f="nen" value="${esc((p.n && p.n.en) || '')}"></label>
         </div>
         <div class="frow">
           <label class="fld">${t('edStopText')} (PT)<textarea data-f="dpt" rows="3">${esc((p.d && p.d.pt) || '')}</textarea></label>
-          <label class="fld">${t('edStopText')} (EN)<textarea data-f="den" rows="3">${esc((p.d && p.d.en) || '')}</textarea></label>
+          <label class="fld campo-en">${t('edStopText')} (EN)<textarea data-f="den" rows="3">${esc((p.d && p.d.en) || '')}</textarea></label>
         </div>
         <div class="photopick">
           <span class="pprev sm" style="background-image:url(${esc(p.ph || '')})">${p.ph ? '' : '<i>+</i>'}</span>
@@ -1115,6 +1128,13 @@ function admTourEdit(id) {
 
   /* a barra fixa reaproveita exatamente os mesmos botoes — sem segunda
      versao da logica de salvar, que e onde bugs se escondem */
+  /* Os campos em ingles ficam escondidos: ela escreve so em portugues.
+     Continuam no DOM (o salvamento le deles) e visiveis se ela quiser ajustar. */
+  const editor = $('.formgrid') || app;
+  const aplicaEn = () => editor.classList.toggle('mostra-en', !!$('#verEn')?.checked);
+  $('#verEn')?.addEventListener('change', aplicaEn);
+  aplicaEn();
+
   $('#savePub2').onclick   = () => $('#savePub').click();
   $('#saveDraft2').onclick = () => $('#saveDraft').click();
 
@@ -1127,6 +1147,9 @@ function admTourEdit(id) {
       price: +$('#fPrice').value || 0, priceMode: $('#fMode').value,
       min: +$('#fMin').value || 1, max: +$('#fMax').value || 1,
       payPolicy: $('#fPay').value,
+      /* guarda qual portugues gerou o ingles atual: se nao mudar,
+         nao traduz de novo e o ajuste manual dela sobrevive */
+      trSig: x.trSig || {},
       photo: newPhoto || x.photo, status,
       duration: $('#fDur').value.trim(), distance: $('#fDist').value.trim(),
       tagline:   par('#fTagPt', '#fTagEn'),
@@ -1176,7 +1199,57 @@ function admTourEdit(id) {
     }
     return problems.length === 0;
   }
-  $('#savePub').onclick = () => {
+  /* Traduz o que mudou e escreve nos campos em ingles ANTES de coletar.
+     Se falhar, os campos ficam como estavam — o ingles velho e melhor que
+     nenhum — e ela decide se salva assim mesmo. */
+  async function traduzAntesDeSalvar() {
+    if (typeof traduzCampos !== 'function') return true;
+    const mapa = {
+      fNamePt: 'fNameEn', fTagPt: 'fTagEn', fDescPt: 'fDescEn',
+      fPNotePt: 'fPNoteEn', fCancelPt: 'fCancelEn', fIncPt: 'fIncEn', fNincPt: 'fNincEn',
+    };
+    const campos = {};
+    for (const [pt, en] of Object.entries(mapa)) {
+      const ept = $('#' + pt), een = $('#' + en);
+      if (!ept || !een) continue;
+      const v = ept.value.trim();
+      if (v) campos[en] = v;
+    }
+    /* paradas: nome e texto de cada uma */
+    $$('#stopList .stopcard').forEach((row, i) => {
+      const npt = row.querySelector('[data-f="npt"]'), npn = row.querySelector('[data-f="nen"]');
+      const dpt = row.querySelector('[data-f="dpt"]'), dpn = row.querySelector('[data-f="den"]');
+      if (npt && npn && npt.value.trim()) campos['stop' + i + 'n'] = npt.value.trim();
+      if (dpt && dpn && dpt.value.trim()) campos['stop' + i + 'd'] = dpt.value.trim();
+    });
+    if (!Object.keys(campos).length) return true;
+
+    const btn = $('#savePub'); const rotulo = btn.textContent;
+    btn.disabled = true; btn.textContent = t('enTraduzindo');
+    const antes = (x.trSig || {});
+    let r;
+    try { r = await traduzCampos(campos, antes); }
+    catch (e) { r = { textos: {}, assinaturas: antes, falhas: Object.keys(campos) }; }
+    btn.disabled = false; btn.textContent = rotulo;
+
+    for (const [chave, en] of Object.entries(r.textos)) {
+      if (chave.startsWith('stop')) {
+        const i = +chave.match(/stop(\d+)/)[1];
+        const campo = chave.endsWith('n') ? 'nen' : 'den';
+        const row = $$('#stopList .stopcard')[i];
+        if (row) { const el = row.querySelector(`[data-f="${campo}"]`); if (el) el.value = en; }
+      } else {
+        const el = $('#' + chave); if (el) el.value = en;
+      }
+    }
+    x.trSig = r.assinaturas;
+    if (r.falhas.length) return confirm(t('enFalhou'));
+    if (Object.keys(r.textos).length) toast(t('enPronto'));
+    return true;
+  }
+
+  $('#savePub').onclick = async () => {
+    if (!(await traduzAntesDeSalvar())) return;
     const data = collect('live');
     if (!validate(data)) return;
     if (!data.name.pt) return toast(LANG === 'pt' ? 'Dê um nome ao passeio.' : 'Give the tour a name.');
@@ -1223,6 +1296,31 @@ function admTourEdit(id) {
 }
 
 /* ---- Reservas ---- */
+/* A conta aparece SEMPRE: quanto entrou, de quanto, e o que falta.
+   Sem isso a Melissa olha a lista e nao sabe quem pagou metade. */
+function situacaoPgto(b, hoje) {
+  const total = +b.total || 0;
+  const pago = Bookings.paid(b);
+  const falta = Math.max(0, total - pago);
+  const conta = t('stDeTotal', { pago: eur(pago), total: eur(total) })
+              + (falta > 0 ? ' · ' + t('stFalta', { v: eur(falta) }) : '');
+
+  if (b.status === 'cancelled') return { classe: 'n', titulo: t('cancelled'), conta, aberta: false };
+  if (falta <= 0)               return { classe: 'ok', titulo: t('stPago'), conta, aberta: false };
+
+  const prazo = Bookings.dueDate(b);
+  if (prazo < hoje) {
+    const dias = Math.round((new Date(hoje) - new Date(prazo)) / 864e5);
+    return { classe: 'bad', titulo: t('stAtrasado', { n: dias }), conta, aberta: true };
+  }
+  return {
+    classe: 'warn',
+    titulo: pago > 0 ? t('stSinal') : t('stEsperando'),
+    conta: conta + ' · ' + t('stAte', { d: fmtDate(prazo) }),
+    aberta: true,
+  };
+}
+
 function admBookings() {
   const list = Bookings.all();
   const today = isoToday();
@@ -1231,20 +1329,9 @@ function admBookings() {
     ${list.length ? `<div class="tlist">${list.map(b => {
       const x = Tours.get(b.tourId);
       const due = Bookings.due(b);
-      let pill, act = '';
-      if (b.status === 'cancelled') pill = `<span class="pill n">${t('cancelled')}</span>`;
-      else if (due <= 0) pill = `<span class="pill ok">${t('paid')}</span>`;
-      else {
-        const dd = Bookings.dueDate(b);
-        if (dd < today) {
-          const days = Math.round((new Date(today) - new Date(dd)) / 864e5);
-          pill = `<span class="pill bad">${t('daysLate', { n: days })}</span>`;
-        } else if (Bookings.paid(b) <= 0) {
-          /* nada entrou ainda — "sinal pago" seria mentira */
-          pill = `<span class="pill warn">${t('waitingPay', { v: eur(due) })}</span>`;
-        } else pill = `<span class="pill warn">${t('depositPaid', { v: eur(due) })}</span>`;
-        act = `<button class="mini strong" data-got="${esc(b.id)}">${t('gotBalance')}</button>`;
-      }
+      const st = situacaoPgto(b, today);
+      const pill = `<span class="pill conta ${st.classe}"><b>${st.titulo}</b><small>${st.conta}</small></span>`;
+      const act = st.aberta ? `<button class="mini strong" data-got="${esc(b.id)}">${t('gotBalance')}</button>` : '';
       const first = b.name.split(' ')[0];
       const tourName = x ? (x.name[LANG] || x.name.pt) : '';
       const waText = (b.status !== 'cancelled' && due > 0)

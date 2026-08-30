@@ -198,6 +198,42 @@ const STR = {
   payProof:    { pt: 'Depois de pagar, me manda o comprovante no WhatsApp — eu confirmo na hora.',
                  en: 'Once you have paid, send me the receipt on WhatsApp and I will confirm right away.' },
   waitingPay:  { pt: 'Aguardando pagamento · {v}', en: 'Awaiting payment · {v}' },
+  /* ---- situacao do pagamento, sempre com a conta inteira ----
+     Antes a etiqueta de atraso mostrava so os dias, sem dizer se tinha
+     entrado alguma coisa. A Melissa nao conseguia saber, olhando a lista,
+     quem pagou metade e quem nao pagou nada. */
+  stPago:      { pt: 'Pago', en: 'Paid' },
+  stEsperando: { pt: 'Nada recebido', en: 'Nothing received' },
+  stSinal:     { pt: 'Sinal recebido', en: 'Deposit received' },
+  stAtrasado:  { pt: 'Atrasado há {n} dias', en: '{n} days late' },
+  stDeTotal:   { pt: '{pago} de {total}', en: '{pago} of {total}' },
+  stFalta:     { pt: 'falta {v}', en: '{v} to go' },
+  stAte:       { pt: 'até {d}', en: 'by {d}' },
+  /* ---- caixa de datas do editor ----
+     Os tres campos da data avulsa nao tinham rotulo: o "7" na tela era
+     "vagas", mas nada dizia isso. E a repeticao semanal ocupava o topo
+     sendo o caso raro — os passeios dela sao em datas escolhidas. */
+  dtMarcadas:  { pt: 'Datas já marcadas', en: 'Dates already set' },
+  dtNenhuma:   { pt: 'Nenhuma data ainda. Adicione a primeira abaixo.',
+                 en: 'No dates yet. Add the first one below.' },
+  dtAdicionar: { pt: 'Adicionar uma data', en: 'Add a date' },
+  dtDia:       { pt: 'Dia', en: 'Day' },
+  dtHora:      { pt: 'Horário', en: 'Time' },
+  dtVagas:     { pt: 'Vagas', en: 'Seats' },
+  dtBotao:     { pt: '+ Adicionar data', en: '+ Add date' },
+  dtRepetir:   { pt: 'Repetir toda semana', en: 'Repeat every week' },
+  dtRepetirOpc:{ pt: 'Opcional. Só para passeios que saem sempre nos mesmos dias da semana.',
+                 en: 'Optional. Only for tours that run on the same weekdays every week.' },
+  dtEscolhaDia:{ pt: 'Em quais dias da semana?', en: 'On which weekdays?' },
+  dtPeriodo:   { pt: 'Durante que período?', en: 'For how long?' },
+  /* ---- ingles automatico ---- */
+  enAuto:      { pt: 'Escreva só em português. O inglês é traduzido sozinho quando você salva.',
+                 en: 'Write in Portuguese only. English is translated automatically when you save.' },
+  enVer:       { pt: 'Ver e ajustar o inglês', en: 'View and edit the English' },
+  enTraduzindo:{ pt: 'Traduzindo para o inglês…', en: 'Translating to English…' },
+  enPronto:    { pt: 'Inglês traduzido', en: 'English translated' },
+  enFalhou:    { pt: 'Não consegui traduzir agora — o inglês anterior foi mantido. Salvo assim mesmo?',
+                 en: 'Could not translate right now — the previous English was kept. Save anyway?' },
   addCal:      { pt: 'Colocar na minha agenda', en: 'Add to my calendar' },
   msgMelissa:  { pt: 'Falar com a Melissa', en: 'Message Melissa' },
   seeMap:      { pt: 'Ver no mapa', en: 'Open in maps' },

@@ -19,7 +19,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="tokens.css?v=1.19.1">
+<link rel="stylesheet" href="tokens.css?v=1.21.0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23064c3f'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='%23d9aa0e' font-family='sans-serif' font-weight='700'%3EM%3C/text%3E%3C/svg%3E">
 <style>
 /* ============ base ============ */
@@ -379,7 +379,32 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{
 .deprow{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:var(--fs-3)}
 .deprow:first-of-type{border-top:0}
 .deprow .pill{margin-left:auto}
+/* Campos em ingles escondidos: a Melissa escreve so em portugues e o
+   ingles e traduzido ao salvar. Continuam no DOM porque o salvamento le
+   deles — e ela pode abrir para corrigir. */
+.formgrid:not(.mostra-en) .campo-en{display:none}
+.enswitch{margin-bottom:var(--s-7)}
+
+/* ---- caixa de datas do editor ---- */
+.dtbloco{margin-top:var(--s-9);padding-top:var(--s-8);border-top:1px solid var(--line)}
+.dtbloco:first-of-type{border-top:0;padding-top:0}
+.dtbloco.destaque{padding:var(--s-8);border:1px solid var(--line-2);border-radius:var(--r-lg);
+  background:var(--surface-2)}
+.dtbloco.destaque .cta.sm{margin-top:var(--s-7)}
+.dtbloco>summary{cursor:pointer;list-style:none;display:flex;flex-direction:column;gap:3px}
+.dtbloco>summary::-webkit-details-marker{display:none}
+.dtbloco>summary::before{content:"▸ ";color:var(--ink-3)}
+.dtbloco[open]>summary::before{content:"▾ "}
+.fld.nolabel{font-size:var(--fs-2);color:var(--ink-3);letter-spacing:var(--track-label);
+  text-transform:uppercase;margin-top:var(--s-7)}
 .pill{font-size:var(--fs-2);font-weight:var(--t-strong);padding:3px 10px;border-radius:var(--r-pill);white-space:nowrap}
+/* Variante de duas linhas: o estado em cima, a conta embaixo. Classe propria
+   em vez de :has() — e o elemento que a Melissa mais olha, nao quero depender
+   de suporte de seletor no celular dela. */
+.pill.conta{display:inline-flex;flex-direction:column;gap:2px;align-items:flex-start;
+  padding:5px 11px;border-radius:var(--r-md);line-height:1.3;text-align:left;white-space:normal;min-width:0}
+.pill.conta b{font-weight:var(--t-strong)}
+.pill.conta small{font-size:var(--fs-1);font-weight:400;opacity:.85}
 .pill.ok{background:var(--ok-wash);color:var(--ok)}
 .pill.warn{background:var(--warn-wash);color:var(--warn)}
 .pill.bad{background:var(--danger-wash);color:var(--danger)}
@@ -838,13 +863,14 @@ td.tacts{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-item
 </div>
 
 <div id="app"></div>
-<script src="auth.js?v=1.19.1"></script>
-<script src="logo.js?v=1.19.1"></script>
-<script src="fx.js?v=1.19.1"></script>
-<script src="store.js?v=1.19.1"></script>
-<script src="cloud.js?v=1.19.1"></script>
-<script src="i18n.js?v=1.19.1"></script>
-<script src="app.js?v=1.19.1"></script>
+<script src="auth.js?v=1.21.0"></script>
+<script src="logo.js?v=1.21.0"></script>
+<script src="fx.js?v=1.21.0"></script>
+<script src="traduz.js?v=1.21.0"></script>
+<script src="store.js?v=1.21.0"></script>
+<script src="cloud.js?v=1.21.0"></script>
+<script src="i18n.js?v=1.21.0"></script>
+<script src="app.js?v=1.21.0"></script>
 <script>
 /* PWA: registra o service worker e recarrega sozinho quando sai versão nova */
 if ('serviceWorker' in navigator) {
