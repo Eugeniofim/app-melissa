@@ -303,6 +303,19 @@ const STR = {
                  en: 'Could not reach the server. Check your connection.' },
   lgEsqueci:   { pt: 'Se não lembra a senha, use "Esqueci minha senha" aqui embaixo.',
                  en: 'If you do not remember it, use "I forgot my password" below.' },
+  /* ---- backup ----
+     O dado dela vive num servidor so. Sem uma copia fora dele, um problema
+     de conta apaga o negocio dela. Isto nao substitui backup automatico,
+     mas tira o "copia unica". */
+  bkpTit:      { pt: 'Backup dos seus dados', en: 'Back up your data' },
+  bkpHelp:     { pt: 'Baixa tudo para o seu computador: clientes, reservas, pagamentos, passeios e datas. Guarde numa pasta sua. Faça isso uma vez por semana na temporada.',
+                 en: 'Downloads everything to your computer: clients, bookings, payments, tours and dates. Keep it in your own folder. Do this weekly during the season.' },
+  bkpTudo:     { pt: 'Baixar tudo (arquivo de segurança)', en: 'Download everything (safety file)' },
+  bkpClientes: { pt: 'Baixar clientes e reservas (planilha)', en: 'Download clients and bookings (spreadsheet)' },
+  bkpFeito:    { pt: 'Backup baixado — guarde numa pasta sua', en: 'Backup downloaded — keep it in your own folder' },
+  bkpVazio:    { pt: 'Ainda não há nada para baixar.', en: 'Nothing to download yet.' },
+  bkpUltimo:   { pt: 'Último backup: {d}', en: 'Last backup: {d}' },
+  bkpNunca:    { pt: 'Você ainda não fez nenhum backup.', en: 'You have not made a backup yet.' },
   ressyncPerg: { pt: 'Buscar tudo de novo do servidor? Nada é apagado no servidor.',
                  en: 'Fetch everything from the server again? Nothing is deleted on the server.' },
   enFalhou:    { pt: 'Não consegui traduzir agora — o inglês anterior foi mantido. Salvo assim mesmo?',

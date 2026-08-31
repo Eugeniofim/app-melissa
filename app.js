@@ -1750,6 +1750,16 @@ function admSettings() {
       <button class="mini" id="tutAgain">${t('tutorialOn')}</button>
     </section>
     <section class="card">
+      <h3>${t('bkpTit')}</h3>
+      <p class="why">${t('bkpHelp')}</p>
+      <p class="why">${(() => { const d = localStorage.getItem('vi_bkp_em');
+        return d ? t('bkpUltimo', { d: new Date(+d).toLocaleString(LANG === 'pt' ? 'pt-BR' : 'en-GB') }) : t('bkpNunca'); })()}</p>
+      <div class="btnrow">
+        <button class="cta sm" id="bkpTudo">${t('bkpTudo')}</button>
+        <button class="mini" id="bkpCli">${t('bkpClientes')}</button>
+      </div>
+    </section>
+    <section class="card">
       <h3>${t('ressyncTit')}</h3>
       <p class="why">${t('ressyncHelp')}</p>
       <button class="cta sm" id="ressync">${t('ressyncBtn')}</button>
@@ -1791,6 +1801,51 @@ function admSettings() {
 
   /* Quando o aparelho fica com uma copia velha, isto resolve sem ela precisar
      mexer em configuracao de navegador. So apaga o que esta AQUI. */
+  /* ---- backup ----
+     Dois formatos de proposito: o JSON e para restaurar (tem tudo, inclusive
+     o que a planilha nao representa); a planilha e para ela abrir e ler. */
+  const baixaArquivo = (conteudo, nome, tipo) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\ufeff' + conteudo], { type: tipo }));
+    a.download = nome; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    try { localStorage.setItem('vi_bkp_em', String(Date.now())); } catch (e) {}
+  };
+  const hojeArq = () => new Date().toISOString().slice(0, 10);
+
+  $('#bkpTudo').onclick = () => {
+    if (!DB.bookings.length && !DB.tours.length) return toast(t('bkpVazio'));
+    const pacote = {
+      salvoEm: new Date().toISOString(),
+      versao: 'vi-backup-1',
+      passeios: DB.tours, regras: DB.rules, datas: DB.departures,
+      bloqueios: DB.blocks, cupons: DB.coupons,
+      configuracoes: DB.settings, reservas: DB.bookings,
+    };
+    baixaArquivo(JSON.stringify(pacote, null, 2), 'backup-voyages-' + hojeArq() + '.json', 'application/json');
+    toast(t('bkpFeito'));
+  };
+
+  $('#bkpCli').onclick = () => {
+    if (!DB.bookings.length) return toast(t('bkpVazio'));
+    const cols = ['Codigo','Nome','Email','WhatsApp','Instagram','Passeio','Data','Horario',
+                  'Pessoas','Total EUR','Pago EUR','Falta EUR','Situacao','Consentimento','Criada em'];
+    const esc2 = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const linhas = Bookings.all().map(b => {
+      const x = Tours.get(b.tourId);
+      const pago = Bookings.paid(b), falta = Math.max(0, (+b.total || 0) - pago);
+      return [b.code, b.name, b.email, b.whats, b.insta,
+              x ? (x.name.pt || '') : '', b.date, b.time, b.pax,
+              b.total, pago, falta,
+              b.status === 'cancelled' ? 'Cancelada' : (falta <= 0 ? 'Paga' : 'Em aberto'),
+              (b.consent && b.consent.ok) ? 'Sim' : 'Nao',
+              (b.createdAt || '').slice(0, 10)].map(esc2).join(';');
+    });
+    baixaArquivo([cols.join(';')].concat(linhas).join('\n'),
+                 'clientes-voyages-' + hojeArq() + '.csv', 'text/csv;charset=utf-8');
+    toast(t('bkpFeito'));
+  };
+
   $('#ressync').onclick = async () => {
     if (!confirm(t('ressyncPerg'))) return;
     try {
