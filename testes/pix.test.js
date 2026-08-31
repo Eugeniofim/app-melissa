@@ -85,5 +85,17 @@ t('o CNPJ dela gera um codigo com CRC valido', ()=>{
   assert.strictEqual(chama('pixCrc',c.slice(0,-4)), c.slice(-4));
 });
 
+t('basta a chave: nome e cidade sao opcionais', ()=>{
+  vm.runInContext("DB={settings:{pixKey:'58.728.880/0001-05'}}",ctx);
+  assert.strictEqual(vm.runInContext('pixDisponivel()',ctx), true, 'so a chave devia bastar');
+  const c=vm.runInContext("pixCopiaECola({chave:DB.settings.pixKey,nome:pixNome(),cidade:pixCidade(),valor:1220,txid:'VI1'})",ctx);
+  assert.ok(c && c.length>100, 'nao gerou o codigo');
+  assert.strictEqual(chama('pixCrc',c.slice(0,-4)), c.slice(-4), 'CRC invalido');
+});
+t('sem chave nenhuma, continua desligado', ()=>{
+  vm.runInContext("DB={settings:{}}",ctx);
+  assert.strictEqual(vm.runInContext('pixDisponivel()',ctx), false);
+});
+
 console.log(falhas?`\n${falhas} FALHA(S)`:'\ntudo passou');
 process.exit(falhas?1:0);

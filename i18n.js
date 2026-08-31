@@ -344,10 +344,10 @@ const STR = {
   admPay:     { pt: 'Como você recebe', en: 'How you get paid' },
   admPayHelp: { pt: 'Isto aparece para o cliente logo depois da reserva. Deixe em branco o que você não usa — o que estiver vazio simplesmente não aparece.',
                 en: 'This is shown to the client right after booking. Leave blank whatever you do not use — empty fields are not shown.' },
-  admPixKey:  { pt: 'Chave Pix', en: 'Pix key' },
+  admPixKey:  { pt: 'Chave Pix · é só isto que o Pix precisa', en: 'Pix key · this is all Pix needs' },
   admPixName: { pt: 'Nome no Pix', en: 'Pix account name' },
   admPixCity: { pt: 'Cidade da conta', en: 'Account city' },
-  admPixHelp: { pt: 'O nome e a cidade precisam ser os mesmos da sua conta bancária — o banco do cliente confere. Sem acento.',
+  admPixHelp: { pt: 'Nome e cidade são opcionais: quem paga vê o titular real que o banco resolve pela sua chave. Se preencher, use sem acento.',
                 en: 'Name and city must match your bank account — the payer bank checks them. No accents.' },
   /* ---- cobranca por Pix na tela do cliente ---- */
   pixTit:      { pt: 'Pagar por Pix', en: 'Pay with Pix' },

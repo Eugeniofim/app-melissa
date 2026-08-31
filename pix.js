@@ -85,7 +85,18 @@ function pixValorEmReais(eur) {
   return v > 0 ? v : null;
 }
 
+/* Basta a chave. Nome e cidade sao praticamente decorativos no Pix: o banco
+   de quem paga resolve o titular real pela propria chave. Exigir os tres era
+   travar o pagamento por um detalhe que o banco ignora. */
 function pixDisponivel() {
   const s = (typeof DB !== 'undefined' && DB && DB.settings) || {};
-  return !!(s.pixKey && s.pixName && s.pixCity);
+  return !!s.pixKey;
+}
+function pixNome() {
+  const s = (typeof DB !== 'undefined' && DB && DB.settings) || {};
+  return s.pixName || s.admName || 'MELISSA HALLAIS';
+}
+function pixCidade() {
+  const s = (typeof DB !== 'undefined' && DB && DB.settings) || {};
+  return s.pixCity || 'SAO PAULO';
 }

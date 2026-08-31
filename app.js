@@ -591,7 +591,7 @@ function comoPagar(b, x) {
      padrao exige os tres — e de cotacao, para converter o euro em real. */
   const brl = (typeof pixValorEmReais === 'function') ? pixValorEmReais(agora) : null;
   const codigoPix = (typeof pixDisponivel === 'function' && pixDisponivel() && brl)
-    ? pixCopiaECola({ chave: st.pixKey, nome: st.pixName, cidade: st.pixCity,
+    ? pixCopiaECola({ chave: st.pixKey, nome: pixNome(), cidade: pixCidade(),
                       valor: brl, txid: b.code })
     : null;
 
