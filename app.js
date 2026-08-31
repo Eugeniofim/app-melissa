@@ -121,7 +121,7 @@ function icsFor(b, x) {
 function vcfLink() {
   const v = ['BEGIN:VCARD', 'VERSION:3.0', 'FN:Melissa Hallais',
     'ORG:Voyages & Images', 'TEL;TYPE=CELL:' + DB.settings.whats,
-    'URL:https://eugeniofim.github.io/app-melissa/',
+    'URL:https://app.melissahallais.com/',
     'X-SOCIALPROFILE;TYPE=instagram:https://instagram.com/' + DB.settings.insta,
     'END:VCARD'].join('\r\n');
   return 'data:text/vcard;charset=utf-8,' + encodeURIComponent(v);
@@ -1720,7 +1720,7 @@ function admSettings() {
     <section class="card">
       <h3>${t('share')}</h3>
       <label class="fld">${t('shareLink')}
-        <div class="crow"><input id="shLink" readonly value="https://eugeniofim.github.io/app-melissa/">
+        <div class="crow"><input id="shLink" readonly value="https://app.melissahallais.com/">
         <button class="mini" id="shCopy">${t('copyLink')}</button></div></label>
       <div class="qrbox">
         <img src="qr-app.png" alt="QR" width="150" height="150">
