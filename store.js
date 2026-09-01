@@ -40,6 +40,15 @@ function _blank() {
               indo para cliente de verdade so depois que ela ler os textos e
               decidir ligar. */
            avisarClientes: false,
+           /* A voz dela dentro do e-mail. Vazio = usa o texto padrao.
+              Ela NAO edita o e-mail inteiro de proposito: o miolo tem os
+              dados da reserva, o Pix e o aviso de que o recibo nao e
+              comprovante de pagamento. Apagar esse aviso sem perceber faria
+              cliente que nao pagou achar que esta tudo certo. */
+           emailReciboIntro: { pt: '', en: '' },
+           emailReciboPS:    { pt: '', en: '' },
+           emailConfIntro:   { pt: '', en: '' },
+           emailConfPS:      { pt: '', en: '' },
            /* margem sobre a cotacao do BCE: cobre o spread de conversao e a
               taxa de quem processa. Sem ela, o euro que chega e menor. */
            /* A Melissa pediu para tirar a cotacao da tela. A chave antiga

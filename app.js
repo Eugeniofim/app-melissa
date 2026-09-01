@@ -1645,6 +1645,42 @@ function admAparencia() {
   });
 }
 
+/* Mostra o e-mail inteiro que o cliente recebe, com as partes dela editaveis
+   e o miolo travado. O miolo fica travado de proposito: ele carrega os dados
+   da reserva, o Pix, e a frase que diz que o recibo NAO e comprovante de
+   pagamento. Ela apagar essa frase sem perceber faria cliente que nao pagou
+   achar que esta tudo certo. */
+function cartaoEmail(qual) {
+  const s = DB.settings, ehRecibo = qual === 'recibo';
+  const iK = ehRecibo ? 'emailReciboIntro' : 'emailConfIntro';
+  const pK = ehRecibo ? 'emailReciboPS'    : 'emailConfPS';
+  const val = (k, l) => esc(((s[k] || {})[l]) || '');
+  const fixo = (txt) => `<p class="emfixo">${txt}</p>`;
+  return `
+    <div class="emcard">
+      <b class="emtit">${t(ehRecibo ? 'emRecTit' : 'emConfTit')}</b>
+      <small class="why">${t(ehRecibo ? 'emRecQuando' : 'emConfQuando')}</small>
+
+      ${fixo(t('emOla'))}
+      <label class="fld">${t('emIntro')} (PT)
+        <textarea id="${qual}IntroPt" rows="2" placeholder="${esc(t(ehRecibo ? 'emRecIntroPad' : 'emConfIntroPad'))}">${val(iK, 'pt')}</textarea></label>
+      <label class="fld">${t('emIntro')} (EN)
+        <textarea id="${qual}IntroEn" rows="2" placeholder="${esc(t(ehRecibo ? 'emRecIntroPadEn' : 'emConfIntroPadEn'))}">${val(iK, 'en')}</textarea></label>
+
+      ${fixo(t('emDados'))}
+      ${ehRecibo ? fixo(t('emPix')) : ''}
+      ${ehRecibo ? `<p class="emtrava">${t('emAviso')}</p>` : ''}
+
+      <label class="fld">${t('emPS')} (PT)
+        <textarea id="${qual}PsPt" rows="2" placeholder="${esc(t('emPSex'))}">${val(pK, 'pt')}</textarea></label>
+      <label class="fld">${t('emPS')} (EN)
+        <textarea id="${qual}PsEn" rows="2" placeholder="${esc(t('emPSexEn'))}">${val(pK, 'en')}</textarea></label>
+
+      ${fixo(t('emAssina'))}
+      <small class="why">${t('emVazio')}</small>
+    </div>`;
+}
+
 function admSettings() {
   admShell('settings', `
     <h1 class="pageh">${t('admSettings')}</h1>
@@ -1722,6 +1758,8 @@ function admSettings() {
       <label class="optin"><input type="checkbox" id="avCli" ${DB.settings.avisarClientes ? 'checked' : ''}>
         <span><b>${t('admCli')}</b><small>${t('admCliHelp')}</small></span></label>
       <small class="why">${t('admCliNota')}</small>
+      ${cartaoEmail('recibo')}
+      ${cartaoEmail('conf')}
       <div class="btnrow"><button class="cta sm" id="avSave">${t('saveBtn')}</button></div>
     </section>
     <section class="card">
@@ -1909,6 +1947,11 @@ function admSettings() {
     if (v && !/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(v)) return toast(t('admAvisoBad'));
     DB.settings.admEmail = v;
     DB.settings.avisarClientes = $('#avCli').checked;
+    const pega = (id) => $('#' + id).value.trim();
+    DB.settings.emailReciboIntro = { pt: pega('reciboIntroPt'), en: pega('reciboIntroEn') };
+    DB.settings.emailReciboPS    = { pt: pega('reciboPsPt'),    en: pega('reciboPsEn') };
+    DB.settings.emailConfIntro   = { pt: pega('confIntroPt'),   en: pega('confIntroEn') };
+    DB.settings.emailConfPS      = { pt: pega('confPsPt'),      en: pega('confPsEn') };
     save(); cloudPushState();
     toast(t('admAvisoSaved'));
   };
