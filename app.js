@@ -209,6 +209,7 @@ function route() {
     if (DB.settings.authRequired && !isLoggedIn()) return viewLogin('in');
     viewAdm(p[1] || 'today', p[2]);
   }
+  else if (p[0] === 'pago')  viewPago(decodeURIComponent((p[1] || '').split('?')[0]));
   else if (p[0] === 'about') viewAbout();
   else if (p[0] === 'tours') viewShowcase();
   else if (p[0] === 'tour')  viewTour(p[1]);
@@ -576,6 +577,66 @@ function prazoSaldo(b, saldo) {
     : t('balanceSoon', { v: eur(saldo) });
 }
 
+/* ---------- cartao pelo Stripe ----------
+   O app manda so o id da reserva. Quem decide o valor e a funcao no
+   servidor, que le a reserva no banco. Ver supabase/functions/pagar. */
+const PAGAR_URL = (typeof SUPA_URL !== 'undefined' ? SUPA_URL : '') + '/functions/v1/pagar';
+
+async function pagarNoServidor(corpo, segundos = 20) {
+  const ctrl = new AbortController();
+  const corta = setTimeout(() => ctrl.abort(), segundos * 1000);
+  try {
+    const r = await fetch(PAGAR_URL, {
+      method: 'POST', signal: ctrl.signal,
+      headers: { 'Content-Type': 'application/json',
+                 apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY },
+      body: JSON.stringify(corpo),
+    });
+    return await r.json();
+  } finally { clearTimeout(corta); }
+}
+
+function ligaBotaoCartao(b) {
+  const bt = $('#btCartao');
+  if (!bt) return;
+  bt.onclick = async () => {
+    bt.disabled = true;
+    const antes = bt.textContent;
+    bt.textContent = t('cardIndo');
+    try {
+      const r = await pagarNoServidor({ reservaId: b.id });
+      if (r && r.url) { location.href = r.url; return; }
+      toast(t('cardErro'));
+    } catch (e) { toast(t('cardErro')); }
+    /* so volta ao normal se NAO saiu daqui — senao pisca antes de trocar de pagina */
+    bt.disabled = false; bt.textContent = antes;
+  };
+}
+
+/* Volta do Stripe: #/pago/<codigo>?s=<sessao>.
+   Quem diz se foi pago e o servidor, perguntando ao Stripe — o navegador
+   nao pode ser a autoridade sobre isso. */
+async function viewPago(codigo) {
+  const sessao = (location.hash.split('?s=')[1] || '').split('&')[0];
+  app.innerHTML = `<div class="wrap narrow"><div class="paybox">
+    <h2 class="okh" id="pgTit">${t('pgConferindo')}</h2>
+    <p class="hint center" id="pgMsg">${t('pgEspere')}</p>
+    <a class="mini" href="#/tours">${t('backTours')}</a></div></div>`;
+  let r = null;
+  try { r = await pagarNoServidor({ verificar: decodeURIComponent(sessao) }, 25); }
+  catch (e) { r = null; }
+  const msg = $('#pgMsg'), tit = $('#pgTit');
+  if (!msg || !tit) return;   /* saiu da tela enquanto conferia */
+  if (r && r.pago) {
+    tit.textContent = t('pgOkTit');
+    msg.innerHTML = t('pgOk', { code: esc(codigo) });
+    if (typeof cloudPull === 'function') cloudPull();
+  } else {
+    tit.textContent = t('pgDuvidaTit');
+    msg.innerHTML = t('pgDuvida', { code: esc(codigo) });
+  }
+}
+
 function comoPagar(b, x) {
   const st = DB.settings || {};
   const agora = b.policy === 'split' ? Math.round(b.total / 2) : b.total;
@@ -605,7 +666,16 @@ function comoPagar(b, x) {
       <button class="cta sm" data-cp="${esc(codigoPix)}">${t('pixCopiar')}</button>
     </div>` : '';
 
-  const meios = blocoPix
+  /* Cartao. O botao so chama o servidor com o ID da reserva — o valor e
+     calculado la, nunca aqui: se o navegador dissesse quanto pagar, bastava
+     mexer no console para fazer o passeio por um euro. */
+  const blocoCartao = st.stripeAtivo ? `
+    <div class="cardbox">
+      <button class="cta sm" id="btCartao">${t('cardPagar', { v: eur(agora) })}</button>
+      <small class="why">${t('cardComo')}</small>
+    </div>` : '';
+
+  const meios = blocoCartao + blocoPix
               + (st.pixKey && !codigoPix ? linha(t('pixLbl'), st.pixKey, st.pixName) : '')
               + (st.iban ? linha(t('ibanLbl'), st.iban, st.ibanName) : '');
   return `
@@ -784,6 +854,7 @@ function renderBook() {
         <a class="mini" target="_blank" rel="noopener" href="${mapLink(noIdioma(x.meeting))}">${t('seeMap')}</a>
       </div>
       <button class="cta soft" id="again">${t('bookAgain')}</button>`;
+    ligaBotaoCartao(b);
     $$('[data-cp]', book).forEach(btn => btn.onclick = async () => {
       try { await navigator.clipboard.writeText(btn.dataset.cp); toast(t('copiedOk')); }
       catch (e) { const i = btn.previousElementSibling; i.select(); document.execCommand('copy'); toast(t('copiedOk')); }

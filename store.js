@@ -40,6 +40,9 @@ function _blank() {
               indo para cliente de verdade so depois que ela ler os textos e
               decidir ligar. */
            avisarClientes: false,
+           /* cartao pelo Stripe. Desligado ate a gente provar a cobranca
+              de ponta a ponta com dinheiro de verdade. */
+           stripeAtivo: false,
            /* A voz dela dentro do e-mail. Vazio = usa o texto padrao.
               Ela NAO edita o e-mail inteiro de proposito: o miolo tem os
               dados da reserva, o Pix e o aviso de que o recibo nao e
