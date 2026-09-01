@@ -362,6 +362,11 @@ const STR = {
   admPixCity: { pt: 'Cidade da conta', en: 'Account city' },
   admPixHelp: { pt: 'Nome e cidade são opcionais: quem paga vê o titular real que o banco resolve pela sua chave. Se preencher, use sem acento.',
                 en: 'Name and city must match your bank account — the payer bank checks them. No accents.' },
+  admCard:     { pt: 'Aceitar cartão (Stripe)', en: 'Accept card (Stripe)' },
+  admCardHelp: { pt: 'O cliente paga com cartão na hora, direto na sua conta Stripe. O app calcula o valor sozinho e registra o pagamento quando ele cai.',
+                 en: 'The client pays by card on the spot, straight into your Stripe account. The app works out the amount and records the payment when it lands.' },
+  admCardNota: { pt: 'O cartão não passa pelo app: o cliente paga na página do Stripe. Você não guarda número de cartão nenhum.',
+                 en: 'The card never touches the app: the client pays on Stripe\'s page. You never store card numbers.' },
   /* ---- cartao pelo Stripe ---- */
   cardPagar: { pt: 'Pagar {v} com cartão', en: 'Pay {v} by card' },
   cardComo:  { pt: 'Você vai para a página segura do Stripe. O cartão não passa por aqui.',

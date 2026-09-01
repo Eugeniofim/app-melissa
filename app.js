@@ -1811,6 +1811,10 @@ function admSettings() {
       </div>
       <label class="fld">${t('admPayNote')}<textarea id="pgNote" rows="3">${esc(DB.settings.payNote || '')}</textarea></label>
       <div class="rulesep"></div>
+      <label class="optin"><input type="checkbox" id="pgCard" ${DB.settings.stripeAtivo ? 'checked' : ''}>
+        <span><b>${t('admCard')}</b><small>${t('admCardHelp')}</small></span></label>
+      <small class="why">${t('admCardNota')}</small>
+      <div class="rulesep"></div>
       <label class="optin"><input type="checkbox" id="pgFx" ${DB.settings.exibirCotacao ? 'checked' : ''}>
         <span><b>${t('admFx')}</b><small>${t('admFxHelp')}</small></span></label>
       <div class="frow">
@@ -2006,6 +2010,7 @@ function admSettings() {
     DB.settings.iban     = $('#pgIban').value.trim();
     DB.settings.ibanName = $('#pgIbanName').value.trim();
     DB.settings.payNote  = $('#pgNote').value.trim();
+    DB.settings.stripeAtivo   = $('#pgCard').checked;
     DB.settings.exibirCotacao = $('#pgFx').checked;
     DB.settings.fxMargem = Math.max(0, Math.min(30, +$('#pgMargem').value || 0));
     save(); cloudPushState();
