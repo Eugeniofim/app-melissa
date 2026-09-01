@@ -1420,6 +1420,14 @@ function admBookings() {
       const st = situacaoPgto(b, today);
       const pill = `<span class="pill conta ${st.classe}"><b>${st.titulo}</b><small>${st.conta}</small></span>`;
       const act = st.aberta ? `<button class="mini strong" data-got="${esc(b.id)}">${t('gotBalance')}</button>` : '';
+      /* Avisar o cliente so aparece quando faz sentido: o aviso esta ligado,
+         a reserva tem e-mail, nao esta cancelada e ainda nao foi avisada.
+         Botao que nao pode dar em nada e so ruido no painel dela. */
+      const podeConf = DB.settings.avisarClientes && b.email
+                       && b.status !== 'cancelled' && !b.clienteConfirmado;
+      const conf = podeConf
+        ? `<button class="mini strong" data-conf="${esc(b.id)}">${t('confCliente')}</button>`
+        : (b.clienteConfirmado ? `<span class="mini done">${t('confClienteFeito')}</span>` : '');
       const first = b.name.split(' ')[0];
       const tourName = x ? (x.name[LANG] || x.name.pt) : '';
       const waText = (b.status !== 'cancelled' && due > 0)
@@ -1436,7 +1444,7 @@ function admBookings() {
         <div class="tinfo"><b>${esc(b.name)}</b>
           <small>${esc(x ? x.name.pt : '?')} · ${fmtDate(b.date)} ${esc(b.time)} · ${esc(b.pax)}p · <span class="mono">${esc(b.code)}</span></small></div>
         <b class="mono">${eur(b.total)}</b>${pill}
-        <div class="tacts" id="ta-${esc(b.id)}">${cobrar}${act}</div>
+        <div class="tacts" id="ta-${esc(b.id)}">${cobrar}${act}${conf}</div>
       </div>`;
     }).join('')}</div>`
     : `<div class="emptybox"><p>${t('emptyBookings')}</p></div>`}`);
@@ -1478,6 +1486,16 @@ function admBookings() {
 
   /* Dar baixa move dinheiro no extrato. Antes de gravar, perguntamos COMO
      ela recebeu — o botão antigo cravava "cartão" e o extrato saía mentindo. */
+  /* Avisar o cliente e irreversivel: o e-mail sai e nao volta. Por isso
+     pergunta antes, dizendo para quem vai. */
+  $$('[data-conf]').forEach(btn => btn.onclick = () => {
+    const b = Bookings.get(btn.dataset.conf);
+    if (!b) return;
+    if (!confirm(t('confClienteAsk', { email: b.email }))) return;
+    Bookings.confirmarCliente(b.id);
+    toast(t('confClienteOk', { name: b.name.split(' ')[0] }));
+    admBookings();
+  });
   $$('[data-got]').forEach(btn => btn.onclick = () => {
     const id = btn.dataset.got;
     const cx = document.getElementById('ta-' + id);
@@ -1700,6 +1718,10 @@ function admSettings() {
       <label class="fld">${t('admAvisoMail')}<input id="avEmail" type="email"
         value="${esc(DB.settings.admEmail || '')}" placeholder="voce@exemplo.com"></label>
       <small class="why">${t('admAvisoNota')}</small>
+      <div class="rulesep"></div>
+      <label class="optin"><input type="checkbox" id="avCli" ${DB.settings.avisarClientes ? 'checked' : ''}>
+        <span><b>${t('admCli')}</b><small>${t('admCliHelp')}</small></span></label>
+      <small class="why">${t('admCliNota')}</small>
       <div class="btnrow"><button class="cta sm" id="avSave">${t('saveBtn')}</button></div>
     </section>
     <section class="card">
@@ -1886,6 +1908,7 @@ function admSettings() {
     const v = $('#avEmail').value.trim();
     if (v && !/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(v)) return toast(t('admAvisoBad'));
     DB.settings.admEmail = v;
+    DB.settings.avisarClientes = $('#avCli').checked;
     save(); cloudPushState();
     toast(t('admAvisoSaved'));
   };

@@ -36,6 +36,10 @@ function _blank() {
            /* para onde vai o aviso de reserva nova. Vazio = ela ainda nao
               preencheu; quem manda o e-mail e o robo, fora do navegador. */
            admEmail: '',
+           /* e-mail PARA O CLIENTE. Nasce desligado de proposito: e-mail
+              indo para cliente de verdade so depois que ela ler os textos e
+              decidir ligar. */
+           avisarClientes: false,
            /* margem sobre a cotacao do BCE: cobre o spread de conversao e a
               taxa de quem processa. Sem ela, o euro que chega e menor. */
            /* A Melissa pediu para tirar a cotacao da tela. A chave antiga
@@ -408,6 +412,9 @@ const Bookings = {
       consent: consent ? { ok: true, at: new Date().toISOString(), src: 'checkout' } : { ok: false },
       payments: [], status: 'confirmed',
       createdAt: new Date().toISOString(), origin: origin || 'site',
+      /* Em que idioma ele reservou. Sem isto o e-mail de recibo sai em
+         portugues para um frances que leu a tela inteira em ingles. */
+      lang: (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'pt',
     };
     /* Aqui havia um pagamento inventado: toda reserva nascia marcada como paga
        no cartao. O painel, o caixa e os relatorios contavam dinheiro que nunca
@@ -423,6 +430,22 @@ const Bookings = {
 
   /* Reserva fechada fora do app (WhatsApp, Instagram, na rua). A Melissa
      informa o que combinou e quanto ja recebeu — nada e inventado aqui. */
+  /* Ela aperta "avisar cliente" quando o dinheiro caiu de verdade. Isto so
+     MARCA a reserva; quem manda o e-mail e o robo, de meia em meia hora.
+     O e-mail nao pode sair daqui: mandar exige a chave do Resend, e chave
+     dentro do navegador fica publica para qualquer um.
+
+     Nao ha "desmarcar": uma vez que o e-mail saiu, ele saiu. Deixar
+     desmarcar so criaria um botao que promete desfazer o que nao volta. */
+  confirmarCliente(id) {
+    const b = Bookings.get(id);
+    if (!b || b.clienteConfirmado) return null;
+    b.clienteConfirmado = { em: new Date().toISOString() };
+    localStorage.setItem(DB_KEY, JSON.stringify(DB));
+    if (typeof cloudUpdateBooking === 'function') cloudUpdateBooking(b);
+    return b;
+  },
+
   criarManual({ tourId, date, time, name, whats, email, pax, total, recebido, metodo }) {
     const b = {
       id: uid(), code: bookCode(), tourId, date, time,
