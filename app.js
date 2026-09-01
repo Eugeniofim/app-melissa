@@ -2367,7 +2367,14 @@ let pendingSync = false;
 function isBusyEditing() {
   const h = location.hash;
   if (document.querySelector('.coach')) return true;                 // tutorial aberto
-  if (h.startsWith('#/tour/') && viewTour._s && viewTour._s.step > 1) return true;  // checkout
+  /* Checkout. A escolha de data e horario acontece no passo 1, e exigir
+     step > 1 aqui deixava justamente ela desprotegida: o cliente clicava
+     "05/12", a sincronia da nuvem ou a cotacao chegava um segundo depois,
+     chamava route(), a tela voltava para "Escolha uma data" e a escolha
+     dele sumia. Acontecia nos primeiros segundos da pagina — exatamente
+     enquanto ele escolhia. Basta ter comecado a escolher para estar ocupado. */
+  const S = viewTour._s;
+  if (h.startsWith('#/tour/') && S && (S.step > 1 || S.date || S.time)) return true;
   if (/^#\/adm\/tours\//.test(h)) return true;                      // editando passeio
   const ae = document.activeElement;
   if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return true; // digitando
