@@ -197,7 +197,15 @@ const Coach = {
 
 /* ---------- roteador ---------- */
 addEventListener('hashchange', route);
-function go(h) { location.hash = h; }
+/* Se o hash ja e esse, o navegador NAO dispara hashchange e a tela nao
+   redesenha. Era o login que dizia "bem-vindo" e ficava parado: o app
+   instalado no celular reabre no ultimo endereco (#/adm/today), mostra o
+   login ali mesmo sem mudar o hash, e depois de entrar go('/adm/today')
+   nao mudava nada — o evento nunca vinha. Mesmo destino = redesenha na mao. */
+function go(h) {
+  if (location.hash === '#' + h) route();
+  else location.hash = h;
+}
 function route() {
   Coach.hide();
   const h = location.hash.slice(2) || '';
