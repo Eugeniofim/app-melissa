@@ -2378,10 +2378,13 @@ function viewNewPass() {
     if (a1 !== b1)      { $('#npB').focus(); return toast(t('npMismatch')); }
     go2.disabled = true; go2.textContent = t('loginWait');
     const r = await authSetPassword(a1);
-    go2.disabled = false; go2.textContent = t('npSave');
-    if (!r.ok) return toast(r.error || t('npFail'));
-    /* a sessão do link já vale como login: aproveita e assume a posse */
+    if (!r.ok) { go2.disabled = false; go2.textContent = t('npSave');
+                 return toast(r.error || t('npFail')); }
+    /* A sessão do link já vale como login: aproveita e assume a posse.
+       O botão só volta ao normal DEPOIS disto — soltar antes deixava a tela
+       parada durante uma chamada de rede, e parecia que nada aconteceu. */
     const own = await claimOwnership();
+    go2.disabled = false; go2.textContent = t('npSave');
     if (own.taken) { await authSignOut(); return toast(t('loginTaken')); }
     DB.settings.authRequired = true; save();
     toast(t('npOk'));
@@ -2442,7 +2445,11 @@ function viewLogin(mode) {
     busy(false);
     if (!r.ok) { mostraErro(traduzErro(r.error)); return; }
     if (r.needsConfirm) return toast(t('loginConfirm', { e: email }));
+    /* Isto e rede: sem o busy() a tela ficava parada, sem nada girando,
+       e parecia que o botao nao tinha funcionado. */
+    busy(true);
     const own = await claimOwnership();
+    busy(false);
     if (own.taken) { await authSignOut(); mostraErro(t('loginTaken')); return; }
 
     /* PRIMEIRO buscar, DEPOIS abrir o painel.

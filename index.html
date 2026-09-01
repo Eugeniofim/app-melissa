@@ -25,7 +25,7 @@
 (function(){try{var t=localStorage.getItem('vi_tema');
 if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="tokens.css?v=1.46.0">
+<link rel="stylesheet" href="tokens.css?v=1.47.0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23064c3f'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='%23FFD23F' font-family='sans-serif' font-weight='700'%3EM%3C/text%3E%3C/svg%3E">
 <style>
 /* ============ base ============ */
@@ -554,6 +554,29 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{
 .wd.on{background:var(--accent);color:var(--accent-ink)}
 .ruleform{margin-top:8px;padding-top:10px;border-top:1px solid var(--line);font-size:var(--fs-3)}
 .rulesep{border-top:1px solid var(--line);margin:14px 0 10px}
+/* ---------- dedo não é seta ----------
+   No celular os alvos estavam entre 18 e 38 pixels. A ponta do dedo cobre
+   cerca de 44 — abaixo disso ela toca e o app não responde, ou responde no
+   botão errado. 44px é a regra da Apple e do Google, e vale para TODOS,
+   não só para quem tem dedo grande.
+
+   `pointer: coarse` pega quem usa o dedo (celular, tablet) sem inchar a
+   tela de quem usa mouse. */
+@media (pointer: coarse){
+  .langs button, .novax, .icobtn{
+    min-height:44px; min-width:44px;
+    display:inline-flex; align-items:center; justify-content:center }
+  .chip, .cta, .cta.sm, .mini, .coach-next, .coach-skip, .adm-entry, .wd{
+    min-height:44px; display:inline-flex; align-items:center; justify-content:center }
+  /* links que agem como botão precisam virar caixa para a altura valer */
+  .linkmap, a.mini, a.cta-ish{
+    min-height:44px; display:inline-flex; align-items:center }
+  /* o campo também: teclado de celular precisa de alvo grande */
+  input, select, textarea, button{ font-size:16px }   /* <16px o iOS dá zoom sozinho */
+  .fld input, .fld select{ min-height:44px }
+  /* espaço entre alvos vizinhos, senão 44px encostado em 44px ainda erra */
+  .chips, .langs, .btnrow, .tacts, .okrow{ gap:10px }
+}
 /* barra de versao nova — fixa embaixo, acima de tudo, some por padrao */
 .novabar{position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;display:none;
   align-items:center;gap:12px;padding:12px 14px;border-radius:12px;
@@ -1029,17 +1052,17 @@ td.tacts{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-item
 </div>
 
 <div id="app"></div>
-<script src="auth.js?v=1.46.0"></script>
-<script src="logo.js?v=1.46.0"></script>
-<script src="fx.js?v=1.46.0"></script>
-<script src="qrcode.js?v=1.46.0"></script>
-<script src="qr.js?v=1.46.0"></script>
-<script src="pix.js?v=1.46.0"></script>
-<script src="traduz.js?v=1.46.0"></script>
-<script src="store.js?v=1.46.0"></script>
-<script src="cloud.js?v=1.46.0"></script>
-<script src="i18n.js?v=1.46.0"></script>
-<script src="app.js?v=1.46.0"></script>
+<script src="auth.js?v=1.47.0"></script>
+<script src="logo.js?v=1.47.0"></script>
+<script src="fx.js?v=1.47.0"></script>
+<script src="qrcode.js?v=1.47.0"></script>
+<script src="qr.js?v=1.47.0"></script>
+<script src="pix.js?v=1.47.0"></script>
+<script src="traduz.js?v=1.47.0"></script>
+<script src="store.js?v=1.47.0"></script>
+<script src="cloud.js?v=1.47.0"></script>
+<script src="i18n.js?v=1.47.0"></script>
+<script src="app.js?v=1.47.0"></script>
 <script>
 /* PWA — como a versão nova chega no celular dela.
 

@@ -8,6 +8,25 @@
 const AUTH_KEY = 'vi_session_v1';
 let SESSION = null;   // { access_token, refresh_token, expires_at, user }
 
+/* Prazo para TODA chamada de rede daqui.
+
+   Sem isto, um `fetch` num celular com sinal fraco fica pendurado para
+   sempre: ela aperta ENTRAR, a roda gira e nunca acontece nada. Era esse o
+   "login que não entra". O cloud.js já tinha prazo; o auth.js tinha SETE
+   chamadas sem nenhum, e é justamente por elas que ela passa para entrar.
+
+   12s é longo o bastante para uma rede ruim e curto o bastante para ela
+   receber uma resposta em vez de encarar uma tela parada. */
+const REDE_PRAZO = 12000;
+
+async function comPrazo(url, opts = {}) {
+  const ctrl = new AbortController();
+  const corta = setTimeout(() => ctrl.abort(), REDE_PRAZO);
+  try {
+    return await fetch(url, { signal: ctrl.signal, ...opts });
+  } finally { clearTimeout(corta); }
+}
+
 function authLoad() {
   try { SESSION = JSON.parse(localStorage.getItem(AUTH_KEY)) || null; } catch (e) { SESSION = null; }
   return SESSION;
@@ -23,7 +42,7 @@ function authToken()  { return SESSION ? SESSION.access_token : null; }
 function isLoggedIn() { return !!authToken(); }
 
 async function authFetch(path, body) {
-  const r = await fetch(SUPA_URL + '/auth/v1/' + path, {
+  const r = await comPrazo(SUPA_URL + '/auth/v1/' + path, {
     method: 'POST',
     headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -43,7 +62,7 @@ async function authSignUp(email, password) {
 
 /* entrar */
 async function authSignIn(email, password) {
-  const r = await fetch(SUPA_URL + '/auth/v1/token?grant_type=password', {
+  const r = await comPrazo(SUPA_URL + '/auth/v1/token?grant_type=password', {
     method: 'POST',
     headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -61,13 +80,19 @@ function sessionFrom(d) {
 
 async function authRefresh() {
   if (!SESSION || !SESSION.refresh_token) return false;
-  const r = await fetch(SUPA_URL + '/auth/v1/token?grant_type=refresh_token', {
-    method: 'POST',
-    headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: SESSION.refresh_token }),
-  });
+  /* Rede fora do ar NAO e sessao invalida: se estourar o prazo, devolve
+     false e MANTEM a sessao. Apagar aqui derrubaria ela do app so porque
+     o metro entrou no tunel. */
+  let r;
+  try {
+    r = await comPrazo(SUPA_URL + '/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST',
+      headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: SESSION.refresh_token }),
+    });
+  } catch (e) { return false; }
   if (!r.ok) { authSave(null); return false; }
-  authSave(sessionFrom(await r.json()));
+  try { authSave(sessionFrom(await r.json())); } catch (e) { return false; }
   return true;
 }
 
@@ -80,7 +105,7 @@ async function authEnsure() {
 
 async function authSignOut() {
   try {
-    await fetch(SUPA_URL + '/auth/v1/logout', {
+    await comPrazo(SUPA_URL + '/auth/v1/logout', {
       method: 'POST',
       headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + authToken() },
     });
@@ -126,7 +151,7 @@ function authFromHash() {
 async function authSetPassword(pass) {
   if (!authToken()) return { ok: false, error: 'sem sessão' };
   try {
-    const r = await fetch(SUPA_URL + '/auth/v1/user', {
+    const r = await comPrazo(SUPA_URL + '/auth/v1/user', {
       method: 'PUT',
       headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + authToken(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: pass }),
@@ -143,13 +168,13 @@ async function claimOwnership() {
   if (!isLoggedIn()) return { ok: false };
   const h = { apikey: SUPA_KEY, Authorization: 'Bearer ' + authToken(), 'Content-Type': 'application/json' };
   try {
-    const cur = await fetch(SUPA_URL + '/rest/v1/app_config?id=eq.1&select=owner_uid', { headers: h })
+    const cur = await comPrazo(SUPA_URL + '/rest/v1/app_config?id=eq.1&select=owner_uid', { headers: h })
       .then(r => r.ok ? r.json() : null);
     if (!cur) return { ok: false, noTable: true };           // SQL ainda não aplicado
     const owner = cur[0] && cur[0].owner_uid;
     if (owner && owner !== authUser().id) return { ok: false, taken: true };
     if (owner === authUser().id) return { ok: true, already: true };
-    const r = await fetch(SUPA_URL + '/rest/v1/app_config?id=eq.1', {
+    const r = await comPrazo(SUPA_URL + '/rest/v1/app_config?id=eq.1', {
       method: 'PATCH', headers: { ...h, Prefer: 'return=minimal' },
       body: JSON.stringify({ owner_uid: authUser().id }),
     });
