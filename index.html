@@ -25,7 +25,7 @@
 (function(){try{var t=localStorage.getItem('vi_tema');
 if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="tokens.css?v=1.43.0">
+<link rel="stylesheet" href="tokens.css?v=1.45.0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23064c3f'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='%23FFD23F' font-family='sans-serif' font-weight='700'%3EM%3C/text%3E%3C/svg%3E">
 <style>
 /* ============ base ============ */
@@ -554,6 +554,19 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{
 .wd.on{background:var(--accent);color:var(--accent-ink)}
 .ruleform{margin-top:8px;padding-top:10px;border-top:1px solid var(--line);font-size:var(--fs-3)}
 .rulesep{border-top:1px solid var(--line);margin:14px 0 10px}
+/* barra de versao nova — fixa embaixo, acima de tudo, some por padrao */
+.novabar{position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;display:none;
+  align-items:center;gap:12px;padding:12px 14px;border-radius:12px;
+  background:var(--card);border:1px solid var(--line);
+  box-shadow:0 10px 30px rgba(0,0,0,.28)}
+.novabar.on{display:flex}
+.novatxt{flex:1;min-width:0}
+.novatxt b{display:block;font-size:var(--fs-3)}
+.novatxt small{display:block;opacity:.7;font-size:var(--fs-4, 12px)}
+.novabar .cta{flex:0 0 auto}
+.novax{flex:0 0 auto;background:none;border:0;color:inherit;opacity:.5;
+  font-size:20px;line-height:1;cursor:pointer;padding:4px 6px}
+@media (min-width:640px){ .novabar{left:auto;right:20px;max-width:420px} }
 .cardbox{margin:0 0 14px}
 .cardbox .cta{width:100%}
 .cardbox .why{margin-top:6px;text-align:center}
@@ -981,6 +994,19 @@ td.tacts{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-item
 </head>
 <body>
 
+<!-- Versão nova disponível. Só aparece quando ela está no meio de alguma
+     coisa — fora isso o app se atualiza sozinho, sem interromper. Fica fixa
+     embaixo para ser vista em qualquer tela: escondida num canto do painel,
+     ela nunca veria. -->
+<div class="novabar" id="novaBar">
+  <div class="novatxt">
+    <b>Tem uma versão nova</b>
+    <small>Seus dados ficam como estão. Leva um segundo.</small>
+  </div>
+  <button class="cta sm" id="btNova">Atualizar</button>
+  <button class="novax" id="btNovaX" aria-label="Agora não">×</button>
+</div>
+
 <!-- ABERTURA — pintada no primeiro quadro, antes do JS.
      O símbolo se desenha traço a traço, girando em 3D; depois vem a palavra. -->
 <div id="splash" class="splash">
@@ -1003,28 +1029,78 @@ td.tacts{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-item
 </div>
 
 <div id="app"></div>
-<script src="auth.js?v=1.43.0"></script>
-<script src="logo.js?v=1.43.0"></script>
-<script src="fx.js?v=1.43.0"></script>
-<script src="qrcode.js?v=1.43.0"></script>
-<script src="qr.js?v=1.43.0"></script>
-<script src="pix.js?v=1.43.0"></script>
-<script src="traduz.js?v=1.43.0"></script>
-<script src="store.js?v=1.43.0"></script>
-<script src="cloud.js?v=1.43.0"></script>
-<script src="i18n.js?v=1.43.0"></script>
-<script src="app.js?v=1.43.0"></script>
+<script src="auth.js?v=1.45.0"></script>
+<script src="logo.js?v=1.45.0"></script>
+<script src="fx.js?v=1.45.0"></script>
+<script src="qrcode.js?v=1.45.0"></script>
+<script src="qr.js?v=1.45.0"></script>
+<script src="pix.js?v=1.45.0"></script>
+<script src="traduz.js?v=1.45.0"></script>
+<script src="store.js?v=1.45.0"></script>
+<script src="cloud.js?v=1.45.0"></script>
+<script src="i18n.js?v=1.45.0"></script>
+<script src="app.js?v=1.45.0"></script>
 <script>
-/* PWA: registra o service worker e recarrega sozinho quando sai versão nova */
+/* PWA — como a versão nova chega no celular dela.
+
+   No laptop a pessoa recarrega a página o tempo todo, então a versão nova
+   sempre chega. No celular o app fica congelado na memória por dias e nunca
+   recarrega. Três coisas precisam estar certas ao mesmo tempo:
+
+   1. updateViaCache:'none' — sem isto o navegador guarda o PRÓPRIO sw.js
+      por até 24h: o app pergunta "tem versão nova?", recebe o arquivo velho
+      de cache e conclui que não tem. É a causa raiz; sem ela o resto não
+      adianta.
+   2. Conferir quando ela VOLTA pro app, não só de hora em hora — no celular
+      o timer pode não rodar em segundo plano.
+   3. Não recarregar em cima dela. Se estiver digitando uma reserva ou no
+      meio do checkout, a página não pode sumir. Aí aparece uma barra e ela
+      decide quando. */
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').then((reg) => {
-    setInterval(() => reg.update(), 60 * 60 * 1000);   // confere 1x por hora
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
+    const confere = () => reg.update().catch(() => {});
+    setInterval(confere, 30 * 60 * 1000);
+    /* o iOS dispara visibilitychange em rajada; a trava evita enxurrada */
+    let ultima = 0;
+    const aoVoltar = () => {
+      if (document.hidden) return;
+      const agora = Date.now();
+      if (agora - ultima < 60000) return;
+      ultima = agora; confere();
+    };
+    document.addEventListener('visibilitychange', aoVoltar);
+    addEventListener('focus', aoVoltar);
+    addEventListener('online', () => { ultima = 0; aoVoltar(); });
   }).catch(() => {});
-  let reloaded = false;
+
+  /* Na PRIMEIRA visita o service worker também assume o controle, e o
+     controllerchange dispara igual. Sem esta trava, todo cliente novo veria
+     "tem uma versão nova" logo de cara — ou levaria um recarregamento à toa
+     no meio da primeira olhada nos passeios. Só é atualização se já havia
+     um controlador antes. */
+  const jaTinhaControlador = !!navigator.serviceWorker.controller;
+  let trocou = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloaded) return; reloaded = true; location.reload();
+    if (!jaTinhaControlador) return;
+    if (trocou) return; trocou = true;
+    /* ocupada = digitando, escolhendo data, ou no meio do checkout.
+       isBusyEditing vem do app.js e é a mesma trava que impede a sincronia
+       de apagar a escolha do cliente. */
+    const ocupada = (typeof isBusyEditing === 'function') && isBusyEditing();
+    if (!ocupada) { location.reload(); return; }
+    const barra = document.getElementById('novaBar');
+    if (barra) barra.classList.add('on');
+    else location.reload();
   });
 }
+/* a barra some se ela fechar; volta na próxima versão */
+addEventListener('DOMContentLoaded', () => {
+  const barra = document.getElementById('novaBar');
+  if (!barra) return;
+  const bt = document.getElementById('btNova'), x = document.getElementById('btNovaX');
+  if (bt) bt.onclick = () => location.reload();
+  if (x)  x.onclick  = () => barra.classList.remove('on');
+});
 /* guarda o convite de instalação (Android / Chrome no laptop) */
 window.__installEvt = null;
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.__installEvt = e; });
