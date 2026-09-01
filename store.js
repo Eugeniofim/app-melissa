@@ -33,6 +33,9 @@ function _blank() {
            /* pixName e pixCity sao exigidos pelo padrao do BR Code:
               sem eles o banco recusa o codigo. */
            pixKey: '', pixName: '', pixCity: '', iban: '', ibanName: '', payNote: '',
+           /* para onde vai o aviso de reserva nova. Vazio = ela ainda nao
+              preencheu; quem manda o e-mail e o robo, fora do navegador. */
+           admEmail: '',
            /* margem sobre a cotacao do BCE: cobre o spread de conversao e a
               taxa de quem processa. Sem ela, o euro que chega e menor. */
            /* A Melissa pediu para tirar a cotacao da tela. A chave antiga

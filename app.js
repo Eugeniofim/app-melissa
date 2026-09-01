@@ -1695,6 +1695,14 @@ function admSettings() {
       <button class="cta sm" id="pgSave">${t('saveBtn')}</button>
     </section>
     <section class="card">
+      <h3>${t('admAviso')}</h3>
+      <p class="why">${t('admAvisoHelp')}</p>
+      <label class="fld">${t('admAvisoMail')}<input id="avEmail" type="email"
+        value="${esc(DB.settings.admEmail || '')}" placeholder="voce@exemplo.com"></label>
+      <small class="why">${t('admAvisoNota')}</small>
+      <div class="btnrow"><button class="cta sm" id="avSave">${t('saveBtn')}</button></div>
+    </section>
+    <section class="card">
       <h3>${t('admAbout')}</h3>
       <p class="why">${t('admAboutHelp')}</p>
       <div class="ph-edit">
@@ -1871,6 +1879,15 @@ function admSettings() {
     DB.settings.fxMargem = Math.max(0, Math.min(30, +$('#pgMargem').value || 0));
     save(); cloudPushState();
     toast(t('payFieldsSaved'));
+  };
+  /* e-mail de aviso. Vazio e permitido: quer dizer "nao quero ser avisada".
+     O que nao pode e salvar um endereco torto e ela achar que esta avisada. */
+  $('#avSave').onclick = () => {
+    const v = $('#avEmail').value.trim();
+    if (v && !/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(v)) return toast(t('admAvisoBad'));
+    DB.settings.admEmail = v;
+    save(); cloudPushState();
+    toast(t('admAvisoSaved'));
   };
   /* foto + história */
   let abNew = null;
