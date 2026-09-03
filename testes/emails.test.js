@@ -1,12 +1,14 @@
-/* O cartão que mostra à Melissa o e-mail que o cliente recebe.
+/* O cartão de Ajustes que mostra à Melissa o e-mail que o cliente recebe.
 
-   Ela edita a abertura e o recado final. O MIOLO é travado de propósito:
-   carrega os dados da reserva, o Pix, e a frase que diz que o recibo não é
-   comprovante de pagamento. Se essa frase virasse campo editável, ela poderia
-   apagá-la sem perceber — e quem não pagou acharia que está tudo certo.
-
-   Este teste garante que os campos existem, que os pedaços travados aparecem
-   como texto e NÃO como campo, e que o aviso continua na tela. */
+   Regra dela (03/09/2026): o cliente recebe UMA mensagem, e só quando pagou.
+   Não existe mais recibo automático nem botão "Avisar cliente". Este teste
+   garante que:
+   - o cartão da confirmação tem os quatro campos que ela edita;
+   - os pedaços fixos (dados da reserva, nota do saldo) aparecem como TEXTO,
+     não como campo — para ela não apagar sem perceber;
+   - o cartão da cobrança do saldo existe e não tem campo nenhum;
+   - o que ela escreveu aparece no campo, escapado;
+   - nada no app fala mais em recibo ou em avisar cliente. */
 const fs = require('fs'), assert = require('assert');
 const SERVE = [__dirname + '/..', __dirname + '/../serve'].find(d => fs.existsSync(d + '/app.js'));
 const src = fs.readFileSync(SERVE + '/app.js', 'utf8');
@@ -15,14 +17,10 @@ const i18n = fs.readFileSync(SERVE + '/i18n.js', 'utf8');
 const ini = src.indexOf('function cartaoEmail'), fim = src.indexOf('function admSettings', ini);
 assert.ok(ini > 0 && fim > ini, 'nao achei cartaoEmail no app.js');
 
-/* mundo mínimo: os textos reais do i18n e um DB.settings vazio */
 const mi = i18n.indexOf('const STR'), mf = i18n.indexOf('function t(', mi);
 assert.ok(mi >= 0 && mf > mi, 'nao achei o dicionario no i18n.js');
-/* `const` dentro de eval nao escapa para o escopo de fora — o dicionario
-   ficaria invisivel e t() devolveria a propria chave, fazendo o teste
-   comparar lixo com lixo e passar sem conferir nada. */
 eval(i18n.slice(mi, mf).replace('const STR', 'globalThis.STR'));
-assert.ok(globalThis.STR && STR.emAviso, 'o dicionario nao carregou');
+assert.ok(globalThis.STR && STR.emConfTit, 'o dicionario nao carregou');
 global.LANG = 'pt';
 global.esc = (v) => String(v == null ? '' : v)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -39,42 +37,35 @@ const ok = (nome, cond, det) => {
   else { falhas++; console.log('  FALHA ' + nome + (det ? ' — ' + det : '')); }
 };
 
-console.log('cartao do e-mail do cliente');
-
-const rec = cartaoEmail('recibo');
-const cnf = cartaoEmail('conf');
-
-/* o que ela PODE editar */
-for (const id of ['reciboIntroPt', 'reciboIntroEn', 'reciboPsPt', 'reciboPsEn'])
-  ok('recibo tem o campo ' + id, rec.includes('id="' + id + '"'));
+console.log('cartao do e-mail de confirmacao');
+const cnf = cartaoEmail();
 for (const id of ['confIntroPt', 'confIntroEn', 'confPsPt', 'confPsEn'])
-  ok('confirmacao tem o campo ' + id, cnf.includes('id="' + id + '"'));
+  ok('tem o campo ' + id, cnf.includes('id="' + id + '"'));
+ok('nao tem campo de recibo', !/recibo/i.test(cnf));
+ok('mostra que leva os dados da reserva (como texto)', cnf.includes('<p class="emfixo">' + t('emDados')));
+ok('mostra a nota do saldo (como texto)', cnf.includes('<p class="emfixo">' + t('emSaldoNota')));
+ok('diz quando sai: quando o pagamento entra', cnf.includes(t('emConfQuando')));
+ok('so quatro campos editaveis', (cnf.match(/<textarea/g) || []).length === 4);
 
-/* o que ela NAO pode editar — tem que aparecer, e como texto */
-ok('recibo mostra o aviso de "nao e pagamento"', rec.includes('emtrava'),
-   'sem isso ela nao sabe que a frase existe');
-/* o proprio elemento do aviso, e so ele: se um dia virar textarea/input,
-   ela poderia apagar a frase sem perceber */
-const soOAviso = (rec.match(/<p class="emtrava">([^]*?)<\/p>/) || [])[1] || '';
-ok('o aviso existe como paragrafo de texto', soOAviso.length > 20, 'nao achei o paragrafo');
-ok('o aviso NAO e um campo editavel', !/<(textarea|input)/.test(soOAviso),
-   'virou campo: ela poderia apagar a frase');
-ok('o aviso diz o que esta em jogo', /não sai|stays/.test(soOAviso),
-   'ela precisa entender por que aquilo e travado');
-ok('recibo mostra que leva o Pix', rec.includes(t('emPix')));
-ok('recibo mostra que leva os dados da reserva', rec.includes(t('emDados')));
-ok('confirmacao NAO promete Pix', !cnf.includes(t('emPix')),
-   'a confirmacao e depois do pagamento');
+console.log('cartao da cobranca do saldo');
+const sal = cartaoSaldo();
+ok('existe e diz 30 dias antes', sal.includes(t('emSaldoTit')) && /30 dias/.test(t('emSaldoTit')));
+ok('NAO tem campo editavel', !/<(textarea|input)/.test(sal), 'e um e-mail de conta, nao de conversa');
 
-/* a confirmacao nao pode carregar o aviso do recibo */
-ok('confirmacao NAO leva o aviso de "nao e pagamento"', !cnf.includes('emtrava'),
-   'ali o pagamento ja chegou');
+console.log('o que ela escreveu');
+DB.settings.emailConfIntro = { pt: 'Oi <b>voce</b>!', en: 'Hi!' };
+DB.settings.emailConfPS = { pt: 'Leve casaco', en: 'Bring a coat' };
+const comTexto = cartaoEmail();
+ok('abertura dela aparece no campo', comTexto.includes('Oi &lt;b&gt;voce&lt;/b&gt;!'));
+ok('recado dela aparece no campo', comTexto.includes('>Leve casaco<'));
+ok('texto dela vai escapado', !comTexto.includes('<b>voce</b>'));
 
-/* valor que ela digitou volta escapado no campo */
-DB.settings = { emailReciboIntro: { pt: '<script>x</script>"aspas"' } };
-const comTexto = cartaoEmail('recibo');
-ok('texto dela volta escapado para a tela',
-   !comTexto.includes('<script>') && comTexto.includes('&lt;script&gt;'));
+console.log('o fluxo antigo sumiu de vez');
+ok('app nao tem mais botao "avisar cliente"', !src.includes('data-conf') && !src.includes('confirmarCliente'));
+ok('app nao monta mais cartao de recibo', !src.includes("cartaoEmail('recibo'"));
+ok('app nao salva mais texto de recibo', !src.includes('emailRecibo'));
+ok('dicionario nao tem mais a frase do recibo', !STR.emAviso && !STR.emPix && !STR.confCliente);
+ok('etiqueta da reserva usa a regra "metade paga"', /titulo: Bookings\.garantida\(b\)/.test(src));
 
 console.log(falhas ? `\n${falhas} FALHA(S)` : '\ntudo passou');
 process.exit(falhas ? 1 : 0);

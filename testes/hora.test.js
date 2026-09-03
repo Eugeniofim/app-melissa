@@ -3,7 +3,7 @@
 const fs=require('fs'), assert=require('assert');
 const SERVE=[__dirname+'/..', __dirname+'/../serve'].find(d=>fs.existsSync(d+'/app.js'));
 const src=fs.readFileSync(SERVE+'/app.js','utf8');
-const i=src.indexOf('function horaInicio'), f=src.indexOf('function icsFor');
+const i=src.indexOf('function horaInicio'), f=src.indexOf('function gcalLink');
 assert.ok(i>0 && f>i, 'nao achei horaInicio no app.js');
 eval(src.slice(i,f));
 

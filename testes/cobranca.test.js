@@ -31,8 +31,16 @@ t('395 com sinal de 50% arredonda', centavosDevidos({ total: 395, policy: 'split
 
 /* ja pagou parte: cobra so o resto, nao cobra de novo */
 t('390, ja pagou 195', centavosDevidos({ total: 390, policy: 'full', payments: [{ amount: 195 }] }), 19500);
-t('390 dividido, ja pagou o sinal',
-  centavosDevidos({ total: 390, policy: 'split', payments: [{ amount: 195 }] }), 0);
+/* Regra da Melissa (03/09/2026): depois do sinal, o cartao cobra o SALDO.
+   Antes devolvia zero — o link da cobranca do saldo nao tinha como cobrar. */
+t('390 dividido, ja pagou o sinal: cobra o saldo',
+  centavosDevidos({ total: 390, policy: 'split', payments: [{ amount: 195 }] }), 19500);
+t('390 dividido, pagou 100 (menos que o sinal): completa o sinal',
+  centavosDevidos({ total: 390, policy: 'split', payments: [{ amount: 100 }] }), 9500);
+t('390 dividido, pagou 300: cobra o que falta',
+  centavosDevidos({ total: 390, policy: 'split', payments: [{ amount: 300 }] }), 9000);
+t('395 dividido, pagou o sinal de 198: cobra 197',
+  centavosDevidos({ total: 395, policy: 'split', payments: [{ amount: 198 }] }), 19700);
 t('390, ja pagou tudo', centavosDevidos({ total: 390, policy: 'full', payments: [{ amount: 390 }] }), 0);
 t('pagou em duas parcelas',
   centavosDevidos({ total: 390, policy: 'full', payments: [{ amount: 100 }, { amount: 90 }] }), 20000);

@@ -96,6 +96,68 @@ function waLink(text, num) {
   return 'https://wa.me/' + (num || waNum()) + (text ? '?text=' + encodeURIComponent(text) : '');
 }
 function mapLink(q) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q); }
+
+/* Icones oficiais do Instagram e do WhatsApp (pedido da Melissa, 03/09/2026).
+   Vetor dentro do arquivo: nao depende de rede nem de fonte de icones. O do
+   WhatsApp e o desenho oficial da marca; o do Instagram e o glifo da camera. */
+const ICONE_IG = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5"/><circle cx="12" cy="12" r="4.3"/><circle cx="17.6" cy="6.4" r="1.1" fill="currentColor" stroke="none"/></svg>';
+const ICONE_WA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>';
+const ICONE_WA_BTN = ICONE_WA.replace('<svg ', '<svg class="wa-ic" ');
+
+/* De onde a pessoa esta reservando — pais e cidade pela conexao. Pedido da
+   Melissa: saber de onde vem o publico. Duas fontes gratuitas, sem chave,
+   4 s cada; se nenhuma responder, a reserva vai sem isso e nada trava.
+   Guarda so pais/regiao/cidade — nunca o IP. */
+let geoCache = null, geoPromessa = null;
+function geoDescobre() {
+  if (geoCache) return Promise.resolve(geoCache);
+  if (geoPromessa) return geoPromessa;
+  const fontes = [
+    { url: 'https://ipwho.is/', le: (j) => (j && j.success !== false && j.country_code)
+        ? { pais: j.country || '', paisCod: j.country_code, cidade: j.city || '', regiao: j.region || '' } : null },
+    { url: 'https://ipapi.co/json/', le: (j) => (j && j.country_code)
+        ? { pais: j.country_name || '', paisCod: j.country_code, cidade: j.city || '', regiao: j.region || '' } : null },
+  ];
+  geoPromessa = (async () => {
+    for (const f of fontes) {
+      const ctrl = new AbortController();
+      const corta = setTimeout(() => ctrl.abort(), 4000);
+      try {
+        const r = await fetch(f.url, { signal: ctrl.signal });
+        if (!r.ok) continue;
+        const g = f.le(await r.json());
+        if (g) { geoCache = g; return g; }
+      } catch (e) { /* proxima fonte */ }
+      finally { clearTimeout(corta); }
+    }
+    return null;
+  })();
+  return geoPromessa;
+}
+
+/* Bandeira a partir do codigo do pais (BR -> 🇧🇷): sao duas letras
+   "regionais" do Unicode, sem imagem nenhuma. */
+function bandeira(cod) {
+  const c = String(cod || '').toUpperCase();
+  if (!/^[A-Z]{2}$/.test(c)) return '';
+  return String.fromCodePoint(...[...c].map(ch => 0x1F1E6 + ch.charCodeAt(0) - 65));
+}
+
+/* Dias de hoje ate uma data (negativo = ja passou). Meio-dia nos dois lados
+   para o horario de verao nao roubar um dia. */
+function diasAte(iso) {
+  return Math.round((new Date(iso + 'T12:00:00') - new Date(isoToday() + 'T12:00:00')) / 864e5);
+}
+
+/* Mes anterior/seguinte de "AAAA-MM", no relogio LOCAL. Era toISOString():
+   converte para UTC, e na Franca (UTC+1/+2) "1 de outubro 00:00" virava
+   "30 de setembro 22:00Z" — o mes nao mudava e a seta da direita da Agenda
+   parecia quebrada. No Brasil (UTC-3) nao acontecia; por isso ninguem viu. */
+function mesMais(ym, n) {
+  const [y, m] = String(ym).split('-').map(Number);
+  const d = new Date(y, m - 1 + n, 1);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
 /* O campo de horario e livre de proposito: a Melissa escreve "09h",
    "09h30" ou "10:00 as 18h" — e essa ultima diz mais ao cliente do que
    um horario seco. Mas o arquivo de calendario exige HHMMSS, e
@@ -108,15 +170,24 @@ function horaInicio(txt) {
   return String(h).padStart(2, '0') + ':' + String(min).padStart(2, '0');
 }
 
-function icsFor(b, x) {
-  const dt = b.date.replace(/-/g, '') + 'T' + horaInicio(b.time).replace(':', '') + '00';
-  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//VoyagesImages//PT', 'BEGIN:VEVENT',
-    'UID:' + b.code + '@voyages-images', 'DTSTART:' + dt,
-    'SUMMARY:' + (x.name[LANG] || x.name.pt) + ' — Melissa Hallais',
-    'LOCATION:' + noIdioma(x.meeting).replace(/,/g, '\\,'),
-    'DESCRIPTION:' + (LANG === 'pt' ? 'Código ' : 'Code ') + b.code,
-    'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
-  return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+/* "Colocar na agenda Google". Era um arquivo .ics para baixar; a Melissa
+   pediu so o Google Agenda (03/09/2026). Link direto, sem download: abre o
+   evento pronto e a pessoa so confirma. Horario no fuso da Alsacia; sem
+   duracao escrita no passeio, marca 3 horas. */
+function gcalLink(b, x) {
+  const dia = b.date.replace(/-/g, '');
+  const ini = horaInicio(b.time);
+  const h = parseInt(ini.slice(0, 2), 10);
+  const fim = String(Math.min(23, h + 3)).padStart(2, '0') + ini.slice(3);
+  const p = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: (x.name[LANG] || x.name.pt) + ' — Melissa Hallais',
+    dates: `${dia}T${ini.replace(':', '')}00/${dia}T${fim}00`,
+    ctz: 'Europe/Paris',
+    location: noIdioma(x.meeting),
+    details: (LANG === 'pt' ? 'Código da reserva: ' : 'Booking code: ') + b.code,
+  });
+  return 'https://calendar.google.com/calendar/render?' + p.toString();
 }
 function vcfLink() {
   const v = ['BEGIN:VCARD', 'VERSION:3.0', 'FN:Melissa Hallais',
@@ -206,7 +277,13 @@ function go(h) {
   if (location.hash === '#' + h) route();
   else location.hash = h;
 }
-function route() {
+/* route(opts): redesenha a tela do endereco atual.
+   opts.manterScroll — usado pela sincronia: quando a nuvem traz algo novo e
+   a tela e redesenhada, a pessoa continua onde estava. Sem isto, a cada
+   25 s a Melissa era puxada para o topo dos Ajustes (bug de 03/09/2026). */
+function route(opts) {
+  const manter = !!(opts && opts.manterScroll);
+  const y = manter ? (window.scrollY || 0) : 0;
   Coach.hide();
   const h = location.hash.slice(2) || '';
   const p = h.split('/');
@@ -218,11 +295,13 @@ function route() {
     viewAdm(p[1] || 'today', p[2]);
   }
   else if (p[0] === 'pago')  viewPago(decodeURIComponent((p[1] || '').split('?')[0]));
+  else if (p[0] === 'pagar') viewPagarSaldo(p[1] || '');
   else if (p[0] === 'about') viewAbout();
   else if (p[0] === 'tours') viewShowcase();
   else if (p[0] === 'tour')  viewTour(p[1]);
   else                       viewHub();
-  scrollTo(0, 0);
+  if (manter) scrollTo({ top: y, left: 0, behavior: 'instant' });
+  else scrollTo(0, 0);
 }
 
 /* barra de idioma do cliente */
@@ -262,8 +341,8 @@ function viewHub() {
         <span class="ic"><img id="hubFace" src="${esc(DB.settings.photo || 'melissa.jpg')}" alt=""
           style="width:34px;height:34px;border-radius:50%;object-fit:cover;object-position:center 20%"></span><span><b>${t('aboutLink')}</b><small>${t('aboutLinkSub')}</small></span><span class="go" aria-hidden="true">→</span>
       </button>
-      <a class="lk" href="https://instagram.com/${esc(DB.settings.insta)}" target="_blank" rel="noopener"><span class="ic">◎</span><span><b>Instagram</b><small>@${esc(DB.settings.insta)}</small></span><span class="go" aria-hidden="true">→</span></a>
-      <a class="lk" href="${waLink(t('waHello'))}" target="_blank" rel="noopener"><span class="ic">✆</span><span><b>${t('whatsapp')}</b></span><span class="go" aria-hidden="true">→</span></a>
+      <a class="lk" href="https://instagram.com/${esc(DB.settings.insta)}" target="_blank" rel="noopener"><span class="ic ig">${ICONE_IG}</span><span><b>Instagram</b><small>@${esc(DB.settings.insta)}</small></span><span class="go" aria-hidden="true">→</span></a>
+      <a class="lk" href="${waLink(t('waHello'))}" target="_blank" rel="noopener"><span class="ic wa">${ICONE_WA}</span><span><b>${t('whatsapp')}</b></span><span class="go" aria-hidden="true">→</span></a>
       <button class="adm-entry" id="admEntry">🔒 ${t('admEntry')}</button>
     </div>
   </div>`;
@@ -392,25 +471,8 @@ function viewShowcase() {
 /* So mostra real para quem esta lendo em portugues: para um cliente frances
    ou alemao o numero em real e ruido. E se nao houver cotacao, nao aparece
    nada — inventar um valor seria pior. */
-/* No painel ela precisa VER o efeito da margem antes de salvar, senao esta
-   escolhendo um numero no escuro. */
-function fxResumo() {
-  const taxa = (typeof fxTaxa === 'function') && fxTaxa();
-  if (!taxa) return t('fxSemCotacao');
-  const ex = (DB.tours[0] && +DB.tours[0].price) || 195;
-  return t('fxResumo', { taxa: taxa.toFixed(2).replace('.', ','), eur: eur(ex), brl: brl(emReais(ex)) })
-       + (typeof fxVencida === 'function' && fxVencida() ? ' · ' + t('fxVelha') : '');
-}
-
-function linhaReais(eur) {
-  if (LANG !== 'pt') return '';
-  if (typeof emReais !== 'function') return '';
-  if (!DB.settings || !DB.settings.exibirCotacao) return '';
-  const v = emReais(eur);
-  if (v == null) return '';
-  return `<span class="embrl">${t('aproxBrl', { v: brl(v) })}</span>`;
-}
-
+/* A cotacao euro->real (fx.js, linhaReais, fxResumo) saiu do app em
+   03/09/2026 a pedido da Melissa: o preco e em euro, ponto. */
 /* texto bilingue: {pt,en}. Existia solto dentro de duas funcoes; agora e um so. */
 /* Claro, escuro, ou seguindo o aparelho. Guardado no proprio aparelho:
    e preferencia de quem olha, nao dado do negocio. */
@@ -439,6 +501,7 @@ function viewTour(id) {
   const x = Tours.get(id);
   if (!x) return go('/tours');
   const S = viewTour._s = { tour: x, date: null, time: null, cap: 0, pax: x.priceMode === 'session' ? 1 : 2, step: 1, coupon: null, discount: 0, policy: x.payPolicy === 'split' ? 'split' : 'full' };
+  geoDescobre();   /* de onde a pessoa esta: chega antes de ela terminar de reservar */
 
   const stops = Array.isArray(x.stops) ? x.stops : [];
   const L = a => (a && (a[LANG] || a.pt)) || '';
@@ -482,7 +545,6 @@ function viewTour(id) {
             </div>
           </li>`).join('')}
       </ol>
-      ${miniMap(stops, x)}
       ` : ''}
 
       <!-- DATAS E HORARIOS -->
@@ -520,7 +582,6 @@ function viewTour(id) {
           <div class="pbmain">
             <b>${eur(x.price)}</b>
             <small>${x.priceMode === 'session' ? t('perSession') : t('perPerson')}</small>
-            ${linhaReais(x.price)}
             ${x.priceLate && x.earlySeats && x.priceMode !== 'session'
               ? `<span class="pbearly">${t('earlyNote', { n: x.earlySeats, v: eur(x.priceLate) })}</span>` : ''}
           </div>
@@ -544,35 +605,9 @@ function viewTour(id) {
   renderBook();
 }
 
-/* ---- o trajeto ----
-   Não desenho um mapa aqui de propósito. Quatro paradas dentro de 600 m
-   viram uma bolinha só numa projeção honesta, e distorcer a escala seria
-   mentir. O que ajuda de verdade é o trajeto na ordem — e o mapa de
-   verdade, com ruas, a um toque. */
-const MODO_MAPA = { day: 'driving', bike: 'bicycling', walk: 'walking', photo: 'walking', session: 'walking' };
-const MODO_TXT  = { day: 'mapWhyDrive', bike: 'mapWhyBike' };
-function miniMap(stops, x) {
-  const pts = stops.filter(p => p.place || (p.lat && p.lng));
-  if (pts.length < 2) return '';
-  const L = a => (a && (a[LANG] || a.pt)) || '';
-  /* endereço digitado pela Melissa vale mais que coordenada: o Maps resolve e mostra o nome */
-  const q = p => encodeURIComponent(p.place || (p.lat + ',' + p.lng));
-  const gmaps = 'https://www.google.com/maps/dir/?api=1'
-    + '&origin=' + q(pts[0])
-    + '&destination=' + q(pts[pts.length - 1])
-    + (pts.length > 2 ? '&waypoints=' + pts.slice(1, -1).map(q).join('%7C') : '')
-    + '&travelmode=' + (MODO_MAPA[x && x.type] || 'walking');
-  return `
-  <h3 class="h3">${t('mapTitle')}</h3>
-  <div class="mapbox">
-    <ol class="trail">
-      ${pts.map((p, i) => `<li><span class="tnum">${i + 1}</span><b>${esc(L(p.n))}</b></li>`).join('')}
-    </ol>
-    <a class="cta sm wide" href="${gmaps}" target="_blank" rel="noopener">${t('mapOpen')} ↗</a>
-    <p class="why">${t(MODO_TXT[x && x.type] || 'mapWhyWalk', { n: pts.length })}</p>
-  </div>`;
-}
-
+/* O bloco "O trajeto, na ordem" (lista das paradas em linha + botao "ver o
+   trajeto no mapa") foi removido a pedido da Melissa em 03/09/2026. As
+   paradas continuam na pagina, uma a uma, com foto e texto. */
 
 /* ---- como pagar ----
    O app nao cobra nada: quem recebe e ela, por Pix ou transferencia. Esta tela
@@ -645,6 +680,24 @@ async function viewPago(codigo) {
   }
 }
 
+/* Link da cobranca do saldo (#/pagar/<id da reserva>), que chega no e-mail
+   30 dias antes do passeio. So abre o Stripe: o valor e decidido no servidor,
+   pela reserva no banco — nunca pelo link. */
+async function viewPagarSaldo(id) {
+  app.innerHTML = `<div class="wrap narrow"><div class="paybox">
+    <h2 class="okh" id="pgTit">${t('pgAbrindo')}</h2>
+    <p class="hint center" id="pgMsg">${t('pgEspere')}</p>
+    <a class="mini" href="#/tours">${t('backTours')}</a></div></div>`;
+  let r = null;
+  try { r = await pagarNoServidor({ reservaId: decodeURIComponent(id) }, 25); }
+  catch (e) { r = null; }
+  if (r && r.url) { location.replace(r.url); return; }
+  const msg = $('#pgMsg'), tit = $('#pgTit');
+  if (!msg || !tit) return;
+  tit.textContent = t('pgDuvidaTit');
+  msg.innerHTML = `${t('pgSaldoErro')} <a class="mini" target="_blank" rel="noopener" href="${waLink(t('waHello'))}">WhatsApp</a>`;
+}
+
 function comoPagar(b, x) {
   const st = DB.settings || {};
   const agora = b.policy === 'split' ? Math.round(b.total / 2) : b.total;
@@ -655,19 +708,17 @@ function comoPagar(b, x) {
       <div class="crow"><input readonly value="${esc(valor)}"><button class="mini" data-cp="${esc(valor)}">${t('copyBtn')}</button></div>
       ${dono ? `<small class="who">${t('inNameOf')} ${esc(dono)}</small>` : ''}
     </div>`;
-  /* Pix com o valor ja embutido: o cliente cola no banco e paga, sem digitar
-     valor nenhum (era onde ele errava). Precisa de chave, nome e cidade — o
-     padrao exige os tres — e de cotacao, para converter o euro em real. */
-  const brl = (typeof pixValorEmReais === 'function') ? pixValorEmReais(agora) : null;
-  const codigoPix = (typeof pixDisponivel === 'function' && pixDisponivel() && brl)
-    ? pixCopiaECola({ chave: st.pixKey, nome: pixNome(), cidade: pixCidade(),
-                      valor: brl, txid: b.code })
+  /* Pix SEM valor, de proposito (pedido da Melissa, 03/09/2026): o preco e
+     em euro e o app nao converte mais. O cliente digita no banco o
+     equivalente em reais pela cotacao do dia; ela confere no comprovante. */
+  const codigoPix = (typeof pixDisponivel === 'function' && pixDisponivel())
+    ? pixCopiaECola({ chave: st.pixKey, nome: pixNome(), cidade: pixCidade(), txid: b.code })
     : null;
 
   const blocoPix = codigoPix ? `
     <div class="pixbox">
       <b class="pixtit">${t('pixTit')}</b>
-      <p class="pixvalor">${t('pixValor', { brl: brl.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 }), eur: eur(agora) })}</p>
+      <p class="pixvalor">${t('pixValor', { eur: eur(agora) })}</p>
       ${(typeof qrSvg === 'function') ? `<div class="pixqr">${qrSvg(codigoPix, { tamanho: 190, alt: t('pixTit') })}</div>` : ''}
       <p class="why">${t('pixComo')}</p>
       <textarea class="pixcod" id="pixCod" readonly rows="3">${esc(codigoPix)}</textarea>
@@ -713,8 +764,7 @@ function renderBook() {
     ? `${eur(x.price)} <small>${t('perSession')}</small>`
     : `${eur(valorEmDestaque)} <small>${t('perPerson')}</small>`
       + (escalonado && sobramBaratas
-          ? `<em class="pearly">${t('earlyNote', { n: x.earlySeats, v: eur(x.priceLate) })}</em>` : '')
-      + linhaReais(valorEmDestaque);
+          ? `<em class="pearly">${t('earlyNote', { n: x.earlySeats, v: eur(x.priceLate) })}</em>` : '');
   const base = pr.total;
   const total = base - S.discount;
 
@@ -728,8 +778,15 @@ function renderBook() {
       <div class="bhead"><span class="bprice">${priceLine}</span></div>
       <div class="bstep">${t('step1')}</div>
       ${dates.length ? `
-      <div class="dgrid">${dates.map(d =>
-        `<button class="dcell ${S.date === d ? 'on' : ''}" data-d="${d}"><b>${fmtDate(d).split(',')[1] || fmtDate(d)}</b><small>${fmtDate(d).split(',')[0]}</small></button>`).join('')}
+      <div class="dgrid">${dates.map(d => {
+        /* Data com todos os horarios lotados nao pode ser clicavel (pedido
+           da Melissa): fica apagada, com "lotado" no lugar do dia da semana. */
+        const lotada = byDate[d].every(dep => Cal.seatsLeft(x.id, dep.date, dep.time, dep.capacity) <= 0);
+        const dia = fmtDate(d).split(',')[1] || fmtDate(d);
+        return lotada
+          ? `<button class="dcell off" disabled aria-disabled="true"><b>${dia}</b><small>${t('dateFull')}</small></button>`
+          : `<button class="dcell ${S.date === d ? 'on' : ''}" data-d="${d}"><b>${dia}</b><small>${fmtDate(d).split(',')[0]}</small></button>`;
+      }).join('')}
       </div>
       <div id="times">${S.date ? timesHtml(byDate[S.date]) : `<p class="hint">${t('pickDate')}</p>`}</div>
       <button class="cta" id="next1" ${S.time ? '' : 'disabled'}>${t('cont')}</button>`
@@ -738,7 +795,7 @@ function renderBook() {
           <a class="cta sm wide" target="_blank" rel="noopener"
              href="${waLink(t('waAskDates', { tour: x.name[LANG] || x.name.pt }))}">${t('askDatesBtn')}</a>
         </div>`}`;
-    $$('.dcell', book).forEach(b => b.onclick = () => { S.date = b.dataset.d; S.time = null; renderBook(); });
+    $$('.dcell[data-d]', book).forEach(b => b.onclick = () => { S.date = b.dataset.d; S.time = null; renderBook(); });
     $$('[data-t]', book).forEach(b => b.onclick = () => {
       S.time = b.dataset.t; S.cap = +b.dataset.c;
       $$('[data-t]', book).forEach(z => z.classList.remove('on')); b.classList.add('on');
@@ -770,7 +827,6 @@ function renderBook() {
         ${(pr.linhas && pr.linhas.length > 1) ? pr.linhas.map(l =>
           `<div class="quebra"><span>${t('linhaPreco', { qtd: l.qtd, valor: eur(l.valor) })}</span><b>${eur(l.qtd * l.valor)}</b></div>`).join('') : ''}
         <div class="tot"><span>${t('total')}</span><b>${eur(total)}</b></div>
-        ${linhaReais(total)}
         ${(x.min > 1 && S.pax < x.min) ? `<p class="why">${t('minAviso', { n: x.min })}</p>` : ''}
       </div>
       <details class="coupon"><summary>${t('haveCoupon')}</summary>
@@ -801,7 +857,12 @@ function renderBook() {
 
   if (S.step === 3) {
     const half = Math.round(total / 2);
-    const splitAllowed = x.payPolicy === 'split';
+    /* Metade so faz sentido se ainda da tempo de cobrar a outra metade: o
+       saldo e cobrado {prazo} dias antes (30, regra da Melissa). Reserva
+       mais em cima da hora paga tudo de uma vez. */
+    const prazo = Bookings.prazoSaldo(x);
+    const splitAllowed = x.payPolicy === 'split' && diasAte(S.date) > prazo;
+    if (!splitAllowed) S.policy = 'full';
     book.innerHTML = `
       <div class="bstep">${t('step3')}</div>
       <label class="fld">${t('fullName')}<input id="fN" autocomplete="name"></label>
@@ -813,7 +874,7 @@ function renderBook() {
       ${splitAllowed ? `
       <div class="payopts">
         <button class="popt ${S.policy === 'full' ? 'on' : ''}" data-p="full"><b>${t('payFull')}</b><small>${t('payFullSub')} · ${eur(total)}</small></button>
-        <button class="popt ${S.policy === 'split' ? 'on' : ''}" data-p="split"><b>${t('paySplit')}</b><small>${t('paySplitSub', { half: eur(half), d: (+x.balanceDays || 1) })}</small></button>
+        <button class="popt ${S.policy === 'split' ? 'on' : ''}" data-p="split"><b>${t('paySplit', { d: prazo })}</b><small>${t('paySplitSub', { half: eur(half), d: prazo })}</small></button>
       </div>` : ''}
       <button class="cta" id="payBtn">${S.policy === 'split' && splitAllowed ? t('payNowBtn', { v: eur(half) }) : t('payBtn', { v: eur(total) })}</button>
       <p class="fine">${cancelaTxt(x)} · ${t('noHidden')}</p>
@@ -838,6 +899,7 @@ function renderBook() {
           insta: $('#fI').value.trim(), pax: S.pax, coupon: S.coupon,
           consent: $('#fOptin').checked,
           policy: splitAllowed ? S.policy : 'full', origin: 'site',
+          geo: geoCache || null,
         });
         S.step = 4; renderBook();
       }, 900);
@@ -856,10 +918,9 @@ function renderBook() {
       </div>
       ${comoPagar(b, x)}
       <a class="cta" style="text-decoration:none;text-align:center" target="_blank" rel="noopener"
-         href="${waLink(t('waBookingMsg', { code: b.code, tour: x.name[LANG] || x.name.pt, when: fmtDate(b.date) + ' ' + b.time, name: b.name }))}">✆ ${t('waSendBooking')}</a>
+         href="${waLink(t('waBookingMsg', { code: b.code, tour: x.name[LANG] || x.name.pt, when: fmtDate(b.date) + ' ' + b.time, name: b.name }))}">${ICONE_WA_BTN} ${t('waSendBooking')}</a>
       <div class="okrow">
-        <a class="mini" href="${icsFor(b, x)}" download="${esc(b.code)}.ics">${t('addCal')}</a>
-        <a class="mini" target="_blank" rel="noopener" href="${mapLink(noIdioma(x.meeting))}">${t('seeMap')}</a>
+        <a class="mini" target="_blank" rel="noopener" href="${gcalLink(b, x)}">${t('addCal')}</a>
       </div>
       <button class="cta soft" id="again">${t('bookAgain')}</button>`;
     ligaBotaoCartao(b);
@@ -1097,7 +1158,7 @@ function admTourEdit(id) {
         <b>${t('edTerms')}</b>
         <div class="frow">
           <label class="fld">${t('tPay')}<select id="fPay">${selOpts([['full','tPayFull'],['split','tPaySplit']], x.payPolicy)}</select></label>
-          <label class="fld">${t('edBalanceDays')}<input id="fBalDays" type="number" min="0" value="${x.balanceDays || 1}"><small class="why">${t('edBalanceWhy')}</small></label>
+          <label class="fld">${t('edBalanceDays')}<input id="fBalDays" type="number" min="0" value="${x.balanceDays || 30}"><small class="why">${t('edBalanceWhy')}</small></label>
         </div>
         <label class="fld">${t('edCancel')}<input id="fCancelPt" value="${esc((x.cancel && x.cancel.pt) || '')}" placeholder="Cancelamento gratis ate 48h antes"><small class="why">${t('edCancelWhy')}</small></label>
         <label class="fld campo-en">${t('edCancel')} (EN)<input id="fCancelEn" value="${esc((x.cancel && x.cancel.en) || '')}"></label>
@@ -1296,7 +1357,7 @@ function admTourEdit(id) {
       closing:   par('#fClosePt', '#fCloseEn'),
       earlySeats: +$('#fEarlyN').value || 0,
       priceLate:  +$('#fLate').value || 0,
-      balanceDays: Math.max(0, +$('#fBalDays').value || 1),
+      balanceDays: Math.max(0, +$('#fBalDays').value || 30),
       includes:    { pt: itens('#fIncPt'),  en: itens('#fIncEn')  },
       notIncludes: { pt: itens('#fNincPt'), en: itens('#fNincEn') },
       /* joga fora parada sem nome — linha em branco na página do cliente é pior que nada */
@@ -1454,7 +1515,7 @@ function situacaoPgto(b, hoje) {
   }
   return {
     classe: 'warn',
-    titulo: pago > 0 ? t('stSinal') : t('stEsperando'),
+    titulo: Bookings.garantida(b) ? t('stSinal') : t('stEsperando'),
     conta: conta + ' · ' + t('stAte', { d: fmtDate(prazo) }),
     aberta: true,
   };
@@ -1499,14 +1560,12 @@ function admBookings() {
       const st = situacaoPgto(b, today);
       const pill = `<span class="pill conta ${st.classe}"><b>${st.titulo}</b><small>${st.conta}</small></span>`;
       const act = st.aberta ? `<button class="mini strong" data-got="${esc(b.id)}">${t('gotBalance')}</button>` : '';
-      /* Avisar o cliente so aparece quando faz sentido: o aviso esta ligado,
-         a reserva tem e-mail, nao esta cancelada e ainda nao foi avisada.
-         Botao que nao pode dar em nada e so ruido no painel dela. */
-      const podeConf = DB.settings.avisarClientes && b.email
-                       && b.status !== 'cancelled' && !b.clienteConfirmado;
-      const conf = podeConf
-        ? `<button class="mini strong" data-conf="${esc(b.id)}">${t('confCliente')}</button>`
-        : (b.clienteConfirmado ? `<span class="mini done">${t('confClienteFeito')}</span>` : '');
+      /* A confirmacao ao cliente sai sozinha (robo) quando a reserva tem
+         metade paga; aqui so se mostra que ja foi. Nao ha mais botao: a
+         Melissa pediu que o cliente receba UMA mensagem, e so quando pagou. */
+      const confAuto = DB.settings.avisarClientes && b.email && b.origin !== 'manual'
+                       && b.status !== 'cancelled' && Bookings.garantida(b);
+      const conf = (b.clienteConfirmado || confAuto) ? `<span class="mini done">✉ ${t('confClienteFeito')}</span>` : '';
       const first = b.name.split(' ')[0];
       const tourName = x ? (x.name[LANG] || x.name.pt) : '';
       const waText = (b.status !== 'cancelled' && due > 0)
@@ -1535,12 +1594,14 @@ function admBookings() {
     if (!tt) return;
     /* mesmo calculo do checkout, inclusive o preco escalonado da data */
     const pr = Bookings.precoDe(tt, tt.id, d, h, pax);
-    $('#nrValor').value = pr.total;
+    /* defaultValue tambem: valor posto pelo app nao e "digitado", e a
+       trava de formulario sujo (isBusyEditing) compara os dois */
+    $('#nrValor').value = $('#nrValor').defaultValue = pr.total;
   };
   ['#nrTour', '#nrPax', '#nrData', '#nrHora'].forEach(sel => {
     const el = $(sel); if (el) el.addEventListener('change', nrRecalcula);
   });
-  if ($('#nrData')) { $('#nrData').value = isoToday(); nrRecalcula(); }
+  if ($('#nrData')) { $('#nrData').value = $('#nrData').defaultValue = isoToday(); nrRecalcula(); }
 
   $('#nrSalvar').onclick = () => {
     const nome = $('#nrNome').value.trim();
@@ -1565,16 +1626,6 @@ function admBookings() {
 
   /* Dar baixa move dinheiro no extrato. Antes de gravar, perguntamos COMO
      ela recebeu — o botão antigo cravava "cartão" e o extrato saía mentindo. */
-  /* Avisar o cliente e irreversivel: o e-mail sai e nao volta. Por isso
-     pergunta antes, dizendo para quem vai. */
-  $$('[data-conf]').forEach(btn => btn.onclick = () => {
-    const b = Bookings.get(btn.dataset.conf);
-    if (!b) return;
-    if (!confirm(t('confClienteAsk', { email: b.email }))) return;
-    Bookings.confirmarCliente(b.id);
-    toast(t('confClienteOk', { name: b.name.split(' ')[0] }));
-    admBookings();
-  });
   $$('[data-got]').forEach(btn => btn.onclick = () => {
     const id = btn.dataset.got;
     const cx = document.getElementById('ta-' + id);
@@ -1724,39 +1775,46 @@ function admAparencia() {
   });
 }
 
-/* Mostra o e-mail inteiro que o cliente recebe, com as partes dela editaveis
-   e o miolo travado. O miolo fica travado de proposito: ele carrega os dados
-   da reserva, o Pix, e a frase que diz que o recibo NAO e comprovante de
-   pagamento. Ela apagar essa frase sem perceber faria cliente que nao pagou
-   achar que esta tudo certo. */
-function cartaoEmail(qual) {
-  const s = DB.settings, ehRecibo = qual === 'recibo';
-  const iK = ehRecibo ? 'emailReciboIntro' : 'emailConfIntro';
-  const pK = ehRecibo ? 'emailReciboPS'    : 'emailConfPS';
+/* O cartao que mostra a Melissa o e-mail que o cliente recebe.
+   Regra dela (03/09/2026): o cliente recebe UMA mensagem, e so quando pagou.
+   Ela edita a abertura e o recado final. Os dados da reserva e a nota do
+   saldo ficam fixos, para nao sumirem sem querer. */
+function cartaoEmail() {
+  const s = DB.settings;
   const val = (k, l) => esc(((s[k] || {})[l]) || '');
   const fixo = (txt) => `<p class="emfixo">${txt}</p>`;
   return `
     <div class="emcard">
-      <b class="emtit">${t(ehRecibo ? 'emRecTit' : 'emConfTit')}</b>
-      <small class="why">${t(ehRecibo ? 'emRecQuando' : 'emConfQuando')}</small>
+      <b class="emtit">${t('emConfTit')}</b>
+      <small class="why">${t('emConfQuando')}</small>
 
       ${fixo(t('emOla'))}
       <label class="fld">${t('emIntro')} (PT)
-        <textarea id="${qual}IntroPt" rows="2" placeholder="${esc(t(ehRecibo ? 'emRecIntroPad' : 'emConfIntroPad'))}">${val(iK, 'pt')}</textarea></label>
+        <textarea id="confIntroPt" rows="2" placeholder="${esc(t('emConfIntroPad'))}">${val('emailConfIntro', 'pt')}</textarea></label>
       <label class="fld">${t('emIntro')} (EN)
-        <textarea id="${qual}IntroEn" rows="2" placeholder="${esc(t(ehRecibo ? 'emRecIntroPadEn' : 'emConfIntroPadEn'))}">${val(iK, 'en')}</textarea></label>
+        <textarea id="confIntroEn" rows="2" placeholder="${esc(t('emConfIntroPadEn'))}">${val('emailConfIntro', 'en')}</textarea></label>
 
       ${fixo(t('emDados'))}
-      ${ehRecibo ? fixo(t('emPix')) : ''}
-      ${ehRecibo ? `<p class="emtrava">${t('emAviso')}</p>` : ''}
+      ${fixo(t('emSaldoNota'))}
 
       <label class="fld">${t('emPS')} (PT)
-        <textarea id="${qual}PsPt" rows="2" placeholder="${esc(t('emPSex'))}">${val(pK, 'pt')}</textarea></label>
+        <textarea id="confPsPt" rows="2" placeholder="${esc(t('emPSex'))}">${val('emailConfPS', 'pt')}</textarea></label>
       <label class="fld">${t('emPS')} (EN)
-        <textarea id="${qual}PsEn" rows="2" placeholder="${esc(t('emPSexEn'))}">${val(pK, 'en')}</textarea></label>
+        <textarea id="confPsEn" rows="2" placeholder="${esc(t('emPSexEn'))}">${val('emailConfPS', 'en')}</textarea></label>
 
       ${fixo(t('emAssina'))}
       <small class="why">${t('emVazio')}</small>
+    </div>`;
+}
+
+/* A cobranca do saldo e texto fixo: diz quanto falta, traz o Pix e o link
+   do cartao. Nao tem campo para editar — e um e-mail de conta, nao de
+   conversa. O cartao existe so para ela saber que o e-mail existe. */
+function cartaoSaldo() {
+  return `
+    <div class="emcard">
+      <b class="emtit">${t('emSaldoTit')}</b>
+      <small class="why">${t('emSaldoQuando')}</small>
     </div>`;
 }
 
@@ -1822,13 +1880,6 @@ function admSettings() {
       <label class="optin"><input type="checkbox" id="pgCard" ${DB.settings.stripeAtivo ? 'checked' : ''}>
         <span><b>${t('admCard')}</b><small>${t('admCardHelp')}</small></span></label>
       <small class="why">${t('admCardNota')}</small>
-      <div class="rulesep"></div>
-      <label class="optin"><input type="checkbox" id="pgFx" ${DB.settings.exibirCotacao ? 'checked' : ''}>
-        <span><b>${t('admFx')}</b><small>${t('admFxHelp')}</small></span></label>
-      <div class="frow">
-        <label class="fld">${t('admFxMargem')}<input id="pgMargem" type="number" min="0" max="30" step="0.5" value="${esc(DB.settings.fxMargem ?? 4)}"></label>
-        <div class="fld"><small class="why">${fxResumo()}</small></div>
-      </div>
       <button class="cta sm" id="pgSave">${t('saveBtn')}</button>
     </section>
     <section class="card">
@@ -1841,8 +1892,8 @@ function admSettings() {
       <label class="optin"><input type="checkbox" id="avCli" ${DB.settings.avisarClientes ? 'checked' : ''}>
         <span><b>${t('admCli')}</b><small>${t('admCliHelp')}</small></span></label>
       <small class="why">${t('admCliNota')}</small>
-      ${cartaoEmail('recibo')}
-      ${cartaoEmail('conf')}
+      ${cartaoEmail()}
+      ${cartaoSaldo()}
       <div class="btnrow"><button class="cta sm" id="avSave">${t('saveBtn')}</button></div>
     </section>
     <section class="card">
@@ -2019,8 +2070,6 @@ function admSettings() {
     DB.settings.ibanName = $('#pgIbanName').value.trim();
     DB.settings.payNote  = $('#pgNote').value.trim();
     DB.settings.stripeAtivo   = $('#pgCard').checked;
-    DB.settings.exibirCotacao = $('#pgFx').checked;
-    DB.settings.fxMargem = Math.max(0, Math.min(30, +$('#pgMargem').value || 0));
     save(); cloudPushState();
     toast(t('payFieldsSaved'));
   };
@@ -2032,8 +2081,6 @@ function admSettings() {
     DB.settings.admEmail = v;
     DB.settings.avisarClientes = $('#avCli').checked;
     const pega = (id) => $('#' + id).value.trim();
-    DB.settings.emailReciboIntro = { pt: pega('reciboIntroPt'), en: pega('reciboIntroEn') };
-    DB.settings.emailReciboPS    = { pt: pega('reciboPsPt'),    en: pega('reciboPsEn') };
     DB.settings.emailConfIntro   = { pt: pega('confIntroPt'),   en: pega('confIntroEn') };
     DB.settings.emailConfPS      = { pt: pega('confPsPt'),      en: pega('confPsEn') };
     save(); cloudPushState();
@@ -2191,10 +2238,8 @@ function admAgenda() {
       </section>
     </div>`);
 
-  const shift = (n) => {
-    const d = new Date(Y, M - 1 + n, 1);
-    admAgenda._m = d.toISOString().slice(0, 7); admAgenda._d = null; admAgenda();
-  };
+  /* mes anterior/seguinte no relogio local — ver mesMais() */
+  const shift = (n) => { admAgenda._m = mesMais(cur, n); admAgenda._d = null; admAgenda(); };
   $('#agPrev').onclick = () => shift(-1);
   $('#agNext').onclick = () => shift(1);
   $('#agNow').onclick = () => { admAgenda._m = isoToday().slice(0, 7); admAgenda._d = isoToday(); admAgenda(); };
@@ -2210,13 +2255,12 @@ function admReports() {
   const from = mode === 'week' ? addDays(today, -7) : today.slice(0, 8) + '01';
   const T = Reports.totals(from, today);
   const tours = Reports.byTour(from, today);
-  const origins = Reports.byOrigin(from, today);
+  const geo = Reports.byGeo(from, today);
   const series = mode === 'week' ? Reports.byWeek(8)
     : Reports.byMonth(+today.slice(0, 4)).map((v, i) => ({
         label: (LANG === 'pt' ? ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
                               : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])[i],
         value: v }));
-  const OLBL = { site: 'oSite', instagram: 'oInsta', whatsapp: 'oWhats', agency: 'oAgency', friend: 'oFriend' };
 
   admShell('reports', `
     <div class="pagehead"><h1 class="pageh">${t('rpTitle')}</h1>
@@ -2250,13 +2294,15 @@ function admReports() {
         : `<p class="empty">${t('rpEmpty')}</p>`}
       </section>
       <section class="card">
-        <h3>${t('rpOrigin')}</h3>
-        <p class="why">${t('rpOriginHelp')}</p>
-        ${origins.length ? origins.map(o => `<div class="orow">
-          <span class="onm">${t(OLBL[o.origin] || 'oSite')}</span>
-          <span class="obar"><i style="width:${o.pct}%"></i></span>
-          <span class="mono">${o.pct}%</span></div>`).join('')
+        <h3>${t('rpGeo')}</h3>
+        <p class="why">${t('rpGeoHelp')}</p>
+        ${geo.paises.length ? geo.paises.map(p => `<div class="orow">
+          <span class="onm">${bandeira(p.cod)} ${esc(p.nome)}
+            ${p.cidades.length ? `<small>${p.cidades.slice(0, 3).map(c => esc(c.nome) + ' · ' + c.n).join(' &nbsp; ')}</small>` : ''}</span>
+          <span class="obar"><i style="width:${p.pct}%"></i></span>
+          <span class="mono">${p.pct}%</span></div>`).join('')
         : `<p class="empty">${t('rpEmpty')}</p>`}
+        ${geo.semInfo ? `<small class="why">${t('rpGeoSem', { n: geo.semInfo })}</small>` : ''}
       </section>
     </div>`);
 
@@ -2512,19 +2558,26 @@ function isBusyEditing() {
   if (/^#\/adm\/tours\//.test(h)) return true;                      // editando passeio
   const ae = document.activeElement;
   if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return true; // digitando
+  /* Campo com texto ainda nao salvo: ela digitou, tocou fora para rolar a
+     pagina, a sincronia chegava, redesenhava — e o texto sumia. Formulario
+     sujo e "ocupada", com ou sem foco. */
+  if (formularioSujo()) return true;
   return false;
+}
+function formularioSujo() {
+  if (typeof document.querySelectorAll !== 'function') return false;
+  return [...document.querySelectorAll('input,textarea,select')].some(el => {
+    if (el.readOnly || el.disabled) return false;
+    if (el.type === 'checkbox' || el.type === 'radio') return el.checked !== el.defaultChecked;
+    if (el.type === 'file') return !!el.value;
+    if (el.tagName === 'SELECT') return [...el.options].some(o => o.selected !== o.defaultSelected);
+    return el.value !== el.defaultValue;
+  });
 }
 /* quando o usuário sai do que estava fazendo, aplica o que ficou pendente */
 addEventListener('hashchange', () => {
   if (pendingSync && !isBusyEditing()) { pendingSync = false; setTimeout(route, 60); }
 });
-
-/* ---------- cotacao ----------
-   Nao bloqueia o arranque: o app abre com o preco em euro e o valor em real
-   entra quando a cotacao chegar. Se nunca chegar, simplesmente nao aparece. */
-if (typeof fxAtualiza === 'function') {
-  fxAtualiza().then((c) => { if (c && LANG === 'pt' && !isBusyEditing()) route(); });
-}
 
 /* ---------- nuvem ---------- */
 cloudStart((r) => {
@@ -2533,7 +2586,8 @@ cloudStart((r) => {
     const b = r.fresh[r.fresh.length - 1];
     toast((LANG === 'pt' ? '🎉 Nova reserva: ' : '🎉 New booking: ') + b.name + ' · ' + eur(b.total));
   }
-  /* re-render seguro: nunca por cima de trabalho em andamento */
+  /* re-render seguro: nunca por cima de trabalho em andamento — e sem
+     puxar a pagina para o topo (a pessoa continua onde estava) */
   if (isBusyEditing()) { pendingSync = true; return; }
-route();
+  route({ manterScroll: true });
 });

@@ -186,6 +186,9 @@ async function cloudUpdateBooking(b) {
 /* ---------- puxar tudo ---------- */
 let lastBookingIds = null;
 let lastStamp = null;
+/* O que foi aplicado da ultima vez (data do estado + reservas). Se a nuvem
+   devolver exatamente o mesmo, nao ha o que aplicar nem redesenhar. */
+let lastAssinatura = null;
 async function cloudPull() {
   try {
     migraMarcaDeSincronia();
@@ -246,6 +249,14 @@ async function cloudPull() {
        estado remoto aqui apagaria o que a Melissa acabou de fazer. */
     if (seguraNuvem()) return { ok: true, segurando: true };
 
+    /* Nada mudou desde a ultima rodada? Entao nao mexe no DB e avisa que
+       nao ha o que redesenhar. Para a visitante o updated_at ja cortava
+       isso; para a Melissa (logada) o app baixava e REAPLICAVA tudo a cada
+       25 s, e cada reaplicacao redesenhava a tela e a puxava para o topo
+       dos Ajustes — o "scroll que sobe sozinho" de 03/09/2026. */
+    const assinatura = (st.updated_at || '') + '|' + (reservasOk ? JSON.stringify(bk) : '?');
+    if (reservasOk && lastAssinatura && assinatura === lastAssinatura) return { ok: true, semMudanca: true };
+
     /* nuvem manda */
     const keepLang = DB.settings.lang;
     Object.assign(DB, {
@@ -269,6 +280,7 @@ async function cloudPull() {
     }
     localStorage.setItem(DB_KEY, JSON.stringify(DB));
     nuvemJaCarregada = true;   /* agora sim sabemos o que a nuvem tem */
+    if (reservasOk) lastAssinatura = assinatura;
 
     /* aviso de reserva nova (para a Melissa, no ADM) */
     let fresh = [];

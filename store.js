@@ -36,28 +36,22 @@ function _blank() {
            /* para onde vai o aviso de reserva nova. Vazio = ela ainda nao
               preencheu; quem manda o e-mail e o robo, fora do navegador. */
            admEmail: '',
-           /* e-mail PARA O CLIENTE. Nasce desligado de proposito: e-mail
-              indo para cliente de verdade so depois que ela ler os textos e
-              decidir ligar. */
-           avisarClientes: false,
+           /* Confirmacao por e-mail PARA O CLIENTE. Sai sozinha quando a
+              reserva tem pelo menos metade paga — cartao (o Stripe grava)
+              ou Pix (ela marca "recebi" no painel). Regra da Melissa
+              (03/09/2026): o cliente recebe UMA mensagem, e so quando pagou. */
+           avisarClientes: true,
            /* cartao pelo Stripe. Desligado ate a gente provar a cobranca
               de ponta a ponta com dinheiro de verdade. */
            stripeAtivo: false,
-           /* A voz dela dentro do e-mail. Vazio = usa o texto padrao.
-              Ela NAO edita o e-mail inteiro de proposito: o miolo tem os
-              dados da reserva, o Pix e o aviso de que o recibo nao e
-              comprovante de pagamento. Apagar esse aviso sem perceber faria
-              cliente que nao pagou achar que esta tudo certo. */
-           emailReciboIntro: { pt: '', en: '' },
-           emailReciboPS:    { pt: '', en: '' },
+           /* A voz dela dentro do e-mail de confirmacao. Vazio = texto padrao.
+              Ela edita a abertura e o recado final; os dados da reserva e a
+              nota do saldo ficam fixos, para nao sumirem sem querer. */
            emailConfIntro:   { pt: '', en: '' },
            emailConfPS:      { pt: '', en: '' },
-           /* margem sobre a cotacao do BCE: cobre o spread de conversao e a
-              taxa de quem processa. Sem ela, o euro que chega e menor. */
-           /* A Melissa pediu para tirar a cotacao da tela. A chave antiga
-              (mostrarReais) ficou 'true' na nuvem; usar um nome novo desliga
-              na hora para todo mundo, sem depender de ela abrir o app. */
-           fxMargem: 4, exibirCotacao: false,
+           /* Nao existe mais cotacao euro->real no app: a Melissa pediu para
+              tirar (03/09/2026). O preco e em euro e o Pix vai sem valor —
+              o cliente digita o equivalente em reais pela cotacao do banco. */
            /* a primeira tela: foto de fundo e a frase. Vazio = usa o padrao. */
            homePhoto: '', homeText: { pt: '', en: '' },
            bio: {
@@ -332,7 +326,15 @@ const Tours = {
 };
 
 /* ---------- calendário ---------- */
-function isoToday() { return new Date().toISOString().slice(0, 10); }
+/* Data de HOJE no relogio local, nao em UTC. toISOString() dava a data de
+   Londres: na Franca, entre meia-noite e as 2h, "hoje" ainda era ontem. */
+function isoToday() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+/* Regra da Melissa (03/09/2026): metade na reserva, a outra metade ate
+   30 dias antes do passeio. E nesse dia que o robo manda a cobranca do saldo. */
+const PRAZO_SALDO = 30;
 function addDays(iso, n) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
 
 const Cal = {
@@ -405,7 +407,7 @@ const Bookings = {
   get(id) { return DB.bookings.find(b => b.id === id); },
   byCode(code) { return DB.bookings.find(b => b.code === code); },
 
-  create({ tourId, date, time, name, email, whats, insta, pax, coupon, policy, origin, consent }) {
+  create({ tourId, date, time, name, email, whats, insta, pax, coupon, policy, origin, consent, geo }) {
     const tour = Tours.get(tourId);
     /* Tem que ser o MESMO calculo que a tela mostrou. tour.price * pax ignora
        o preco escalonado (195 para as 3 primeiras, 225 depois) e gravava a
@@ -427,6 +429,9 @@ const Bookings = {
       /* Em que idioma ele reservou. Sem isto o e-mail de recibo sai em
          portugues para um frances que leu a tela inteira em ingles. */
       lang: (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'pt',
+      /* De onde a pessoa estava ao reservar (pais/cidade pela conexao).
+         Pedido da Melissa: saber de onde vem o publico. Nunca guarda o IP. */
+      geo: geo || null,
     };
     /* Aqui havia um pagamento inventado: toda reserva nascia marcada como paga
        no cartao. O painel, o caixa e os relatorios contavam dinheiro que nunca
@@ -442,22 +447,9 @@ const Bookings = {
 
   /* Reserva fechada fora do app (WhatsApp, Instagram, na rua). A Melissa
      informa o que combinou e quanto ja recebeu — nada e inventado aqui. */
-  /* Ela aperta "avisar cliente" quando o dinheiro caiu de verdade. Isto so
-     MARCA a reserva; quem manda o e-mail e o robo, de meia em meia hora.
-     O e-mail nao pode sair daqui: mandar exige a chave do Resend, e chave
-     dentro do navegador fica publica para qualquer um.
-
-     Nao ha "desmarcar": uma vez que o e-mail saiu, ele saiu. Deixar
-     desmarcar so criaria um botao que promete desfazer o que nao volta. */
-  confirmarCliente(id) {
-    const b = Bookings.get(id);
-    if (!b || b.clienteConfirmado) return null;
-    b.clienteConfirmado = { em: new Date().toISOString() };
-    localStorage.setItem(DB_KEY, JSON.stringify(DB));
-    if (typeof cloudUpdateBooking === 'function') cloudUpdateBooking(b);
-    return b;
-  },
-
+  /* Nao existe mais "avisar cliente" a mao: a confirmacao sai sozinha, pelo
+     robo, quando a reserva tem metade paga (ver garantida). O robo grava
+     clienteConfirmado na reserva quando o e-mail sai; o painel so mostra. */
   criarManual({ tourId, date, time, name, whats, email, pax, total, recebido, metodo }) {
     const b = {
       id: uid(), code: bookCode(), tourId, date, time,
@@ -513,12 +505,25 @@ const Bookings = {
     return n;
   },
   due(b)    { return Math.max(0, b.total - Bookings.paid(b)); },
-  /* Cada passeio tem seu prazo. O de Natal cobra o saldo 30 dias antes,
-     nao na vespera — usar um numero fixo aqui cobraria tarde demais. */
+  /* Prazo do saldo de cada passeio. Sem nada escrito, 30 dias (era 1: a
+     vespera — tarde demais para cobrar alguem). */
+  prazoSaldo(x) { return (x && +x.balanceDays) || PRAZO_SALDO; },
+  /* O dia em que o saldo e cobrado: e quando o robo manda o e-mail. */
   dueDate(b){
-    const x = Tours.get(b.tourId);
-    const dias = (x && +x.balanceDays) || 1;
-    return addDays(b.date, -dias);
+    return addDays(b.date, -Bookings.prazoSaldo(Tours.get(b.tourId)));
+  },
+  /* Quanto se pede AGORA: metade se a politica e "split", tudo se nao. */
+  sinal(b) {
+    const total = +b.total || 0;
+    return b.policy === 'split' ? Math.round(total / 2) : total;
+  },
+  /* Vaga garantida = pelo menos metade paga. Reserva sem dinheiro nao e
+     reserva: e um pedido. Painel, tela do cliente e robo de e-mail usam
+     esta mesma conta — se ela mudar, muda num lugar so. */
+  garantida(b) {
+    const total = +b.total || 0;
+    if (total <= 0) return true;
+    return Bookings.paid(b) * 2 >= total;
   },
   payBalance(id, method) {
     const b = Bookings.get(id); if (!b) return;
@@ -615,18 +620,27 @@ const Reports = {
                occupancy: seats ? Math.round(pax / seats * 100) : 0 };
     }).filter(r => r.departures > 0 || r.revenue > 0);
   },
-  /* de onde vieram as reservas */
-  byOrigin(fromIso, toIso) {
-    const map = {};
-    let total = 0;
+  /* De onde SAO os clientes — pais e cidade descobertos pela conexao na
+     hora da reserva (pedido da Melissa: achar o publico certo). Reserva
+     lancada a mao nao tem isso e entra em "sem informacao". */
+  byGeo(fromIso, toIso) {
+    const paises = {};
+    let total = 0, semInfo = 0;
     for (const b of DB.bookings) {
       if (b.status === 'cancelled' || b.date < fromIso || b.date > toIso) continue;
-      const o = b.origin || 'site';
-      map[o] = (map[o] || 0) + 1; total++;
+      total++;
+      const g = b.geo;
+      if (!g || !g.paisCod) { semInfo++; continue; }
+      const cod = String(g.paisCod).toUpperCase();
+      const p = paises[cod] = paises[cod] || { cod, nome: g.pais || cod, n: 0, cidades: {} };
+      p.n++;
+      if (g.cidade) p.cidades[g.cidade] = (p.cidades[g.cidade] || 0) + 1;
     }
-    return Object.entries(map)
-      .map(([k, n]) => ({ origin: k, n, pct: total ? Math.round(n / total * 100) : 0 }))
-      .sort((a, b) => b.n - a.n);
+    const lista = Object.values(paises).map(p => ({
+      cod: p.cod, nome: p.nome, n: p.n, pct: total ? Math.round(p.n / total * 100) : 0,
+      cidades: Object.entries(p.cidades).map(([nome, n]) => ({ nome, n })).sort((a, b) => b.n - a.n),
+    })).sort((a, b) => b.n - a.n);
+    return { paises: lista, total, semInfo };
   },
   totals(fromIso, toIso) {
     const bs = DB.bookings.filter(b => b.status !== 'cancelled' && b.date >= fromIso && b.date <= toIso);

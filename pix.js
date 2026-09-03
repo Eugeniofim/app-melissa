@@ -46,7 +46,8 @@ function pixTxid(codigo) {
 }
 
 /* Monta o copia e cola.
-   valor em reais (número). Sem valor, o cliente digita — evitamos isso. */
+   valor (em reais) e OPCIONAL. Hoje o app manda sem valor, de proposito:
+   a Melissa cobra em euro e o cliente digita o equivalente no banco. */
 /* CPF e CNPJ entram no codigo so com digitos: a Melissa digita
    "58.728.880/0001-05" e o banco espera "58728880000105". Telefone vira
    +55...; e-mail e chave aleatoria vao como estao. */
@@ -76,14 +77,9 @@ function pixCopiaECola({ chave, nome, cidade, valor, txid }) {
   return p + pixCrc(p);
 }
 
-/* A Melissa cobra em euro; o Pix é em real. Usa a mesma conversão e a mesma
-   margem do resto do app (fx.js). Sem cotação, não há Pix — melhor não
-   oferecer do que cobrar um valor errado. */
-function pixValorEmReais(eur) {
-  if (typeof emReais !== 'function') return null;
-  const v = emReais(eur);
-  return v > 0 ? v : null;
-}
+/* O Pix vai SEM valor (pedido da Melissa, 03/09/2026): o preco e em euro e
+   o app nao converte mais. O cliente digita no banco o equivalente em reais
+   pela cotacao do dia — e ela confere no comprovante. */
 
 /* Basta a chave. Nome e cidade sao praticamente decorativos no Pix: o banco
    de quem paga resolve o titular real pela propria chave. Exigir os tres era

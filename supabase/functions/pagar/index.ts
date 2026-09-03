@@ -84,14 +84,19 @@ async function supa(caminho: string, init: RequestInit = {}) {
 }
 
 /* Quanto falta receber nesta reserva, em centavos.
-   Mesma conta da tela: sinal de 50% quando a política é "split".
-   Desconta o que já foi pago — se ela já registrou metade na mão, o cartão
-   cobra só o resto, em vez de cobrar duas vezes. */
+   Regra da Melissa (03/09/2026): metade na reserva, metade até 30 dias antes.
+   - nada pago ainda: pede o sinal (metade) se a política é "split", tudo se não;
+   - já pagou o sinal: pede o RESTO — é por aqui que o link da cobrança do
+     saldo (#/pagar/<id>), mandado por e-mail, cobra a segunda metade;
+   - pagou menos que o sinal (ela registrou uma parte à mão): completa o sinal.
+   Nunca cobra o que já entrou. Antes, depois do sinal, isto devolvia zero —
+   e o saldo não tinha como ser pago no cartão. */
 function centavosDevidos(b: any) {
   const total = Number(b?.total) || 0;
-  const agora = b?.policy === 'split' ? Math.round(total / 2) : total;
   const pago = (b?.payments || []).reduce((s: number, p: any) => s + (Number(p?.amount) || 0), 0);
-  const falta = Math.max(0, agora - pago);
+  const metade = Math.round(total / 2);
+  const alvo = (b?.policy === 'split' && pago < metade) ? metade : total;
+  const falta = Math.max(0, alvo - pago);
   return Math.round(falta * 100);
 }
 
@@ -124,11 +129,14 @@ Deno.serve(async (req) => {
       const jaTem = (b.payments || []).some((p: any) => p.stripe === s.id);
       if (!jaTem) {
         b.payments = b.payments || [];
+        const valor = (s.amount_total || 0) / 100;
+        const antes = b.payments.reduce((t: number, p: any) => t + (Number(p?.amount) || 0), 0);
         b.payments.push({
-          amount: (s.amount_total || 0) / 100,
+          amount: valor,
           date: new Date().toISOString().slice(0, 10),
           method: 'card',
-          kind: (s.amount_total || 0) / 100 >= (b.total || 0) ? 'full' : 'deposit',
+          /* segunda cobrança = saldo; primeira = tudo ou sinal */
+          kind: antes > 0 ? 'balance' : (valor >= (b.total || 0) ? 'full' : 'deposit'),
           stripe: s.id,
         });
         await supa('bookings?id=eq.' + encodeURIComponent(reservaId), {
