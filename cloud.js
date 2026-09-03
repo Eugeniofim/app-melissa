@@ -42,6 +42,17 @@ function supaFetch(path, opts = {}) {
 /* ---------- fila offline ---------- */
 function qAll() { try { return JSON.parse(localStorage.getItem(QUEUE_KEY)) || []; } catch (e) { return []; } }
 function qPush(job) { const q = qAll(); q.push(job); localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); }
+/* Reserva apagada nao pode ter envio pendente: a fila reenviaria o POST e a
+   reserva voltaria do tumulo na primeira vez que a rede voltasse. */
+function qDropBooking(id) {
+  const alvo = 'bookings?id=eq.' + encodeURIComponent(id);
+  const q = qAll().filter((j) => {
+    if (j.path === alvo) return false;
+    if (j.path === 'bookings' && j.body && j.body.id === id) return false;
+    return true;
+  });
+  localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
+}
 async function qFlush() {
   const q = qAll(); if (!q.length) return;
   const rest = [];
@@ -170,6 +181,34 @@ async function cloudPushBooking(b) {
     return { ok: true };
   } catch (e) { qPush({ path: 'bookings', method: 'POST', body }); return { ok: false }; }
 }
+/* ---------- apagar de vez ----------
+   A Melissa pediu para poder apagar reserva no painel (03/09/2026), e apagar
+   de verdade — nao esconder.
+
+   Duas regras que nao podem ser quebradas:
+
+   1. So sai daqui DEPOIS que o banco confirmou. Se apagassemos primeiro no
+      aparelho, a proxima sincronia baixaria a reserva de volta e ela
+      reapareceria sozinha — o pior tipo de bug, porque parece assombracao.
+   2. O banco responde HTTP 200 mesmo quando a trava (RLS) descarta a
+      exclusao: simplesmente nenhuma linha sai. Por isso pedimos as linhas de
+      volta e contamos, igual ao patchConta.
+
+   Reserva que ainda nao subiu (naNuvem falso) nao existe la: apaga so aqui,
+   e tira da fila o envio que estava esperando. */
+async function cloudDeleteBooking(b) {
+  const path = 'bookings?id=eq.' + encodeURIComponent(b.id);
+  if (!b.naNuvem) { qDropBooking(b.id); return { ok: true, linhas: 1, soLocal: true }; }
+  try {
+    const r = await supaFetch(path, { method: 'DELETE', headers: { Prefer: 'return=representation' } });
+    if (!r.ok) return { ok: false, linhas: 0 };
+    let linhas = 0;
+    try { const j = await r.json(); linhas = Array.isArray(j) ? j.length : 1; } catch (e) { linhas = 1; }
+    if (linhas > 0) qDropBooking(b.id);
+    return { ok: true, linhas };
+  } catch (e) { return { ok: false, linhas: 0 }; }
+}
+
 async function cloudUpdateBooking(b) {
   const body = { data: b };
   const path = 'bookings?id=eq.' + encodeURIComponent(b.id);

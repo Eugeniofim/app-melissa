@@ -1582,7 +1582,7 @@ function admBookings() {
         <div class="tinfo"><b>${esc(b.name)}</b>
           <small>${esc(x ? x.name.pt : '?')} · ${fmtDate(b.date)} ${esc(b.time)} · ${esc(b.pax)}p · <span class="mono">${esc(b.code)}</span></small></div>
         <b class="mono">${eur(b.total)}</b>${pill}
-        <div class="tacts" id="ta-${esc(b.id)}">${cobrar}${act}${conf}</div>
+        <div class="tacts" id="ta-${esc(b.id)}">${cobrar}${act}${conf}<button class="mini danger" data-del="${esc(b.id)}" title="${t('apagarX')}" aria-label="${t('apagarX')}">×</button></div>
       </div>`;
     }).join('')}</div>`
     : `<div class="emptybox"><p>${t('emptyBookings')}</p></div>`}`);
@@ -1626,6 +1626,53 @@ function admBookings() {
 
   /* Dar baixa move dinheiro no extrato. Antes de gravar, perguntamos COMO
      ela recebeu — o botão antigo cravava "cartão" e o extrato saía mentindo. */
+  /* ---- tirar uma reserva da lista ----
+     A Melissa pediu isto em 03/09/2026: reserva de teste, duplicada, ou
+     cliente que desmarcou. Sao DOIS caminhos, e a diferenca importa:
+
+       Só cancelar  — a vaga volta a ficar livre e o registro fica na lista,
+                      marcado como cancelada. O extrato continua honesto.
+       Apagar de vez — nao sobra rastro, em nenhum aparelho. Sem desfazer.
+
+     O menu abre dentro da propria linha, igual ao "Recebi por", para ela
+     nao precisar aprender um jeito novo. */
+  $$('[data-del]').forEach(btn => btn.onclick = () => {
+    const id = btn.dataset.del;
+    const b = Bookings.get(id);
+    const cx = document.getElementById('ta-' + id);
+    if (!b || !cx) return;
+    cx.innerHTML = `<span class="howgot">${t('apagarTit')}</span>`
+      + (b.status !== 'cancelled' ? `<button class="mini" data-dcancel="1">${t('soCancelar')}</button>` : '')
+      + `<button class="mini danger" data-dapaga="1">${t('apagarDeVez')}</button>`
+      + `<button class="mini ghost" data-dnao="1">${t('cancelSm')}</button>`;
+
+    $('[data-dnao]', cx).onclick = () => admBookings();
+
+    const btCancelar = $('[data-dcancel]', cx);
+    if (btCancelar) btCancelar.onclick = () => {
+      if (!confirm(t('cancelarPerg', { nome: b.name, code: b.code }))) return;
+      Bookings.cancel(id);
+      toast(t('cancelarOk'));
+      admBookings();
+    };
+
+    /* Apagar de verdade: primeiro o banco, depois o aparelho. Ao contrario,
+       a proxima sincronia baixaria a reserva de volta. */
+    $('[data-dapaga]', cx).onclick = async () => {
+      const pago = Bookings.paid(b);
+      const aviso = t('apagarPerg', { nome: b.name, code: b.code })
+                  + (pago > 0 ? t('apagarDinheiro', { v: eur(pago) }) : '');
+      if (!confirm(aviso)) return;
+      cx.innerHTML = `<span class="howgot">${t('apagando')}</span>`;
+      const r = (typeof cloudDeleteBooking === 'function')
+        ? await cloudDeleteBooking(b) : { ok: false, linhas: 0 };
+      if (!r.ok)      { toast(t('apagarSemRede')); return admBookings(); }
+      if (!r.linhas)  { toast(t('apagarErro'));    return admBookings(); }
+      Bookings.apagarLocal(id);
+      toast(t('apagarFeito'));
+      admBookings();
+    };
+  });
   $$('[data-got]').forEach(btn => btn.onclick = () => {
     const id = btn.dataset.got;
     const cx = document.getElementById('ta-' + id);

@@ -535,6 +535,16 @@ const Bookings = {
   cancel(id) { const b = Bookings.get(id); if (b) { b.status = 'cancelled';
     localStorage.setItem(DB_KEY, JSON.stringify(DB));
     if (typeof cloudUpdateBooking === 'function') cloudUpdateBooking(b); } },
+  /* Tira a reserva DESTE aparelho. Quem manda apagar e o app.js, e so
+     depois de o banco confirmar — senao a sincronia traria de volta.
+     Ver cloudDeleteBooking. */
+  apagarLocal(id) {
+    const antes = DB.bookings.length;
+    DB.bookings = DB.bookings.filter(b => b.id !== id);
+    if (DB.bookings.length === antes) return false;
+    localStorage.setItem(DB_KEY, JSON.stringify(DB));
+    return true;
+  },
 
   /* extrato: uma linha por PAGAMENTO (é o que o contador quer) */
   statement(fromIso, toIso) {

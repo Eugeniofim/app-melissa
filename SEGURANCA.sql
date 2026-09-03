@@ -33,9 +33,15 @@ drop policy if exists bk_insert_public on bookings;
 drop policy if exists bk_read_owner on bookings;
 drop policy if exists bk_write_owner on bookings;
 
+drop policy if exists bk_delete_owner on bookings;
+
 create policy bk_insert_public on bookings for insert to anon, authenticated with check (true);
 create policy bk_read_owner    on bookings for select to authenticated using (is_owner());
 create policy bk_write_owner   on bookings for update to authenticated using (is_owner());
+-- Apagar reserva pelo painel (pedido da Melissa, 03/09/2026). SO a dona.
+-- Sem esta linha o banco devolve 200 e nao apaga nada: o app avisa que
+-- foi recusado, mas a reserva fica na tela dela para sempre.
+create policy bk_delete_owner  on bookings for delete to authenticated using (is_owner());
 
 -- 3) DISPONIBILIDADE pública: só a contagem de lugares, sem dado pessoal
 create or replace view seat_counts as

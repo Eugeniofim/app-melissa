@@ -420,6 +420,27 @@ const STR = {
   admCliNota: { pt: 'Quem reservou e não pagou não recebe nada — a vaga não está garantida.',
                 en: 'Whoever booked and did not pay gets nothing — the spot is not secured.' },
   confClienteFeito: { pt: 'confirmação automática por e-mail', en: 'automatic email confirmation' },
+  /* ---- apagar reserva (pedido da Melissa, 03/09/2026) ----
+     Ela precisa tirar do painel a reserva de teste, a duplicada e a que o
+     cliente desmarcou. Sao duas coisas diferentes, e a diferenca importa:
+     CANCELAR guarda o registro e libera a vaga; APAGAR nao deixa rastro. */
+  apagarX:      { pt: 'Apagar reserva', en: 'Delete booking' },
+  apagarTit:    { pt: 'O que fazer com esta reserva?', en: 'What to do with this booking?' },
+  soCancelar:   { pt: 'Só cancelar', en: 'Just cancel' },
+  apagarDeVez:  { pt: 'Apagar de vez', en: 'Delete for good' },
+  cancelarPerg: { pt: 'Cancelar a reserva de {nome} ({code})?\n\nA vaga volta a ficar livre e a reserva continua na lista, marcada como cancelada.',
+                  en: 'Cancel {nome}\'s booking ({code})?\n\nThe seat is freed and the booking stays in the list, marked as cancelled.' },
+  cancelarOk:   { pt: 'Reserva cancelada. A vaga está livre de novo.', en: 'Booking cancelled. The seat is free again.' },
+  apagarPerg:   { pt: 'Apagar de vez a reserva de {nome} ({code})?\n\nEla some da lista, da agenda e dos relatórios, em todos os seus aparelhos. Não tem como desfazer.',
+                  en: 'Delete {nome}\'s booking ({code}) for good?\n\nIt disappears from the list, the calendar and the reports, on all your devices. This cannot be undone.' },
+  apagarDinheiro:{ pt: '\n\nATENÇÃO: esta reserva tem {v} registrado como recebido. Esse valor sai do extrato junto.',
+                   en: '\n\nWARNING: this booking has {v} recorded as received. That amount leaves your statement too.' },
+  apagarFeito:  { pt: 'Reserva apagada.', en: 'Booking deleted.' },
+  apagarErro:   { pt: 'Não consegui apagar — o banco recusou. Nada foi perdido: a reserva continua aí. Fale com o Eugênio.',
+                  en: 'Could not delete — the database refused. Nothing was lost: the booking is still there. Talk to Eugênio.' },
+  apagarSemRede:{ pt: 'Sem internet agora. A reserva continua aí — tente de novo quando a rede voltar.',
+                  en: 'No internet right now. The booking is still there — try again when you are back online.' },
+  apagando:     { pt: 'Apagando…', en: 'Deleting…' },
   /* ---- o que o cliente recebe, editavel por ela ---- */
   emConfTit:    { pt: '1. Confirmação — sai sozinha quando o pagamento entra', en: '1. Confirmation — goes out on its own once the payment arrives' },
   emConfQuando: { pt: 'Cartão pelo Stripe, ou Pix que você marcou "Recebi". É o único e-mail que o cliente recebe: diz que a vaga está garantida.',
