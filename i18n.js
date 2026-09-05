@@ -138,6 +138,17 @@ const STR = {
                 en: 'Hi Melissa! I saw {tour} on your app and would like to know the next dates 🙂' },
   cont:        { pt: 'Continuar', en: 'Continue' },
   peopleLbl:   { pt: 'Pessoas', en: 'People' },
+  /* ---- adulto e crianca (pedido da Melissa, 05/09/2026) ----
+     A idade limite vem do passeio, entao o rotulo se monta sozinho e nao
+     precisa ser traduzido a cada passeio novo. */
+  adultosLbl:  { pt: 'Adultos', en: 'Adults' },
+  criancasLbl: { pt: 'Crianças', en: 'Children' },
+  ateAnos:     { pt: 'até {n} anos', en: 'up to {n} years' },
+  precoCrianca:{ pt: 'criança {idade} · {v}', en: 'child {idade} · {v}' },
+  precisaAdulto:{ pt: 'A reserva precisa de pelo menos um adulto.', en: 'A booking needs at least one adult.' },
+  linhaAdulto: { pt: '{qtd} × adulto {valor}', en: '{qtd} × adult {valor}' },
+  linhaCrianca:{ pt: '{qtd} × criança {valor}', en: '{qtd} × child {valor}' },
+  paxComKids:  { pt: '{a} adulto(s) + {c} criança(s)', en: '{a} adult(s) + {c} child(ren)' },
   maxNote:     { pt: 'Este passeio vai até {n} pessoas. Para um grupo maior, me chame no WhatsApp.', en: 'This tour takes up to {n}. For a bigger group, message me.' },
   total:       { pt: 'Total', en: 'Total' },
   haveCoupon:  { pt: 'Tem um cupom?', en: 'Have a coupon?' },
@@ -241,6 +252,7 @@ const STR = {
   nrData:      { pt: 'Data', en: 'Date' },
   nrHora:      { pt: 'Horário', en: 'Time' },
   nrPessoas:   { pt: 'Pessoas', en: 'People' },
+  nrCriancas:  { pt: 'Dessas, crianças', en: 'Of those, children' },
   nrNome:      { pt: 'Nome', en: 'Name' },
   nrWhats:     { pt: 'WhatsApp', en: 'WhatsApp' },
   nrEmail:     { pt: 'E-mail (se tiver)', en: 'Email (if any)' },
@@ -539,6 +551,12 @@ const STR = {
   edEarlyWhy: { pt: 'Deixe em zero se o preço for único. A contagem é por data: cada saída tem suas primeiras vagas.',
                 en: 'Leave at zero for a single price. Counted per date: each departure has its own early seats.' },
   edEarlySeats:{ pt: 'Quantas vagas no valor menor', en: 'How many seats at the lower price' },
+  /* preco de crianca — fica junto do valor, no editor do passeio */
+  edCrianca:   { pt: 'Preço para criança', en: 'Child price' },
+  edCriancaWhy:{ pt: 'Deixe em zero se não houver valor de criança — aí o cliente escolhe só "pessoas". Criança ocupa vaga igual, e o desconto das primeiras vagas vale só para adulto.',
+                 en: 'Leave at zero for no child price — the guest then just picks "people". A child takes a seat like anyone else, and the early-seat discount applies to adults only.' },
+  edCriancaVal:{ pt: 'Valor da criança', en: 'Price per child' },
+  edCriancaIdade:{ pt: 'Idade máxima', en: 'Maximum age' },
   edLatePrice:{ pt: 'Valor depois dessas vagas', en: 'Price after those seats' },
   edPriceNote:{ pt: 'Observação sobre o valor', en: 'Note about the price' },
   edGroup:    { pt: 'Tamanho do grupo', en: 'Group size' },

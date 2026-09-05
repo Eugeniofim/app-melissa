@@ -34,6 +34,10 @@ global.addDays = (iso, n) => '2026-12-31';
 global.waLink = () => '#';
 global.toast = () => {};
 global.Bookings = { precoDe: () => ({ total: 390 }), prazoSaldo: () => 30 };
+/* renderBook usa estes dois para anunciar o preco de crianca; aqui o passeio
+   nao tem crianca, entao basta o falso */
+global.temCrianca = () => false;
+global.idadeCrianca = () => 'até 12 anos';
 global.diasAte = () => 90;
 /* tres datas: d1 tem um horario cheio e um livre; d2 esta toda cheia; d3 livre */
 const vagas = { 'd1|09h': 0, 'd1|14h': 3, 'd2|09h': 0, 'd2|14h': 0, 'd3|09h': 7 };

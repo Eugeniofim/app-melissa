@@ -500,7 +500,9 @@ function cancelaTxt(x) {
 function viewTour(id) {
   const x = Tours.get(id);
   if (!x) return go('/tours');
-  const S = viewTour._s = { tour: x, date: null, time: null, cap: 0, pax: x.priceMode === 'session' ? 1 : 2, step: 1, coupon: null, discount: 0, policy: x.payPolicy === 'split' ? 'split' : 'full' };
+  /* S.pax e o TOTAL de gente; S.criancas diz quantas delas sao criancas.
+     Adultos = pax - criancas. Ver Bookings.precoDe. */
+  const S = viewTour._s = { tour: x, date: null, time: null, cap: 0, pax: x.priceMode === 'session' ? 1 : 2, criancas: 0, step: 1, coupon: null, discount: 0, policy: x.payPolicy === 'split' ? 'split' : 'full' };
   geoDescobre();   /* de onde a pessoa esta: chega antes de ela terminar de reservar */
 
   const stops = Array.isArray(x.stops) ? x.stops : [];
@@ -584,6 +586,7 @@ function viewTour(id) {
             <small>${x.priceMode === 'session' ? t('perSession') : t('perPerson')}</small>
             ${x.priceLate && x.earlySeats && x.priceMode !== 'session'
               ? `<span class="pbearly">${t('earlyNote', { n: x.earlySeats, v: eur(x.priceLate) })}</span>` : ''}
+            ${temCrianca(x) ? `<span class="pbearly">${t('precoCrianca', { idade: idadeCrianca(x), v: eur(x.priceChild) })}</span>` : ''}
           </div>
           <div class="pbterms">
             <p>${esc(cancelaTxt(x))}</p>
@@ -608,6 +611,10 @@ function viewTour(id) {
 /* O bloco "O trajeto, na ordem" (lista das paradas em linha + botao "ver o
    trajeto no mapa") foi removido a pedido da Melissa em 03/09/2026. As
    paradas continuam na pagina, uma a uma, com foto e texto. */
+
+/* Rotulo da crianca: "criança (até 12 anos)". A idade vem do passeio. */
+function idadeCrianca(x) { return t('ateAnos', { n: (+x.childAge || 12) }); }
+function temCrianca(x) { return (+x.priceChild || 0) > 0 && x.priceMode !== 'session'; }
 
 /* ---- como pagar ----
    O app nao cobra nada: quem recebe e ela, por Pix ou transferencia. Esta tela
@@ -752,7 +759,7 @@ function renderBook() {
   const S = viewTour._s, x = S.tour, book = $('#book');
   /* Precos vem de Bookings.precoDe: ele sabe quantas vagas baratas restam
      naquela data e divide as pessoas entre os dois valores. */
-  const pr = Bookings.precoDe(x, x.id, S.date, S.time, S.pax);
+  const pr = Bookings.precoDe(x, x.id, S.date, S.time, S.pax, S.criancas);
   /* Preco escalonado: 195 para as 3 primeiras da data, 225 depois.
      Enquanto sobra vaga barata, o valor em destaque e 195 e a nota explica.
      Quando as 3 acabam, anunciar "195, depois 225" vira propaganda enganosa —
@@ -764,7 +771,8 @@ function renderBook() {
     ? `${eur(x.price)} <small>${t('perSession')}</small>`
     : `${eur(valorEmDestaque)} <small>${t('perPerson')}</small>`
       + (escalonado && sobramBaratas
-          ? `<em class="pearly">${t('earlyNote', { n: x.earlySeats, v: eur(x.priceLate) })}</em>` : '');
+          ? `<em class="pearly">${t('earlyNote', { n: x.earlySeats, v: eur(x.priceLate) })}</em>` : '')
+      + (temCrianca(x) ? `<em class="pearly">${t('precoCrianca', { idade: idadeCrianca(x), v: eur(x.priceChild) })}</em>` : '');
   const base = pr.total;
   const total = base - S.discount;
 
@@ -817,15 +825,24 @@ function renderBook() {
     book.innerHTML = `
       <div class="bhead"><span class="bprice">${priceLine}</span></div>
       <div class="bstep">${t('step2')}</div>
+      ${temCrianca(x) ? `
+      <div class="paxrow">
+        <b>${t('adultosLbl')}</b>
+        <div class="pm"><button id="mn">−</button><span id="pax">${S.pax - S.criancas}</span><button id="pl">+</button></div>
+      </div>
+      <div class="paxrow">
+        <b>${t('criancasLbl')}<small class="why">${idadeCrianca(x)} · ${eur(x.priceChild)}</small></b>
+        <div class="pm"><button id="kmn">−</button><span id="kids">${S.criancas}</span><button id="kpl">+</button></div>
+      </div>` : `
       <div class="paxrow ${x.priceMode === 'session' ? 'hide' : ''}">
         <b>${t('peopleLbl')}</b>
         <div class="pm"><button id="mn">−</button><span id="pax">${S.pax}</span><button id="pl">+</button></div>
-      </div>
+      </div>`}
       <div class="sums">
         <div><span>${fmtDate(S.date)} · ${S.time}</span></div>
         ${S.discount ? `<div><span>${t('couponOk', { c: S.coupon })}</span><b>−${eur(S.discount)}</b></div>` : ''}
         ${(pr.linhas && pr.linhas.length > 1) ? pr.linhas.map(l =>
-          `<div class="quebra"><span>${t('linhaPreco', { qtd: l.qtd, valor: eur(l.valor) })}</span><b>${eur(l.qtd * l.valor)}</b></div>`).join('') : ''}
+          `<div class="quebra"><span>${t(l.crianca ? 'linhaCrianca' : (temCrianca(x) ? 'linhaAdulto' : 'linhaPreco'), { qtd: l.qtd, valor: eur(l.valor) })}</span><b>${eur(l.qtd * l.valor)}</b></div>`).join('') : ''}
         <div class="tot"><span>${t('total')}</span><b>${eur(total)}</b></div>
         ${(x.min > 1 && S.pax < x.min) ? `<p class="why">${t('minAviso', { n: x.min })}</p>` : ''}
       </div>
@@ -838,13 +855,25 @@ function renderBook() {
     /* Antes o piso era x.min (3 nos passeios dela): apertar "menos" com 2
        pessoas SUBIA para 3, e um casal nao conseguia reservar de jeito nenhum.
        O minimo dela e a regra de saida, nao o tamanho minimo de uma reserva. */
+    const limpaCupom = () => { S.discount = 0; S.coupon = null; };
+    const cabeMais = () => S.pax < Math.min(x.max, S.cap || x.max);
     $('#mn').onclick = () => {
-      if (S.pax <= 1) return;
-      S.pax = S.pax - 1; S.discount = 0; S.coupon = null; renderBook();
+      /* Sempre tem que sobrar um adulto: crianca nao viaja sozinha, e sem
+         adulto a conta do passeio nao faz sentido. */
+      if (S.pax - S.criancas <= 1) return toast(t('precisaAdulto'));
+      S.pax--; limpaCupom(); renderBook();
     };
     $('#pl').onclick = () => {
-      if (S.pax >= Math.min(x.max, S.cap || x.max)) return toast(t('maxNote', { n: x.max }));
-      S.pax++; S.discount = 0; S.coupon = null; renderBook();
+      if (!cabeMais()) return toast(t('maxNote', { n: x.max }));
+      S.pax++; limpaCupom(); renderBook();
+    };
+    if ($('#kmn')) $('#kmn').onclick = () => {
+      if (S.criancas <= 0) return;
+      S.pax--; S.criancas--; limpaCupom(); renderBook();
+    };
+    if ($('#kpl')) $('#kpl').onclick = () => {
+      if (!cabeMais()) return toast(t('maxNote', { n: x.max }));
+      S.pax++; S.criancas++; limpaCupom(); renderBook();
     };
     $('#capply').onclick = () => {
       const v = Coupons.validate($('#cin').value, null);
@@ -896,7 +925,7 @@ function renderBook() {
       setTimeout(() => {
         S.booking = Bookings.create({
           tourId: x.id, date: S.date, time: S.time, name, email, whats,
-          insta: $('#fI').value.trim(), pax: S.pax, coupon: S.coupon,
+          insta: $('#fI').value.trim(), pax: S.pax, criancas: S.criancas, coupon: S.coupon,
           consent: $('#fOptin').checked,
           policy: splitAllowed ? S.policy : 'full', origin: 'site',
           geo: geoCache || null,
@@ -1144,6 +1173,14 @@ function admTourEdit(id) {
           <label class="fld">${t('edEarlySeats')}<input id="fEarlyN" type="number" min="0" value="${x.earlySeats || 0}" placeholder="3"></label>
           <label class="fld">${t('edLatePrice')}<input id="fLate" type="number" min="0" value="${x.priceLate || 0}" placeholder="225"></label>
         </div>
+        <div class="rulesep"></div>
+        <b>${t('edCrianca')}</b>
+        <p class="why">${t('edCriancaWhy')}</p>
+        <div class="frow">
+          <label class="fld">${t('edCriancaVal')}<input id="fChildPrice" type="number" min="0" value="${x.priceChild || 0}" placeholder="95"></label>
+          <label class="fld">${t('edCriancaIdade')}<input id="fChildAge" type="number" min="1" max="17" value="${x.childAge || 12}"></label>
+        </div>
+
         <label class="fld">${t('edPriceNote')}<input id="fPNotePt" value="${esc((x.priceNote && x.priceNote.pt) || '')}" placeholder="Valor especial para as primeiras reservas, sujeito a disponibilidade."></label>
         <label class="fld campo-en">${t('edPriceNote')} (EN)<input id="fPNoteEn" value="${esc((x.priceNote && x.priceNote.en) || '')}"></label>
 
@@ -1356,6 +1393,8 @@ function admTourEdit(id) {
       cancel:    par('#fCancelPt', '#fCancelEn'),
       closing:   par('#fClosePt', '#fCloseEn'),
       earlySeats: +$('#fEarlyN').value || 0,
+      priceChild: Math.max(0, +$('#fChildPrice').value || 0),
+      childAge:   Math.max(1, Math.min(17, +$('#fChildAge').value || 12)),
       priceLate:  +$('#fLate').value || 0,
       balanceDays: Math.max(0, +$('#fBalDays').value || 30),
       includes:    { pt: itens('#fIncPt'),  en: itens('#fIncEn')  },
@@ -1532,6 +1571,7 @@ function admBookings() {
         <label class="fld">${t('nrPasseio')}<select id="nrTour">${Tours.all().map(tt =>
           `<option value="${esc(tt.id)}">${esc(tt.name[LANG] || tt.name.pt)}</option>`).join('')}</select></label>
         <label class="fld">${t('nrPessoas')}<input id="nrPax" type="number" min="1" value="2"></label>
+        <label class="fld">${t('nrCriancas')}<input id="nrKids" type="number" min="0" value="0"></label>
       </div>
       <div class="frow">
         <label class="fld">${t('nrData')}<input id="nrData" type="date"></label>
@@ -1580,7 +1620,9 @@ function admBookings() {
             : '');
       return `<div class="trow">
         <div class="tinfo"><b>${esc(b.name)}</b>
-          <small>${esc(x ? x.name.pt : '?')} · ${fmtDate(b.date)} ${esc(b.time)} · ${esc(b.pax)}p · <span class="mono">${esc(b.code)}</span></small></div>
+          <small>${esc(x ? x.name.pt : '?')} · ${fmtDate(b.date)} ${esc(b.time)} · ${b.criancas > 0
+              ? esc(t('paxComKids', { a: b.pax - b.criancas, c: b.criancas }))
+              : esc(b.pax) + 'p'} · <span class="mono">${esc(b.code)}</span></small></div>
         <b class="mono">${eur(b.total)}</b>${pill}
         <div class="tacts" id="ta-${esc(b.id)}">${cobrar}${act}${conf}<button class="mini danger" data-del="${esc(b.id)}" title="${t('apagarX')}" aria-label="${t('apagarX')}">×</button></div>
       </div>`;
@@ -1593,12 +1635,12 @@ function admBookings() {
     const d = $('#nrData').value, h = $('#nrHora').value;
     if (!tt) return;
     /* mesmo calculo do checkout, inclusive o preco escalonado da data */
-    const pr = Bookings.precoDe(tt, tt.id, d, h, pax);
+    const pr = Bookings.precoDe(tt, tt.id, d, h, pax, +$('#nrKids').value || 0);
     /* defaultValue tambem: valor posto pelo app nao e "digitado", e a
        trava de formulario sujo (isBusyEditing) compara os dois */
     $('#nrValor').value = $('#nrValor').defaultValue = pr.total;
   };
-  ['#nrTour', '#nrPax', '#nrData', '#nrHora'].forEach(sel => {
+  ['#nrTour', '#nrPax', '#nrKids', '#nrData', '#nrHora'].forEach(sel => {
     const el = $(sel); if (el) el.addEventListener('change', nrRecalcula);
   });
   if ($('#nrData')) { $('#nrData').value = $('#nrData').defaultValue = isoToday(); nrRecalcula(); }
@@ -1617,7 +1659,7 @@ function admBookings() {
     Bookings.criarManual({
       tourId, date: data, time: hora, name: nome,
       whats: $('#nrWhats').value.trim(), email: $('#nrEmail').value.trim(),
-      pax, total: +$('#nrValor').value || 0,
+      pax, criancas: +$('#nrKids').value || 0, total: +$('#nrValor').value || 0,
       recebido: +$('#nrRecebido').value || 0, metodo: $('#nrComo').value || 'other',
     });
     toast(t('nrFeita'));

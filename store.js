@@ -407,12 +407,12 @@ const Bookings = {
   get(id) { return DB.bookings.find(b => b.id === id); },
   byCode(code) { return DB.bookings.find(b => b.code === code); },
 
-  create({ tourId, date, time, name, email, whats, insta, pax, coupon, policy, origin, consent, geo }) {
+  create({ tourId, date, time, name, email, whats, insta, pax, criancas, coupon, policy, origin, consent, geo }) {
     const tour = Tours.get(tourId);
     /* Tem que ser o MESMO calculo que a tela mostrou. tour.price * pax ignora
        o preco escalonado (195 para as 3 primeiras, 225 depois) e gravava a
        reserva abaixo do que a pessoa acabou de ler. */
-    const base = Bookings.precoDe(tour, tourId, date, time, pax).total;
+    const base = Bookings.precoDe(tour, tourId, date, time, pax, criancas).total;
     let discount = 0, couponCode = null;
     if (coupon) {
       const v = Coupons.validate(coupon, email);
@@ -422,6 +422,9 @@ const Bookings = {
     const b = {
       id: uid(), code: bookCode(), tourId, date, time,
       name, email, whats, insta: insta || '', pax, total,
+      /* quantas das {pax} pessoas sao criancas — 0 quando o passeio nao tem
+         preco de crianca. A vaga que elas ocupam ja esta contada em pax. */
+      criancas: Math.max(0, Math.min(+criancas || 0, pax)),
       coupon: couponCode, discount, policy,
       consent: consent ? { ok: true, at: new Date().toISOString(), src: 'checkout' } : { ok: false },
       payments: [], status: 'confirmed',
@@ -450,11 +453,11 @@ const Bookings = {
   /* Nao existe mais "avisar cliente" a mao: a confirmacao sai sozinha, pelo
      robo, quando a reserva tem metade paga (ver garantida). O robo grava
      clienteConfirmado na reserva quando o e-mail sai; o painel so mostra. */
-  criarManual({ tourId, date, time, name, whats, email, pax, total, recebido, metodo }) {
+  criarManual({ tourId, date, time, name, whats, email, pax, criancas, total, recebido, metodo }) {
     const b = {
       id: uid(), code: bookCode(), tourId, date, time,
       name, email: email || '', whats: whats || '', insta: '',
-      pax: +pax || 1, total: Math.max(0, +total || 0),
+      pax: +pax || 1, criancas: Math.max(0, Math.min(+criancas || 0, +pax || 1)), total: Math.max(0, +total || 0),
       coupon: null, discount: 0, policy: 'full',
       consent: { ok: false },
       payments: [], status: 'confirmed',
@@ -476,20 +479,42 @@ const Bookings = {
      A Melissa vende as primeiras vagas de cada data mais barato: 195 para
      os 3 primeiros, 225 depois. O calculo e por DATA, nao por reserva —
      quem chega quando ja ha 2 vendidos leva 1 barato e o resto caro. */
-  precoDe(x, tourId, date, time, pax) {
+  /* Quanto custa a reserva.
+     `pax` e o TOTAL de gente e `criancas` quantas delas sao criancas — os
+     adultos saem da subtracao. Guardar o total (e nao adultos+criancas
+     separados) e de proposito: vaga, agenda, lotacao e relatorios contam
+     gente, nao idade, e continuam funcionando sem saber que crianca existe.
+
+     Crianca paga um valor fixo (x.priceChild). O preco escalonado — as
+     primeiras vagas mais baratas — vale so para ADULTO: e um desconto de
+     lancamento, e misturar as duas contas deixaria o cliente sem entender
+     por que o valor mudou. */
+  precoDe(x, tourId, date, time, pax, criancas) {
     const cheio = +x.price || 0;
     const tarde = +x.priceLate || 0;
     const vagasBaratas = +x.earlySeats || 0;
     if (x.priceMode === 'session') return { total: cheio, linhas: [{ qtd: 1, valor: cheio }] };
-    if (!tarde || !vagasBaratas) return { total: cheio * pax, linhas: [{ qtd: pax, valor: cheio }] };
+
+    const valorCrianca = +x.priceChild || 0;
+    const kids = valorCrianca > 0 ? Math.max(0, Math.min(+criancas || 0, pax)) : 0;
+    const adultos = Math.max(0, pax - kids);
+    const contaKids = kids * valorCrianca;
+    const linhaKids = kids ? [{ qtd: kids, valor: valorCrianca, crianca: true }] : [];
+
+    if (!tarde || !vagasBaratas) {
+      return { total: cheio * adultos + contaKids,
+               linhas: (adultos ? [{ qtd: adultos, valor: cheio }] : []).concat(linhaKids) };
+    }
 
     const jaVendidos = Bookings.vendidosEm(tourId, date, time);
-    const baratas = Math.max(0, Math.min(pax, vagasBaratas - jaVendidos));
-    const caras = pax - baratas;
+    const baratas = Math.max(0, Math.min(adultos, vagasBaratas - jaVendidos));
+    const caras = adultos - baratas;
     const linhas = [];
     if (baratas) linhas.push({ qtd: baratas, valor: cheio });
     if (caras)   linhas.push({ qtd: caras,   valor: tarde });
-    return { total: baratas * cheio + caras * tarde, linhas, baratasRestantes: Math.max(0, vagasBaratas - jaVendidos) };
+    return { total: baratas * cheio + caras * tarde + contaKids,
+             linhas: linhas.concat(linhaKids),
+             baratasRestantes: Math.max(0, vagasBaratas - jaVendidos) };
   },
 
   /* lugares ja vendidos numa saida — base do preco escalonado e das vagas */
