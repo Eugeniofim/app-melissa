@@ -295,6 +295,11 @@ async function cloudPull() {
     if (!logged && scR.ok) {
       try { DB.seatCounts = (await scR.json()).map(r =>
         ({ tourId: r.tour_id, date: r.date, time: r.time, pax: +r.pax })); } catch (e) {}
+    } else if (logged && DB.seatCounts && DB.seatCounts.length) {
+      /* Logada, quem manda sao as reservas. A contagem publica guardada de
+         quando ela navegou deslogada nunca mais era atualizada e ficava
+         inflando os numeros para sempre — joga fora. */
+      DB.seatCounts = [];
     }
 
     const cloudEmpty = !st || !st.data || !st.data.tours || !st.data.tours.length;

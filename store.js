@@ -337,6 +337,24 @@ function isoToday() {
 const PRAZO_SALDO = 30;
 function addDays(iso, n) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
 
+/* ---------- de onde vem "quantos ja reservaram" ----------
+   Sao duas fontes, e usar a errada custou caro em 06/09/2026:
+
+   - VISITANTE nao pode ler reservas (elas tem nome e telefone de gente), e
+     por isso o banco publica uma view so com a contagem: seat_counts.
+   - LOGADA, a Melissa tem as reservas de verdade no aparelho. A contagem
+     publica nao serve para nada aqui — e pior: ela NAO e atualizada
+     enquanto ela esta logada, entao o que sobra e um retrato velho. Com o
+     Math.max, esse retrato velho vencia a realidade e ela via "5 vagas" em
+     datas sem reserva nenhuma.
+
+   Logada, a verdade sao as reservas. Deslogado, a contagem publica. */
+function contagemPublica(tourId, date, time) {
+  if (typeof isLoggedIn === 'function' && isLoggedIn()) return null;
+  if (!Array.isArray(DB.seatCounts) || !DB.seatCounts.length) return null;
+  return DB.seatCounts.find(c => c.tourId === tourId && c.date === date && c.time === time) || null;
+}
+
 const Cal = {
   rulesFor(tourId) { return DB.rules.filter(r => r.tourId === tourId); },
   addRule(r) { r.id = uid(); DB.rules.push(r); save(); return r; },
@@ -370,15 +388,12 @@ const Cal = {
 
   seatsLeft(tourId, date, time, capacity) {
     /* logada: conta pelas reservas. Visitante: usa a contagem pública,
-       que não expõe nome nem telefone de ninguém. */
+       que não expõe nome nem telefone de ninguém. Ver contagemPublica. */
     const local = DB.bookings
       .filter(b => b.tourId === tourId && b.date === date && b.time === time && b.status === 'confirmed')
       .reduce((s, b) => s + b.pax, 0);
-    let taken = local;
-    if (Array.isArray(DB.seatCounts) && DB.seatCounts.length) {
-      const row = DB.seatCounts.find(c => c.tourId === tourId && c.date === date && c.time === time);
-      taken = Math.max(local, row ? row.pax : 0);
-    }
+    const row = contagemPublica(tourId, date, time);
+    const taken = row ? Math.max(local, +row.pax) : local;
     return Math.max(0, capacity - taken);
   },
 };
@@ -522,12 +537,8 @@ const Bookings = {
     const local = DB.bookings
       .filter(b => b.tourId === tourId && b.date === date && b.time === time && b.status !== 'cancelled')
       .reduce((s, b) => s + b.pax, 0);
-    let n = local;
-    if (Array.isArray(DB.seatCounts) && DB.seatCounts.length) {
-      const row = DB.seatCounts.find(c => c.tourId === tourId && c.date === date && c.time === time);
-      if (row) n = Math.max(local, +row.pax);
-    }
-    return n;
+    const row = contagemPublica(tourId, date, time);
+    return row ? Math.max(local, +row.pax) : local;
   },
   due(b)    { return Math.max(0, b.total - Bookings.paid(b)); },
   /* Prazo do saldo de cada passeio. Sem nada escrito, 30 dias (era 1: a

@@ -144,6 +144,59 @@ t('lotado não vira número negativo', async () => {
   assert.strictEqual(c.vagasNaTela(), 0);
 });
 
+console.log('logada, quem manda sao as reservas dela');
+
+/* mundo da MELISSA: logada, com as reservas de verdade e um retrato velho
+   da contagem publica guardado de quando ela navegou deslogada */
+function ambDona(seatCountsVelho) {
+  const ctx = { console, JSON, Date, Math, Number, Object, Array, String, Set,
+    localStorage: { _d: {}, getItem(k) { return this._d[k] ?? null; }, setItem(k, v) { this._d[k] = v; }, removeItem(k) { delete this._d[k]; } } };
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(SERVE + '/store.js', 'utf8'), ctx);
+  vm.runInContext('load();', ctx);
+  ctx.isLoggedIn = () => true;
+  vm.runInContext(`DB.tours = [{ id: 'vinhos', price: 195, max: 7, earlySeats: 3, priceLate: 225 }];
+    DB.departures = [{ id:'d1', tourId:'vinhos', date:'2026-12-03', time:'10:00 as 18h', capacity:7 }];
+    DB.bookings = [];
+    DB.seatCounts = ${JSON.stringify(seatCountsVelho)};`, ctx);
+  return ctx;
+}
+const velho = [{ tourId: 'vinhos', date: '2026-12-03', time: '10:00 as 18h', pax: 2 }];
+
+t('passeio de 7 lugares sem reserva mostra 7, nao 5', async () => {
+  const c = ambDona(velho);
+  const livres = vm.runInContext("Cal.seatsLeft('vinhos','2026-12-03','10:00 as 18h',7)", c);
+  assert.strictEqual(livres, 7,
+    'o retrato velho da contagem publica estava descontando 2 reservas que nao existem');
+});
+
+t('logada, a reserva de verdade conta', async () => {
+  const c = ambDona(velho);
+  vm.runInContext("DB.bookings = [{ id:'b1', tourId:'vinhos', date:'2026-12-03', time:'10:00 as 18h', pax:4, status:'confirmed', payments:[] }];", c);
+  assert.strictEqual(vm.runInContext("Cal.seatsLeft('vinhos','2026-12-03','10:00 as 18h',7)", c), 3);
+});
+
+t('o preco escalonado tambem ignora o retrato velho', async () => {
+  const c = ambDona(velho);
+  /* 3 vagas baratas e nenhuma reserva: as 2 primeiras pessoas pagam 195 */
+  const pr = vm.runInContext("Bookings.precoDe(Tours.get('vinhos'),'vinhos','2026-12-03','10:00 as 18h',2,0)", c);
+  assert.strictEqual(pr.total, 390, 'com o retrato velho, a 2a pessoa ja pagava 225');
+});
+
+t('deslogado continua usando a contagem publica', async () => {
+  const c = ambDona(velho);
+  ctxSemLogin(c);
+  assert.strictEqual(vm.runInContext("Cal.seatsLeft('vinhos','2026-12-03','10:00 as 18h',7)", c), 5,
+    'visitante nao le reservas: sem a contagem publica ele veria vaga que nao existe');
+});
+function ctxSemLogin(c) { c.isLoggedIn = () => false; }
+
+t('a sincronia joga fora o retrato velho quando ela esta logada', async () => {
+  const src = fs.readFileSync(SERVE + '/cloud.js', 'utf8');
+  assert.ok(/logged && DB\.seatCounts && DB\.seatCounts\.length/.test(src) && /DB\.seatCounts = \[\];/.test(src),
+    'sem limpar, o retrato volta do localStorage no proximo load');
+});
+
 (async () => {
   for (const [n, f] of casos) {
     try { await f(); console.log('  ok   ' + n); }
