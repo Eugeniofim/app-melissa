@@ -1579,7 +1579,7 @@ function admBookings() {
       </div>
       <div class="frow">
         <label class="fld">${t('nrData')}<input id="nrData" type="date"></label>
-        <label class="fld">${t('nrHora')}<input id="nrHora" value="09:00"></label>
+        <label class="fld">${t('nrHora')}<span id="nrHoraBox"></span></label>
       </div>
       <div class="frow">
         <label class="fld">${t('nrNome')}<input id="nrNome" placeholder="Maria Silva"></label>
@@ -1633,6 +1633,26 @@ function admBookings() {
     }).join('')}</div>`
     : `<div class="emptybox"><p>${t('emptyBookings')}</p></div>`}`);
   /* ---- lancamento manual ---- */
+  /* O horario e escolhido, nao digitado. Digitando, ela punha "09:00" num dia
+     cuja saida se chama "10:00 as 18h" — a reserva entrava mas nao descontava
+     vaga nenhuma, e o site seguia vendendo o lugar. Aqui so aparecem as
+     saidas que existem naquele dia, com quantas vagas ainda tem. */
+  const nrHoras = () => {
+    const box = $('#nrHoraBox'); if (!box) return;
+    const tourId = $('#nrTour').value, data = $('#nrData').value;
+    const saidas = (tourId && data) ? Cal.departures(tourId, data, data) : [];
+    if (saidas.length) {
+      box.innerHTML = `<select id="nrHora">${saidas.map(d => {
+        const livres = Cal.seatsLeft(tourId, d.date, d.time, d.capacity);
+        return `<option value="${esc(d.time)}">${esc(d.time)} · ${t('agFree', { n: livres })}</option>`;
+      }).join('')}</select>`;
+    } else {
+      /* Dia sem saida publicada: ela ainda pode lancar (uma reserva antiga,
+         um combinado a parte), mas precisa saber que aquilo nao tira vaga. */
+      box.innerHTML = `<input id="nrHora" value="09:00"><small class="why">${t('nrSemSaida')}</small>`;
+    }
+    $('#nrHora').addEventListener('change', () => nrRecalcula());
+  };
   const nrRecalcula = () => {
     const tt = Tours.get($('#nrTour').value);
     const pax = +$('#nrPax').value || 1;
@@ -1644,10 +1664,17 @@ function admBookings() {
        trava de formulario sujo (isBusyEditing) compara os dois */
     $('#nrValor').value = $('#nrValor').defaultValue = pr.total;
   };
-  ['#nrTour', '#nrPax', '#nrKids', '#nrData', '#nrHora'].forEach(sel => {
+  ['#nrPax', '#nrKids'].forEach(sel => {
     const el = $(sel); if (el) el.addEventListener('change', nrRecalcula);
   });
-  if ($('#nrData')) { $('#nrData').value = $('#nrData').defaultValue = isoToday(); nrRecalcula(); }
+  /* trocar passeio ou dia refaz a lista de horarios antes de recalcular */
+  ['#nrTour', '#nrData'].forEach(sel => {
+    const el = $(sel); if (el) el.addEventListener('change', () => { nrHoras(); nrRecalcula(); });
+  });
+  if ($('#nrData')) {
+    $('#nrData').value = $('#nrData').defaultValue = isoToday();
+    nrHoras(); nrRecalcula();
+  }
 
   $('#nrSalvar').onclick = () => {
     const nome = $('#nrNome').value.trim();

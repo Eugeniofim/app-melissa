@@ -253,6 +253,12 @@ const STR = {
   nrHora:      { pt: 'Horário', en: 'Time' },
   nrPessoas:   { pt: 'Pessoas', en: 'People' },
   nrCriancas:  { pt: 'Dessas, crianças', en: 'Of those, children' },
+  /* O horario da reserva lancada a mao TEM que ser o de uma saida publicada.
+     Em 06/09/2026 ela lancou 4 pessoas as 09:00 num dia cuja saida e
+     "10:00 as 18h": a reserva entrou, mas nao tirou vaga nenhuma daquela
+     saida, e o site continuou oferecendo 7 lugares. Agora e uma lista. */
+  nrSemSaida:  { pt: 'Este dia não tem saída publicada. A reserva vai ser salva, mas não vai tirar vaga de nenhuma saída — publique a data no passeio se quiser que ela conte.',
+                 en: 'This day has no published departure. The booking will be saved, but it will not take a seat from any departure — publish the date on the tour if you want it to count.' },
   nrNome:      { pt: 'Nome', en: 'Name' },
   nrWhats:     { pt: 'WhatsApp', en: 'WhatsApp' },
   nrEmail:     { pt: 'E-mail (se tiver)', en: 'Email (if any)' },

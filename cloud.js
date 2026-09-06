@@ -237,13 +237,38 @@ async function cloudPull() {
 
     /* Com fotos de parada, o estado passa de 1 MB. Baixar isso a cada 25s
        queimaria o plano dela e a internet do celular à toa. Primeiro
-       perguntamos só a data da última alteração — se não mudou, paramos aqui. */
+       perguntamos só a data da última alteração — se não mudou, não baixamos
+       o catálogo.
+
+       MAS as vagas não podem ficar congeladas junto. Quem reserva pelo site,
+       e a Melissa apagando uma reserva no painel, mudam a disponibilidade
+       SEM tocar no catálogo — o updated_at continua igual. Em 06/09/2026 foi
+       exatamente isso: ela via "5 vagas" em datas sem reserva nenhuma, porque
+       o aparelho mostrava uma contagem de dias antes. A contagem pública são
+       poucos bytes; relemos sempre. */
     if (lastStamp && !logged) {
       try {
-        const hR = await supaFetch('appstate?id=eq.1&select=updated_at', { headers: { Prefer: '' } });
+        const [hR, scR] = await Promise.all([
+          supaFetch('appstate?id=eq.1&select=updated_at', { headers: { Prefer: '' } }),
+          supaFetch('seat_counts?select=*', { headers: { Prefer: '' } }),
+        ]);
         if (hR.ok) {
           const h = (await hR.json())[0];
-          if (h && h.updated_at === lastStamp) return { ok: true, semMudanca: true };
+          if (h && h.updated_at === lastStamp) {
+            let vagasMudaram = false;
+            if (scR.ok) {
+              try {
+                const novas = (await scR.json()).map(r =>
+                  ({ tourId: r.tour_id, date: r.date, time: r.time, pax: +r.pax }));
+                if (JSON.stringify(novas) !== JSON.stringify(DB.seatCounts || [])) {
+                  DB.seatCounts = novas;
+                  localStorage.setItem(DB_KEY, JSON.stringify(DB));
+                  vagasMudaram = true;
+                }
+              } catch (e) { /* contagem ilegivel: fica com a que tinha */ }
+            }
+            return vagasMudaram ? { ok: true, vagasMudaram: true } : { ok: true, semMudanca: true };
+          }
         }
       } catch (e) { /* sem rede: segue para o caminho normal */ }
     }
@@ -293,7 +318,12 @@ async function cloudPull() {
        isso; para a Melissa (logada) o app baixava e REAPLICAVA tudo a cada
        25 s, e cada reaplicacao redesenhava a tela e a puxava para o topo
        dos Ajustes — o "scroll que sobe sozinho" de 03/09/2026. */
-    const assinatura = (st.updated_at || '') + '|' + (reservasOk ? JSON.stringify(bk) : '?');
+    /* As vagas entram na assinatura: sem isso, uma reserva nova (ou apagada)
+       era baixada, aplicada na memoria e o "semMudanca" saia ANTES do
+       localStorage.setItem la embaixo — a tela continuava com o numero velho
+       e o aparelho gravava o velho de novo no proximo load. */
+    const assinatura = (st.updated_at || '') + '|' + (reservasOk ? JSON.stringify(bk) : '?')
+                     + '|' + JSON.stringify(DB.seatCounts || []);
     if (reservasOk && lastAssinatura && assinatura === lastAssinatura) return { ok: true, semMudanca: true };
 
     /* nuvem manda */
