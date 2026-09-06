@@ -519,7 +519,11 @@ function viewTour(id) {
       <h1>${esc(x.name[LANG] || x.name.pt)}</h1>
       ${x.tagline && (x.tagline[LANG] || x.tagline.pt)
         ? `<p class="thsub">${esc(x.tagline[LANG] || x.tagline.pt)}</p>` : ''}
-      <span class="badge onhero">${esc(cancelaTxt(x))}</span>
+      <!-- A tarja de cancelamento saiu daqui a pedido da Melissa (06/09/2026):
+           a capa e a vitrine do passeio, e falar de sinal nao reembolsavel
+           antes de a pessoa saber o que e o passeio esfria a venda.
+           O texto continua em "Valor e reserva" e na tela de pagamento —
+           antes de pagar ela le, que e o que importa. -->
     </div>
   </div>
 
