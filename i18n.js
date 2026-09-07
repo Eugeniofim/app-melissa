@@ -399,16 +399,36 @@ const STR = {
   dateFull:     { pt: 'lotado', en: 'full' },
   /* ---- cobranca por Pix na tela do cliente ---- */
   pixTit:      { pt: 'Pagar por Pix', en: 'Pay with Pix' },
-  /* Sem cotacao no app (pedido da Melissa, 03/09/2026): o valor e em euro e
-     o cliente digita o equivalente em reais no banco dele. */
-  pixValor:    { pt: '{eur} — em reais, pela cotação do dia no seu banco',
-                 en: '{eur} — in Brazilian reais, at your bank\'s rate of the day' },
-  pixComo:     { pt: 'No computador, aponte a câmera do celular para o código acima. No celular, copie e cole no seu banco em "Pix Copia e Cola". O banco vai pedir o valor: digite o equivalente em reais.',
-                 en: 'On a computer, point your phone camera at the code above. On a phone, copy and paste it into your bank under "Pix Copia e Cola". Your bank will ask for the amount: type the equivalent in reais.' },
+  /* O valor em real vai DENTRO do codigo: sem ele o banco pergunta quanto e
+     e o cliente nao sabe — foi o que travou a primeira venda (07/09/2026). */
+  pixValor:    { pt: '{brl} · equivale a {eur}', en: '{brl} · equals {eur}' },
+  pixComo:     { pt: 'No computador, aponte a câmera do celular para o código acima. No celular, copie e cole no seu banco em "Pix Copia e Cola". O valor já vai junto — você não digita nada.',
+                 en: 'On a computer, point your phone camera at the code above. On a phone, copy and paste it into your bank under "Pix Copia e Cola". The amount is already included.' },
+  /* Sem cotacao o codigo sai sem valor. Dizer isso e melhor que deixar a
+     pessoa parada no banco sem saber quanto pagar. */
+  pixSemValor: { pt: 'Este código vai sem o valor. Me chame no WhatsApp que eu passo o valor exato em reais.',
+                 en: 'This code has no amount. Message me on WhatsApp and I will send you the exact amount in reais.' },
   pixCopiar:   { pt: 'Copiar código Pix', en: 'Copy Pix code' },
   pixCopiado:  { pt: 'Código copiado', en: 'Code copied' },
   pixDepois:   { pt: 'Depois de pagar, me manda o comprovante no WhatsApp — eu confirmo na hora.',
                  en: 'After paying, send me the receipt on WhatsApp and I will confirm right away.' },
+  /* ---- cotacao do Pix (07/09/2026) ---- */
+  admFxTit:   { pt: 'O valor do Pix em reais', en: 'The Pix amount in reais' },
+  admFxHelp:  { pt: 'O Pix só existe em real, então o código precisa levar o valor convertido — senão o banco pergunta quanto é e o cliente não sabe. A cotação vem do Banco Central Europeu e atualiza sozinha.',
+                en: 'Pix only works in reais, so the code must carry the converted amount — otherwise the bank asks how much and the client has no idea. The rate comes from the European Central Bank and updates on its own.' },
+  admFxTaxa:  { pt: 'Fixar a cotação (R$ por € 1)', en: 'Fix the rate (R$ per € 1)' },
+  admFxTaxaWhy:{ pt: 'Deixe em branco para usar a cotação do dia. Preencha só se você combinou um câmbio com o cliente e não quer que o número mude.',
+                 en: 'Leave blank to use the rate of the day. Fill it only if you agreed a rate with the client and do not want the number to move.' },
+  admFxMargem:{ pt: 'Margem sobre a cotação (%)', en: 'Margin over the rate (%)' },
+  admFxMargemWhy:{ pt: 'Deixe em zero para cobrar a cotação limpa — é o número que bate com o banco do cliente. Suba só se quiser cobrir o spread da conversão.',
+                   en: 'Leave at zero to charge the clean rate — that is the number that matches the client\'s bank. Raise it only to cover the conversion spread.' },
+  fxResumo:   { pt: 'Hoje 1 € = R$ {taxa}. Com isso, {eur} sai a {brl}.',
+                en: 'Today 1 € = R$ {taxa}. With this, {eur} comes to {brl}.' },
+  fxFixada:   { pt: 'Cotação fixada por você: 1 € = R$ {taxa}. {eur} sai a {brl}.',
+                en: 'Rate fixed by you: 1 € = R$ {taxa}. {eur} comes to {brl}.' },
+  fxSemCotacao:{ pt: '⚠ Sem cotação agora — o código Pix vai sair SEM valor e o cliente não vai saber quanto pagar. Fixe uma cotação no campo acima.',
+                 en: '⚠ No rate right now — the Pix code will go out WITHOUT an amount and the client will not know how much to pay. Fix a rate in the field above.' },
+  fxVelha:    { pt: 'cotação de antes, a rede não respondeu', en: 'older rate, the network did not respond' },
   admIban:    { pt: 'IBAN', en: 'IBAN' },
   admIbanName:{ pt: 'Nome na conta', en: 'Account holder' },
   admPayNote: { pt: 'Recado sobre o pagamento (opcional)', en: 'Note about payment (optional)' },

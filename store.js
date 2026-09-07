@@ -49,9 +49,11 @@ function _blank() {
               nota do saldo ficam fixos, para nao sumirem sem querer. */
            emailConfIntro:   { pt: '', en: '' },
            emailConfPS:      { pt: '', en: '' },
-           /* Nao existe mais cotacao euro->real no app: a Melissa pediu para
-              tirar (03/09/2026). O preco e em euro e o Pix vai sem valor —
-              o cliente digita o equivalente em reais pela cotacao do banco. */
+           /* Cotacao euro->real, so para o Pix (o preco continua em euro).
+              fxTaxa vazio = usa a cotacao do dia; preenchido = ela fixou.
+              fxMargem nasce ZERO: era a margem de 4% mais o arredondamento
+              que faziam o app dizer R$ 705 onde o banco dela dava R$ 669. */
+           fxTaxa: '', fxMargem: 0,
            /* a primeira tela: foto de fundo e a frase. Vazio = usa o padrao. */
            homePhoto: '', homeText: { pt: '', en: '' },
            bio: {

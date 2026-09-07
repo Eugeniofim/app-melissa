@@ -77,9 +77,16 @@ function pixCopiaECola({ chave, nome, cidade, valor, txid }) {
   return p + pixCrc(p);
 }
 
-/* O Pix vai SEM valor (pedido da Melissa, 03/09/2026): o preco e em euro e
-   o app nao converte mais. O cliente digita no banco o equivalente em reais
-   pela cotacao do dia — e ela confere no comprovante. */
+/* A Melissa cobra em euro; o Pix e em real. Sem o valor dentro do codigo, o
+   banco pergunta quanto e e o cliente nao sabe — foi o que travou a primeira
+   venda dela (07/09/2026). Usa a cotacao e a margem do resto do app (fx.js).
+   Sem cotacao nao ha valor: melhor mandar pedir no WhatsApp do que cobrar
+   um numero errado. */
+function pixValorEmReais(eur) {
+  if (typeof emReais !== 'function') return null;
+  const v = emReais(eur);
+  return v > 0 ? v : null;
+}
 
 /* Basta a chave. Nome e cidade sao praticamente decorativos no Pix: o banco
    de quem paga resolve o titular real pela propria chave. Exigir os tres era

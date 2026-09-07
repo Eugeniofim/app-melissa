@@ -471,8 +471,16 @@ function viewShowcase() {
 /* So mostra real para quem esta lendo em portugues: para um cliente frances
    ou alemao o numero em real e ruido. E se nao houver cotacao, nao aparece
    nada — inventar um valor seria pior. */
-/* A cotacao euro->real (fx.js, linhaReais, fxResumo) saiu do app em
-   03/09/2026 a pedido da Melissa: o preco e em euro, ponto. */
+/* O preco continua em euro. A cotacao existe so para o Pix, que so aceita
+   real — e ela precisa VER o numero antes de salvar, senao escolhe no escuro. */
+function fxResumo() {
+  const taxa = (typeof fxTaxa === 'function') && fxTaxa();
+  if (!taxa) return `<span class="alerta">${t('fxSemCotacao')}</span>`;
+  const ex = (DB.tours[0] && +DB.tours[0].price) || 195;
+  const chave = (typeof fxManual === 'function' && fxManual()) ? 'fxFixada' : 'fxResumo';
+  return t(chave, { taxa: taxa.toFixed(4).replace('.', ','), eur: eur(ex), brl: brl(emReais(ex)) })
+       + (typeof fxVencida === 'function' && fxVencida() ? ' · ' + t('fxVelha') : '');
+}
 /* texto bilingue: {pt,en}. Existia solto dentro de duas funcoes; agora e um so. */
 /* Claro, escuro, ou seguindo o aparelho. Guardado no proprio aparelho:
    e preferencia de quem olha, nao dado do negocio. */
@@ -719,19 +727,25 @@ function comoPagar(b, x) {
       <div class="crow"><input readonly value="${esc(valor)}"><button class="mini" data-cp="${esc(valor)}">${t('copyBtn')}</button></div>
       ${dono ? `<small class="who">${t('inNameOf')} ${esc(dono)}</small>` : ''}
     </div>`;
-  /* Pix SEM valor, de proposito (pedido da Melissa, 03/09/2026): o preco e
-     em euro e o app nao converte mais. O cliente digita no banco o
-     equivalente em reais pela cotacao do dia; ela confere no comprovante. */
+  /* O codigo Pix leva o valor em real DENTRO dele. Sem isso o banco pergunta
+     quanto e e o cliente nao sabe — foi o que travou a primeira venda de
+     verdade dela em 07/09/2026. Sem cotacao, o codigo sai sem valor e a tela
+     diz isso na cara, em vez de deixar a pessoa parada no banco. */
+  const brlValor = (typeof pixValorEmReais === 'function') ? pixValorEmReais(agora) : null;
   const codigoPix = (typeof pixDisponivel === 'function' && pixDisponivel())
-    ? pixCopiaECola({ chave: st.pixKey, nome: pixNome(), cidade: pixCidade(), txid: b.code })
+    ? pixCopiaECola({ chave: st.pixKey, nome: pixNome(), cidade: pixCidade(),
+                      valor: brlValor || undefined, txid: b.code })
     : null;
 
   const blocoPix = codigoPix ? `
     <div class="pixbox">
       <b class="pixtit">${t('pixTit')}</b>
-      <p class="pixvalor">${t('pixValor', { eur: eur(agora) })}</p>
+      <p class="pixvalor">${brlValor
+        ? t('pixValor', { brl: brl(brlValor), eur: eur(agora) })
+        : eur(agora)}</p>
+      ${brlValor ? '' : `<p class="why alerta">${t('pixSemValor')}</p>`}
       ${(typeof qrSvg === 'function') ? `<div class="pixqr">${qrSvg(codigoPix, { tamanho: 190, alt: t('pixTit') })}</div>` : ''}
-      <p class="why">${t('pixComo')}</p>
+      ${brlValor ? `<p class="why">${t('pixComo')}</p>` : ''}
       <textarea class="pixcod" id="pixCod" readonly rows="3">${esc(codigoPix)}</textarea>
       <button class="cta sm" data-cp="${esc(codigoPix)}">${t('pixCopiar')}</button>
     </div>` : '';
@@ -1995,6 +2009,18 @@ function admSettings() {
         <label class="fld">${t('admIban')}<input id="pgIban" value="${esc(DB.settings.iban || '')}" placeholder="FR76 …"></label>
         <label class="fld">${t('admIbanName')}<input id="pgIbanName" value="${esc(DB.settings.ibanName || '')}" placeholder="Melissa Hallais"></label>
       </div>
+      <div class="rulesep"></div>
+      <b>${t('admFxTit')}</b>
+      <p class="why">${t('admFxHelp')}</p>
+      <div class="frow">
+        <label class="fld">${t('admFxTaxa')}<input id="pgFxTaxa" type="number" min="0" step="0.0001"
+          value="${esc(DB.settings.fxTaxa || '')}" placeholder="${(typeof fxDoDia === 'function' && fxDoDia()) ? fxDoDia().toFixed(4) : '5,95'}">
+          <small class="why">${t('admFxTaxaWhy')}</small></label>
+        <label class="fld">${t('admFxMargem')}<input id="pgMargem" type="number" min="0" max="30" step="0.5"
+          value="${esc(DB.settings.fxMargem ?? 0)}"><small class="why">${t('admFxMargemWhy')}</small></label>
+      </div>
+      <p class="why" id="fxPrevia">${fxResumo()}</p>
+
       <label class="fld">${t('admPayNote')}<textarea id="pgNote" rows="3">${esc(DB.settings.payNote || '')}</textarea></label>
       <div class="rulesep"></div>
       <label class="optin"><input type="checkbox" id="pgCard" ${DB.settings.stripeAtivo ? 'checked' : ''}>
@@ -2190,9 +2216,23 @@ function admSettings() {
     DB.settings.ibanName = $('#pgIbanName').value.trim();
     DB.settings.payNote  = $('#pgNote').value.trim();
     DB.settings.stripeAtivo   = $('#pgCard').checked;
+    /* vazio = cotacao do dia; numero = ela fixou */
+    DB.settings.fxTaxa   = Math.max(0, +$('#pgFxTaxa').value || 0) || '';
+    DB.settings.fxMargem = Math.max(0, Math.min(30, +$('#pgMargem').value || 0));
     save(); cloudPushState();
     toast(t('payFieldsSaved'));
   };
+  /* a previa da cotacao acompanha o que ela digita, para nao escolher no escuro */
+  ['#pgFxTaxa', '#pgMargem'].forEach((sel) => {
+    const el = $(sel); if (!el) return;
+    el.addEventListener('input', () => {
+      const antesTaxa = DB.settings.fxTaxa, antesMargem = DB.settings.fxMargem;
+      DB.settings.fxTaxa = Math.max(0, +$('#pgFxTaxa').value || 0) || '';
+      DB.settings.fxMargem = Math.max(0, Math.min(30, +$('#pgMargem').value || 0));
+      const p = $('#fxPrevia'); if (p) p.innerHTML = fxResumo();
+      DB.settings.fxTaxa = antesTaxa; DB.settings.fxMargem = antesMargem;  /* so salva no botao */
+    });
+  });
   /* e-mail de aviso. Vazio e permitido: quer dizer "nao quero ser avisada".
      O que nao pode e salvar um endereco torto e ela achar que esta avisada. */
   $('#avSave').onclick = () => {
@@ -2698,6 +2738,13 @@ function formularioSujo() {
 addEventListener('hashchange', () => {
   if (pendingSync && !isBusyEditing()) { pendingSync = false; setTimeout(route, 60); }
 });
+
+/* ---------- cotacao ----------
+   Nao bloqueia o arranque: a tela abre e o valor em real entra quando a
+   cotacao chegar. So redesenha se a pessoa nao estiver no meio de algo. */
+if (typeof fxAtualiza === 'function') {
+  fxAtualiza().then((c) => { if (c && !isBusyEditing()) route({ manterScroll: true }); });
+}
 
 /* ---------- nuvem ---------- */
 cloudStart((r) => {
