@@ -11,6 +11,10 @@ const i = html.indexOf('@media (pointer: coarse)');
 ok('existe o bloco para quem usa o dedo', i > 0);
 const bloco = html.slice(i, html.indexOf('}\n}', i) + 3);
 ok('minimo de 44px', /min-height:\s*44px/.test(bloco));
+/* Os -/+ de "quantas pessoas" tinham 32px. E o alvo mais importante da
+   reserva: errar ali no celular custa a venda. */
+ok('os botoes de quantidade entram na regra', /\.pm button/.test(bloco),
+   'o -/+ de adultos e criancas tem que ter 44px no dedo');
 for (const cls of ['.langs button', '.chip', '.cta', '.mini', '.coach-next', '.coach-skip', '.linkmap', '.novax', '.adm-entry'])
   ok('cobre ' + cls, bloco.includes(cls), 'esse alvo volta a ficar pequeno');
 ok('campos com 16px (senao o iOS da zoom sozinho)', /font-size:\s*16px/.test(bloco));
