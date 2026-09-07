@@ -744,6 +744,11 @@ function comoPagar(b, x) {
         ? t('pixValor', { brl: brl(brlValor), eur: eur(agora) })
         : eur(agora)}</p>
       ${brlValor ? '' : `<p class="why alerta">${t('pixSemValor')}</p>`}
+      ${brlValor ? `<p class="why pixfonte">${t(
+        /* cotacao crua do BCE? entao pode dizer o nome. Com margem dela ou
+           cotacao fixada por ela, o honesto e so "cambio usado". */
+        (!(+st.fxMargem) && !(typeof fxManual === 'function' && fxManual())) ? 'pixFonte' : 'pixFonteDela',
+        { taxa: (brlValor / agora).toFixed(4).replace('.', ',') })}</p>` : ''}
       ${(typeof qrSvg === 'function') ? `<div class="pixqr">${qrSvg(codigoPix, { tamanho: 190, alt: t('pixTit') })}</div>` : ''}
       ${brlValor ? `<p class="why">${t('pixComo')}</p>` : ''}
       <textarea class="pixcod" id="pixCod" readonly rows="3">${esc(codigoPix)}</textarea>

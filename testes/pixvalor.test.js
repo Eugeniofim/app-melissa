@@ -81,6 +81,18 @@ t('o "não digita nada" só aparece quando o valor foi junto',
    /brlValor \? `<p class="why">\$\{t\('pixComo'\)\}<\/p>` : ''/.test(app));
 t('o código é montado com o valor', /valor: brlValor \|\| undefined/.test(app));
 
+console.log('de onde veio a cotação (a Melissa perguntou)');
+t('a tela diz a fonte do câmbio', /pixFonte/.test(app),
+   'ninguem aceita um valor em real sem saber de onde veio');
+t('só credita o BCE quando a cotação é crua',
+   /!\(\+st\.fxMargem\) && !\(typeof fxManual === 'function' && fxManual\(\)\)/.test(app),
+   'com margem por cima nao da para dizer que o numero e do Banco Central Europeu');
+t('a taxa mostrada é a que foi de fato usada',
+   /taxa: \(brlValor \/ agora\)\.toFixed\(4\)/.test(app),
+   'mostrar outra taxa faria o cliente refazer a conta e achar diferenca');
+t('some junto com o valor quando não há cotação',
+   /brlValor \? `<p class="why pixfonte">/.test(app));
+
 console.log('o painel dela');
 t('tem campo para fixar a cotação', /id="pgFxTaxa"/.test(app));
 t('tem campo de margem', /id="pgMargem"/.test(app));

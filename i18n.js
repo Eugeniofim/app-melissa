@@ -406,6 +406,15 @@ const STR = {
                  en: 'On a computer, point your phone camera at the code above. On a phone, copy and paste it into your bank under "Pix Copia e Cola". The amount is already included.' },
   /* Sem cotacao o codigo sai sem valor. Dizer isso e melhor que deixar a
      pessoa parada no banco sem saber quanto pagar. */
+  /* De onde saiu o numero. A Melissa pediu (07/09/2026) e tem razao:
+     ninguem aceita um valor em real sem saber de onde veio, e dizer a fonte
+     evita a conversa de "por que essa cotacao?" no meio da venda.
+     So diz "Banco Central Europeu" quando e de fato a cotacao crua dele —
+     com margem por cima, vira "cambio usado", que e a verdade. */
+  pixFonte:    { pt: 'Câmbio do Banco Central Europeu de hoje · 1 € = R$ {taxa}',
+                 en: 'European Central Bank rate today · 1 € = R$ {taxa}' },
+  pixFonteDela:{ pt: 'Câmbio usado · 1 € = R$ {taxa}',
+                 en: 'Rate used · 1 € = R$ {taxa}' },
   pixSemValor: { pt: 'Este código vai sem o valor. Me chame no WhatsApp que eu passo o valor exato em reais.',
                  en: 'This code has no amount. Message me on WhatsApp and I will send you the exact amount in reais.' },
   pixCopiar:   { pt: 'Copiar código Pix', en: 'Copy Pix code' },
