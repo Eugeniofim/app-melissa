@@ -273,8 +273,28 @@ async function cloudPull() {
       } catch (e) { /* sem rede: segue para o caminho normal */ }
     }
 
+    /* LOGADA: as reservas dela mudam a toda hora, mas o CATALOGO quase nunca.
+       Ate 20/09/2026 o atalho de cima valia so pra visitante, e logada o app
+       baixava o catalogo inteiro — 1,9 MB, por causa das fotos das paradas —
+       a cada 25 s. Com o painel dela aberto isso deu 13,4 GB em 17 dias e
+       estourou o plano. Agora, logada tambem: pergunta a data primeiro, e o
+       catalogo so desce quando mudou de verdade. As reservas continuam
+       vindo sempre, que e o que ela precisa ver na hora. */
+    let precisaCatalogo = true;
+    if (logged && lastStamp && DB.tours && DB.tours.length) {
+      try {
+        const hR = await supaFetch('appstate?id=eq.1&select=updated_at', { headers: { Prefer: '' } });
+        if (hR.ok) {
+          const h = (await hR.json())[0];
+          if (h && h.updated_at === lastStamp) precisaCatalogo = false;
+        }
+      } catch (e) { /* sem rede: segue pelo caminho normal e baixa tudo */ }
+    }
+
     const [stR, bkR, scR] = await Promise.all([
-      supaFetch('appstate?id=eq.1&select=data,updated_at', { headers: { Prefer: '' } }),
+      precisaCatalogo
+        ? supaFetch('appstate?id=eq.1&select=data,updated_at', { headers: { Prefer: '' } })
+        : Promise.resolve(null),
       logged ? supaFetch('bookings?select=data&order=created_at.asc', { headers: { Prefer: '' } })
              : Promise.resolve({ ok: true, json: async () => [] }),
       /* visitante só enxerga a contagem de lugares, nunca os dados de quem reservou */
@@ -285,8 +305,8 @@ async function cloudPull() {
        das reservas falhasse (sessao expirada, por exemplo), a funcao abortava
        e NAO aplicava nem os passeios — o painel ficava vazio como se ela nao
        tivesse nada. Uma coisa nao pode derrubar a outra. */
-    if (!stR.ok) return { ok: false };
-    const st = (await stR.json())[0];
+    if (precisaCatalogo && !stR.ok) return { ok: false };
+    const st = precisaCatalogo ? (await stR.json())[0] : null;
     if (st) lastStamp = st.updated_at;
 
     const reservasOk = bkR.ok;
@@ -302,7 +322,9 @@ async function cloudPull() {
       DB.seatCounts = [];
     }
 
-    const cloudEmpty = !st || !st.data || !st.data.tours || !st.data.tours.length;
+    /* sem catalogo novo, vale o que ja esta no aparelho — e ele nao esta
+       vazio, senao precisaCatalogo seria true */
+    const cloudEmpty = precisaCatalogo && (!st || !st.data || !st.data.tours || !st.data.tours.length);
     if (cloudEmpty) {
       /* Nuvem vazia costuma ser primeira vez — mas tambem acontece logo apos
          uma limpeza intencional. Se este aparelho tambem esta vazio, nao ha
@@ -327,20 +349,24 @@ async function cloudPull() {
        era baixada, aplicada na memoria e o "semMudanca" saia ANTES do
        localStorage.setItem la embaixo — a tela continuava com o numero velho
        e o aparelho gravava o velho de novo no proximo load. */
-    const assinatura = (st.updated_at || '') + '|' + (reservasOk ? JSON.stringify(bk) : '?')
+    const assinatura = ((st ? st.updated_at : lastStamp) || '') + '|' + (reservasOk ? JSON.stringify(bk) : '?')
                      + '|' + JSON.stringify(DB.seatCounts || []);
     if (reservasOk && lastAssinatura && assinatura === lastAssinatura) return { ok: true, semMudanca: true };
 
-    /* nuvem manda */
-    const keepLang = DB.settings.lang;
-    Object.assign(DB, {
-      tours: st.data.tours || [], rules: st.data.rules || [],
-      departures: st.data.departures || [], blocks: st.data.blocks || [],
-      coupons: st.data.coupons || [],
-      /* a nuvem pode ser mais antiga que o app: completa o que faltar */
-      settings: fillSettings({ ...st.data.settings, lang: keepLang,
-                  tutorialClient: DB.settings.tutorialClient, tutorialAdm: DB.settings.tutorialAdm }),
-    });
+    /* nuvem manda — mas so quando ela mandou catalogo novo. Se o catalogo
+       nao desceu, o que esta no aparelho JA e o da nuvem: escrever por cima
+       com um st que nem existe apagaria os passeios dela. */
+    if (st && st.data) {
+      const keepLang = DB.settings.lang;
+      Object.assign(DB, {
+        tours: st.data.tours || [], rules: st.data.rules || [],
+        departures: st.data.departures || [], blocks: st.data.blocks || [],
+        coupons: st.data.coupons || [],
+        /* a nuvem pode ser mais antiga que o app: completa o que faltar */
+        settings: fillSettings({ ...st.data.settings, lang: keepLang,
+                    tutorialClient: DB.settings.tutorialClient, tutorialAdm: DB.settings.tutorialAdm }),
+      });
+    }
     /* reservas: nuvem + locais que ainda não subiram.
        Se a busca das reservas falhou, mantemos as que ja estao no aparelho —
        apagar por causa de um erro de rede seria pior. */
@@ -386,7 +412,11 @@ function cloudStart(onChange) {
       await new Promise(res => setTimeout(res, wait));
     }
   })();
-  setInterval(tick, 25000);
+  /* Relogio: 60 s e SO com a aba na frente. Antes batia a cada 25 s mesmo
+     com a aba escondida, dia e noite — uma aba esquecida aberta era um
+     ralo. Ao voltar pra aba o visibilitychange abaixo busca na hora, entao
+     nada fica velho pra quem esta olhando. */
+  setInterval(() => { if (!document.hidden) tick(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
   addEventListener('online', tick);
 }
