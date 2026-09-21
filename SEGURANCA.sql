@@ -50,7 +50,9 @@ create or replace view seat_counts as
          data->>'time'   as time,
          sum((data->>'pax')::int) as pax
   from bookings
-  where coalesce(data->>'status','confirmed') <> 'cancelled'
+  -- so RESERVA conta vaga. 'pending' e pedido sem pagamento (21/09/2026):
+  -- nao segura lugar; quem pagar primeiro fica com ele.
+  where coalesce(data->>'status','confirmed') = 'confirmed'
   group by 1,2,3;
 alter view seat_counts set (security_invoker = off);
 grant select on seat_counts to anon, authenticated;

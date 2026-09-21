@@ -61,7 +61,9 @@ t('as linhas separam adulto de criança',
 
 console.log('criança ocupa vaga como qualquer pessoa');
 vm.runInContext(`Bookings.create({ tourId: 'natal', date: '2026-12-05', time: '09h', name: 'Ana',
-  email: 'a@x.com', whats: '+55', pax: 3, criancas: 1, policy: 'split', origin: 'site' });`, ctx);
+  email: 'a@x.com', whats: '+55', pax: 3, criancas: 1, policy: 'split', origin: 'site' });
+  /* do site nasce PEDIDO e nao ocupa vaga; o pagamento e o que reserva */
+  Bookings.payBalance(DB.bookings[0].id, 'pix');`, ctx);
 const nova = vm.runInContext('DB.bookings[0]', ctx);
 t('a reserva guarda quantas são crianças', nova.criancas === 1);
 t('pax é o total de gente', nova.pax === 3);

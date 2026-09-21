@@ -61,8 +61,10 @@ const mi = i18n.indexOf('const STR'), mf = i18n.indexOf('function t(', mi);
 eval(i18n.slice(mi, mf).replace('const STR', 'globalThis.STR'));
 /* 21/09/2026: a regra virou "reservou tem que pagar". O titulo agora diz ate
    quando a vaga esta segurada — e continua sem prometer vaga garantida. */
-t('titulo pos-reserva nao promete vaga garantida', !/garantid|confirmad/i.test(STR.booked.pt) && /\{h\}/.test(STR.booked.pt));
-t('texto pos-reserva diz que sem pagamento a reserva e cancelada', /cancelada automaticamente/.test(STR.sentAll.pt));
+/* 21/09/2026, regra final: sem pagamento nao e reserva — e pedido, e nao
+   segura vaga. A tela diz isso sem rodeio. */
+t('titulo pos-reserva diz que falta o pagamento para reservar', /pagamento/i.test(STR.booked.pt) && !/reservad[oa]\b/i.test(STR.booked.pt));
+t('texto pos-reserva diz que o lugar continua livre ate pagar', /continua livre/.test(STR.sentAll.pt) && /stays open/.test(STR.sentAll.en));
 t('etiqueta sem pagamento diz "vaga nao garantida"', /não garantida/.test(STR.stEsperando.pt));
 t('etiqueta com sinal diz "vaga garantida"', /vaga garantida/.test(STR.stSinal.pt));
 t('"metade agora" diz que a cobranca chega por e-mail', /e-mail/.test(STR.paySplitSub.pt) && /\{d\} dias/.test(STR.paySplitSub.pt));

@@ -17,7 +17,11 @@ Block      {id, from, until, reason}                        // bloqueio global (
 Booking    {id, code, tourId, date, time, name, email, whats, insta, pax, total,
             coupon, discount, policy:'full'|'split',
             payments:[{amount, date, method, kind:'full'|'deposit'|'balance'}],
-            status:'confirmed'|'cancelled', createdAt, origin}
+            status:'pending'|'confirmed'|'cancelled', createdAt, origin}
+   'pending' = PEDIDO: veio do site e ainda nao pagou. Nao ocupa vaga, nao
+   aparece como reserva. Vira 'confirmed' no primeiro pagamento (cartao, ou
+   Pix que ela marcou "Recebi"). Regra da Melissa (21/09/2026): sem
+   pagamento nao e reserva.
 Coupon     {code, pct, until, oncePerPerson, uses:[email]}
 ------------------------------------------------------ */
 
@@ -448,11 +452,15 @@ const Bookings = {
       criancas: Math.max(0, Math.min(+criancas || 0, pax)),
       coupon: couponCode, discount, policy,
       consent: consent ? { ok: true, at: new Date().toISOString(), src: 'checkout' } : { ok: false },
-      payments: [], status: 'confirmed',
+      payments: [],
+      /* Do site nasce como PEDIDO: so vira reserva quando o dinheiro entra.
+         Ate la nao ocupa vaga — quem pagar primeiro fica com o lugar. */
+      status: 'pending',
       createdAt: new Date().toISOString(), origin: origin || 'site',
       /* Ate quando a vaga fica segurada sem pagamento. Gravado na reserva, e
          nao calculado depois: foi este prazo que a pessoa leu na tela, e ele
          nao pode mudar se a Melissa mexer no ajuste amanha. */
+      /* (aqui: ate quando o PEDIDO vale; depois o robo descarta) */
       prazoPagamento: new Date(Date.now() + ((+DB.settings.horasPagamento || 24) * 3600e3)).toISOString(),
       /* Em que idioma ele reservou. Sem isto o e-mail de recibo sai em
          portugues para um frances que leu a tela inteira em ingles. */
@@ -545,7 +553,7 @@ const Bookings = {
   /* lugares ja vendidos numa saida — base do preco escalonado e das vagas */
   vendidosEm(tourId, date, time) {
     const local = DB.bookings
-      .filter(b => b.tourId === tourId && b.date === date && b.time === time && b.status !== 'cancelled')
+      .filter(b => b.tourId === tourId && b.date === date && b.time === time && b.status === 'confirmed')
       .reduce((s, b) => s + b.pax, 0);
     const row = contagemPublica(tourId, date, time);
     return row ? Math.max(local, +row.pax) : local;
@@ -571,10 +579,19 @@ const Bookings = {
     if (total <= 0) return true;
     return Bookings.paid(b) * 2 >= total;
   },
+  /* Primeiro dinheiro que entra transforma o PEDIDO em RESERVA. */
+  confirmaSePago(b) {
+    if (b && b.status === 'pending' && Bookings.paid(b) > 0) { b.status = 'confirmed'; b.confirmadaEm = new Date().toISOString(); }
+  },
+  /* "Recebi o sinal": num pedido, grava so a metade (ou tudo, se a
+     politica for pagar de uma vez) e confirma. Numa reserva ja confirmada
+     com saldo, grava o que falta — comportamento de sempre. */
   payBalance(id, method) {
     const b = Bookings.get(id); if (!b) return;
     const due = Bookings.due(b); if (due <= 0) return;
-    b.payments.push({ amount: due, date: isoToday(), method: method || 'card', kind: 'balance' });
+    const valor = (b.status === 'pending' && Bookings.paid(b) === 0) ? Math.min(due, Bookings.sinal(b)) : due;
+    b.payments.push({ amount: valor, date: isoToday(), method: method || 'card', kind: valor >= due ? (Bookings.paid(b) === 0 ? 'full' : 'balance') : 'deposit' });
+    Bookings.confirmaSePago(b);
     localStorage.setItem(DB_KEY, JSON.stringify(DB));
     if (typeof cloudUpdateBooking === 'function') cloudUpdateBooking(b);
   },
@@ -615,7 +632,7 @@ const Clients = {
   all() {
     const map = new Map();
     for (const b of DB.bookings) {
-      if (b.status === 'cancelled') continue;
+      if (b.status !== 'confirmed') continue;
       const key = (b.email || b.whats || b.name).toLowerCase();
       const c = map.get(key) || { name: b.name, email: b.email, whats: b.whats, insta: b.insta,
                                   tours: 0, spent: 0, last: '', origins: new Set(), consent: false, consentAt: '' };
@@ -666,7 +683,7 @@ const Reports = {
   /* desempenho por passeio no intervalo */
   byTour(fromIso, toIso) {
     return Tours.all().map(x => {
-      const bs = DB.bookings.filter(b => b.tourId === x.id && b.status !== 'cancelled'
+      const bs = DB.bookings.filter(b => b.tourId === x.id && b.status === 'confirmed'
                                     && b.date >= fromIso && b.date <= toIso);
       const deps = new Set(bs.map(b => b.date + b.time));
       const pax = bs.reduce((s, b) => s + b.pax, 0);
@@ -683,7 +700,7 @@ const Reports = {
     const paises = {};
     let total = 0, semInfo = 0;
     for (const b of DB.bookings) {
-      if (b.status === 'cancelled' || b.date < fromIso || b.date > toIso) continue;
+      if (b.status !== 'confirmed' || b.date < fromIso || b.date > toIso) continue;
       total++;
       const g = b.geo;
       if (!g || !g.paisCod) { semInfo++; continue; }
@@ -699,7 +716,7 @@ const Reports = {
     return { paises: lista, total, semInfo };
   },
   totals(fromIso, toIso) {
-    const bs = DB.bookings.filter(b => b.status !== 'cancelled' && b.date >= fromIso && b.date <= toIso);
+    const bs = DB.bookings.filter(b => b.status === 'confirmed' && b.date >= fromIso && b.date <= toIso);
     const revenue = DB.bookings.reduce((s, b) =>
       s + b.payments.filter(p => p.date >= fromIso && p.date <= toIso).reduce((t, p) => t + p.amount, 0), 0);
     const pax = bs.reduce((s, b) => s + b.pax, 0);

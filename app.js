@@ -978,8 +978,8 @@ function renderBook() {
     const b = S.booking, due = Bookings.due(b);
     book.innerHTML = `
       <div class="okc">✓</div>
-      <h2 class="okh">${b.prazoPagamento ? t('booked', { h: fmtHora(b.prazoPagamento) }) : t('booked', { h: '' })}</h2>
-      <p class="hint center">${t('sentAll')}</p>
+      <h2 class="okh">${t('booked')}</h2>
+      <p class="hint center">${t('sentAll', { h: b.prazoPagamento ? fmtHora(b.prazoPagamento) : '' })}</p>
       <div class="voucher">
         <small>${t('yourCode')}</small><div class="code">${esc(b.code)}</div>
         <p>${fmtDate(b.date)} · ${b.time}</p><p>${esc(noIdioma(x.meeting))}</p>
@@ -1586,12 +1586,12 @@ function situacaoPgto(b, hoje) {
   if (b.status === 'cancelled') return { classe: 'n', titulo: t(b.canceladaPor === 'prazo' ? 'stCancelPrazo' : 'cancelled'), conta, aberta: false };
   if (falta <= 0)               return { classe: 'ok', titulo: t('stPago'), conta, aberta: false };
 
-  /* Reserva do site sem NADA pago: o que manda e o prazo de pagamento, nao o
-     do saldo. Passou o prazo, o robo cancela na proxima rodada. */
-  if (pago <= 0 && b.prazoPagamento) {
-    const venceu = new Date(b.prazoPagamento).getTime() < Date.now();
-    return { classe: venceu ? 'bad' : 'warn',
-             titulo: venceu ? t('stVencido') : t('stCancelaEm', { h: fmtHora(b.prazoPagamento) }),
+  /* PEDIDO (site, nada pago): nao e reserva, nao ocupa vaga. O que manda e
+     o prazo do pedido; vencido, o robo descarta na proxima rodada. */
+  if (b.status === 'pending' || (pago <= 0 && b.prazoPagamento)) {
+    const venceu = b.prazoPagamento && new Date(b.prazoPagamento).getTime() < Date.now();
+    return { classe: venceu ? 'bad' : 'warn', pedido: true,
+             titulo: venceu ? t('stPedidoVenc') : t('stPedido', { h: b.prazoPagamento ? fmtHora(b.prazoPagamento) : '' }),
              conta, aberta: true };
   }
 
@@ -1647,7 +1647,7 @@ function admBookings() {
       const due = Bookings.due(b);
       const st = situacaoPgto(b, today);
       const pill = `<span class="pill conta ${st.classe}"><b>${st.titulo}</b><small>${st.conta}</small></span>`;
-      const act = st.aberta ? `<button class="mini strong" data-got="${esc(b.id)}">${t('gotBalance')}</button>` : '';
+      const act = st.aberta ? `<button class="mini strong" data-got="${esc(b.id)}">${t(st.pedido ? 'gotPedido' : 'gotBalance')}</button>` : '';
       /* A confirmacao ao cliente sai sozinha (robo) quando a reserva tem
          metade paga; aqui so se mostra que ja foi. Nao ha mais botao: a
          Melissa pediu que o cliente receba UMA mensagem, e so quando pagou. */
@@ -2371,7 +2371,7 @@ function admAgenda() {
      que ja passou aparece vazio mesmo tendo tido gente — o historico dela
      sumia da agenda. Aqui recuperamos os dias pelas reservas que existem. */
   Bookings.all()
-    .filter(b => b.status !== 'cancelled' && b.date >= first && b.date <= last)
+    .filter(b => b.status === 'confirmed' && b.date >= first && b.date <= last)
     .forEach(b => {
       const lista = byDay[b.date] = byDay[b.date] || [];
       if (lista.some(d => d.time === b.time && d.tour && d.tour.id === b.tourId)) return;
@@ -2421,7 +2421,7 @@ function admAgenda() {
         <h3>${t('agDayOf', { d: fmtDate(sel) })}</h3>
         ${selList.length ? selList.map(d => {
           const bs = DB.bookings.filter(b => b.tourId === d.tour.id && b.date === d.date
-                                        && b.time === d.time && b.status !== 'cancelled');
+                                        && b.time === d.time && b.status === 'confirmed');
           return `<div class="deprow">
             <div class="tinfo"><b>${d.time} · ${esc(d.tour.name[LANG] || d.tour.name.pt)}</b>
               <small>${t('agBooked', { n: d.booked })} · ${t('agFree', { n: d.left })}</small></div>

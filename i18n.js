@@ -185,8 +185,12 @@ const STR = {
      A tela nao pode dizer "esta reservado" antes de o dinheiro entrar. */
   /* Reservou tem que pagar (regra da Melissa, 21/09/2026). A tela diz ate
      quando a vaga esta segurada — e que depois disso ela e cancelada. */
-  booked:      { pt: 'Sua vaga está reservada até {h}.', en: 'Your spot is held until {h}.' },
-  sentAll:     { pt: 'Pague até lá — cartão ou Pix — para garantir. Se o pagamento não entrar, a reserva é cancelada automaticamente e a vaga volta a ficar livre. Guarde o código abaixo.',
+  /* Sem pagamento nao e reserva — e PEDIDO, e nao segura vaga (regra da
+     Melissa, 21/09/2026). A tela tem que dizer isso sem rodeio. */
+  booked:      { pt: 'Falta o pagamento para reservar.', en: 'Pay to complete your booking.' },
+  sentAll:     { pt: 'Sua vaga só fica reservada quando o pagamento entrar — cartão ou Pix. Até lá o lugar continua livre para outras pessoas. Este pedido vale até {h}. Guarde o código abaixo.',
+                 en: 'Your spot is only booked once the payment arrives — card or Pix. Until then the seat stays open to others. This request is valid until {h}. Keep the code below.' },
+  sentAllVelho2:{ pt: 'Pague até lá — cartão ou Pix — para garantir. Se o pagamento não entrar, a reserva é cancelada automaticamente e a vaga volta a ficar livre. Guarde o código abaixo.',
                  en: 'Pay by then — card or Pix — to secure it. If the payment does not arrive, the booking is cancelled automatically and the spot is released. Keep the code below.' },
   sentAllVelho:{ pt: 'Sua vaga fica garantida quando o pagamento (ou o sinal) entrar — aí você recebe um e-mail de confirmação. Guarde o código abaixo.',
                  en: 'Your spot is secured once the payment (or the deposit) arrives — then you get a confirmation email. Keep the code below.' },
@@ -218,12 +222,13 @@ const STR = {
      quem pagou metade e quem nao pagou nada. */
   stPago:      { pt: 'Pago', en: 'Paid' },
   stEsperando: { pt: 'Aguardando pagamento · vaga não garantida', en: 'Awaiting payment · spot not secured' },
-  stCancelaEm: { pt: 'Aguardando pagamento · cancela sozinha {h}', en: 'Awaiting payment · auto-cancels {h}' },
-  stVencido:   { pt: 'Prazo de pagamento vencido · cancela na próxima rodada', en: 'Payment deadline passed · cancels on the next run' },
-  stCancelPrazo:{ pt: 'Cancelada · não pagou no prazo', en: 'Cancelled · did not pay in time' },
+  stPedido:    { pt: 'Pedido · não ocupa vaga · vale até {h}', en: 'Request · no seat held · valid until {h}' },
+  stPedidoVenc:{ pt: 'Pedido vencido · some na próxima rodada', en: 'Request expired · removed on the next run' },
+  stCancelPrazo:{ pt: 'Pedido descartado · não pagou', en: 'Request dropped · did not pay' },
+  gotPedido:   { pt: 'Recebi · vira reserva', en: 'Received · book it' },
   /* ajuste do prazo */
-  admHoras:    { pt: 'Reserva sem pagamento é cancelada sozinha depois de (horas)', en: 'Unpaid booking is cancelled automatically after (hours)' },
-  admHorasWhy: { pt: 'A vaga fica segurada por esse tempo. Se nada entrar — cartão ou Pix que você marcou "Recebi" — o robô cancela e a vaga volta. Você recebe um e-mail quando isso acontecer.',
+  admHoras:    { pt: 'Pedido sem pagamento some depois de (horas)', en: 'Unpaid request is dropped after (hours)' },
+  admHorasWhy: { pt: 'Reserva do site só vale com pagamento: até o dinheiro entrar é um pedido, e não ocupa vaga. Passado esse tempo sem nada — cartão, ou Pix que você marcou "Recebi" — o robô descarta o pedido e te avisa.',
                  en: 'The spot is held for this long. If nothing arrives — card, or Pix you marked "Received" — the robot cancels it and the seat is released. You get an email when that happens.' },
   stSinal:     { pt: 'Sinal recebido · vaga garantida', en: 'Deposit received · spot secured' },
   stAtrasado:  { pt: 'Atrasado há {n} dias', en: '{n} days late' },
@@ -404,7 +409,7 @@ const STR = {
   pgConferindo: { pt: 'Conferindo seu pagamento…', en: 'Checking your payment…' },
   pgEspere:     { pt: 'Um instante, estou perguntando ao banco.', en: 'One moment, asking the bank.' },
   pgOkTit:      { pt: 'Pagamento confirmado', en: 'Payment confirmed' },
-  pgOk:         { pt: 'Recebemos seu pagamento. Sua reserva <b>{code}</b> está garantida — a Melissa já foi avisada.',
+  pgOk:         { pt: 'Recebemos seu pagamento. Agora sim: sua reserva <b>{code}</b> está feita e a vaga é sua — a Melissa já foi avisada.',
                   en: 'We received your payment. Your booking <b>{code}</b> is secured — Melissa has been notified.' },
   pgDuvidaTit:  { pt: 'Ainda não consegui confirmar', en: 'Could not confirm yet' },
   pgDuvida:     { pt: 'Se o valor saiu do seu cartão, está tudo certo — às vezes o banco demora alguns minutos. Guarde o código <b>{code}</b> e, se quiser, fale com a Melissa.',
@@ -481,7 +486,7 @@ const STR = {
                 en: 'Email the confirmation once the payment arrives' },
   admCliHelp: { pt: 'O cliente recebe UMA mensagem, e só quando pagou. Cartão: o Stripe registra e a confirmação sai sozinha. Pix: quando você tocar "Recebi" na reserva, a confirmação sai sozinha. Em até 30 minutos.',
                 en: 'The client gets ONE message, and only once they have paid. Card: Stripe records it and the confirmation goes out on its own. Pix: when you tap "Received" on the booking, the confirmation goes out on its own. Within 30 minutes.' },
-  admCliNota: { pt: 'Quem reservou e não pagou não recebe nada — a vaga não está garantida.',
+  admCliNota: { pt: 'Quem fez o pedido e não pagou não recebe nada — não é reserva e não ocupa vaga.',
                 en: 'Whoever booked and did not pay gets nothing — the spot is not secured.' },
   confClienteFeito: { pt: 'confirmação automática por e-mail', en: 'automatic email confirmation' },
   /* ---- apagar reserva (pedido da Melissa, 03/09/2026) ----

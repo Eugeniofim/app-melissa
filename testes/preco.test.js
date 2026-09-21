@@ -13,7 +13,9 @@ function ambiente(vendidos){
   const tour={id:'fn',priceMode:'person',price:195,priceLate:225,earlySeats:3,max:7,min:3};
   ctx.__tour=tour; ctx.__vendidos=vendidos;
   vm.runInContext(`DB.tours=[__tour]; DB.bookings=[];
-    for (let i=0;i<__vendidos;i++) DB.bookings.push({id:'b'+i,tourId:'fn',date:'2026-12-05',time:'09:00',pax:1,seatCounts:1,payments:[],name:'x'+i});`,ctx);
+    /* 'confirmed' de proposito: desde 21/09/2026 so RESERVA consome vaga e
+       promo. Um pedido sem pagamento (status 'pending') nao conta. */
+    for (let i=0;i<__vendidos;i++) DB.bookings.push({id:'b'+i,tourId:'fn',date:'2026-12-05',time:'09:00',pax:1,status:'confirmed',payments:[],name:'x'+i});`,ctx);
   return ctx;
 }
 const restantes=(c)=>vm.runInContext("Bookings.precoDe(__tour,'fn','2026-12-05','09:00',1).baratasRestantes",c);

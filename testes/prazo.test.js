@@ -44,6 +44,27 @@ chk('reserva lançada à mão não tem prazo', !vm.runInContext(`Bookings.criarM
 chk('o padrão da loja é 24', vm.runInContext('DB.settings.horasPagamento', loja()) === 24);
 
 /* ---------- dados de verdade ---------- */
+console.log('pedido não é reserva');
+{
+  const c = loja();
+  const b = cria(c);
+  chk('reserva do site nasce como PEDIDO', b.status === 'pending');
+  chk('pedido NÃO ocupa vaga', vm.runInContext("Cal.seatsLeft('natal','2026-12-05','09:00',7)", c) === 7);
+  chk('pedido NÃO consome as vagas do preço promocional', vm.runInContext("Bookings.vendidosEm('natal','2026-12-05','09:00')", c) === 0);
+  chk('pedido não entra nos relatórios', vm.runInContext("Reports.totals('2026-12-01','2026-12-31').bookings", c) === 0);
+  vm.runInContext(`Bookings.payBalance('${b.id}', 'pix')`, c);
+  const dep = vm.runInContext(`Bookings.get('${b.id}')`, c);
+  chk('"Recebi" no pedido grava só o que se pede agora (tudo, pois a política é full)', dep.payments[0].amount === 195, 'gravou ' + dep.payments[0].amount);
+  chk('e o pedido vira RESERVA', dep.status === 'confirmed');
+  chk('agora sim ocupa a vaga', vm.runInContext("Cal.seatsLeft('natal','2026-12-05','09:00',7)", c) === 6);
+  const s2 = loja(); const b2 = vm.runInContext(`Bookings.create({ tourId: 'natal', date: '2026-12-05', time: '09:00', name: 'Ana Silva', email: 'a@x.com', whats: '+5511999999999', insta: 'ana', pax: 2, policy: 'split', origin: 'site' })`, s2);
+  vm.runInContext(`Bookings.payBalance('${b2.id}', 'pix')`, s2);
+  const d2 = vm.runInContext(`Bookings.get('${b2.id}')`, s2);
+  chk('com política "metade", "Recebi" no pedido grava o sinal (195 de 390)', d2.payments[0].amount === 195 && d2.status === 'confirmed', 'gravou ' + d2.payments[0].amount);
+  const m = vm.runInContext(`Bookings.criarManual({ tourId: 'natal', date: '2026-12-06', time: '09:00', name: 'B', pax: 2, total: 390, recebido: 0 })`, c);
+  chk('reserva lançada à mão continua confirmada (ela já falou com a pessoa)', m.status === 'confirmed');
+}
+
 console.log('quem reserva tem que dizer quem é');
 const li = app.indexOf('function limpaWhats'), lf = app.indexOf('\n}\n', li) + 3;
 eval(app.slice(li, lf));
@@ -71,11 +92,14 @@ global.Bookings = { paid: (b) => (b.payments || []).reduce((s, p) => s + p.amoun
   dueDate: () => '2026-11-05', garantida: (b) => global.Bookings.paid(b) * 2 >= b.total };
 eval(app.slice(si, sf));
 const daqui = (h) => new Date(Date.now() + h * 3600e3).toISOString();
-chk('sem pagar, dentro do prazo: "cancela sozinha às …"',
-  /^stCancelaEm/.test(situacaoPgto({ total: 195, payments: [], status: 'confirmed', prazoPagamento: daqui(5) }, '2026-09-21').titulo));
-chk('sem pagar, prazo vencido: "cancela na próxima rodada"',
-  situacaoPgto({ total: 195, payments: [], status: 'confirmed', prazoPagamento: daqui(-1) }, '2026-09-21').titulo === 'stVencido');
-chk('cancelada pelo robô diz por quê',
+/* regra final (21/09): sem pagamento e PEDIDO, nao reserva, e nao ocupa vaga */
+chk('pedido dentro do prazo: "não ocupa vaga · vale até …"',
+  /^stPedido/.test(situacaoPgto({ total: 195, payments: [], status: 'pending', prazoPagamento: daqui(5) }, '2026-09-21').titulo));
+chk('pedido vencido: "some na próxima rodada"',
+  situacaoPgto({ total: 195, payments: [], status: 'pending', prazoPagamento: daqui(-1) }, '2026-09-21').titulo === 'stPedidoVenc');
+chk('o botão do pedido é "Recebi · vira reserva"',
+  situacaoPgto({ total: 195, payments: [], status: 'pending', prazoPagamento: daqui(5) }, '2026-09-21').pedido === true);
+chk('descartado pelo robô diz por quê',
   situacaoPgto({ total: 195, payments: [], status: 'cancelled', canceladaPor: 'prazo' }, '2026-09-21').titulo === 'stCancelPrazo');
 chk('cancelada por ela continua "Cancelada"',
   situacaoPgto({ total: 195, payments: [], status: 'cancelled' }, '2026-09-21').titulo === 'cancelled');
@@ -87,10 +111,11 @@ chk('reserva antiga sem prazo segue a regra de antes',
 
 /* ---------- a tela do cliente ---------- */
 console.log('a tela do cliente');
-chk('diz até quando a vaga está reservada', /t\('booked', \{ h: fmtHora\(b\.prazoPagamento\) \}\)/.test(app));
+chk('a tela final mostra até quando o pedido vale', /t\('sentAll', \{ h: b\.prazoPagamento \? fmtHora\(b\.prazoPagamento\) : '' \}\)/.test(app));
 const mi = i18n.indexOf('const STR'), mf = i18n.indexOf('function t(', mi);
 eval(i18n.slice(mi, mf).replace('const STR', 'globalThis.STR'));
-chk('e que sem pagamento a reserva é cancelada', /cancelada automaticamente/.test(STR.sentAll.pt) && /cancelled automatically/.test(STR.sentAll.en));
+chk('e que sem pagamento o lugar continua livre', /continua livre/.test(STR.sentAll.pt) && /stays open/.test(STR.sentAll.en));
+chk('diz até quando o pedido vale', /\{h\}/.test(STR.sentAll.pt));
 chk('Ajustes tem o campo das horas', /id="pgHoras"/.test(app) && /DB\.settings\.horasPagamento = Math\.max\(1, Math\.min\(168/.test(app));
 
 console.log(falhas ? `\n${falhas} FALHA(S)` : '\ntudo passou');

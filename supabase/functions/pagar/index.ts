@@ -139,6 +139,9 @@ Deno.serve(async (req) => {
           kind: antes > 0 ? 'balance' : (valor >= (b.total || 0) ? 'full' : 'deposit'),
           stripe: s.id,
         });
+        /* Reserva do site nasce como PEDIDO ('pending') e nao ocupa vaga.
+           O primeiro dinheiro que entra e o que a transforma em reserva. */
+        if (b.status === 'pending') { b.status = 'confirmed'; b.confirmadaEm = new Date().toISOString(); }
         await supa('bookings?id=eq.' + encodeURIComponent(reservaId), {
           method: 'PATCH',
           headers: { Prefer: 'return=minimal' },
