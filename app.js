@@ -135,6 +135,14 @@ function geoDescobre() {
   return geoPromessa;
 }
 
+/* WhatsApp so com digitos e o "+" na frente. Gente digita "±", espacos,
+   parenteses, "00" no lugar do "+". O link do WhatsApp so entende +digitos. */
+function limpaWhats(txt) {
+  let d = String(txt || '').replace(/[^\d]/g, '');
+  if (d.startsWith('00')) d = d.slice(2);
+  return d ? '+' + d : '';
+}
+
 /* Bandeira a partir do codigo do pais (BR -> 🇧🇷): sao duas letras
    "regionais" do Unicode, sem imagem nenhuma. */
 function bandeira(cod) {
@@ -940,15 +948,23 @@ function renderBook() {
     });
     $('#back2').onclick = () => { S.step = 2; renderBook(); };
     $('#payBtn').onclick = () => {
-      const name = $('#fN').value.trim(), email = $('#fE').value.trim(), whats = $('#fW').value.trim();
-      if (!name || !email || !whats) return toast(LANG === 'pt' ? 'Preencha nome, e-mail e WhatsApp.' : 'Fill in name, email and WhatsApp.');
+      /* 21/09/2026: entrou "Hjhhhjhj" com WhatsApp "±351...". A Melissa nao
+         tinha como saber quem era. Nome e sobrenome, WhatsApp limpo com o
+         codigo do pais, Instagram obrigatorio (pedido do Eugenio). */
+      const name = $('#fN').value.trim().replace(/\s+/g, ' ');
+      const email = $('#fE').value.trim();
+      const whats = limpaWhats($('#fW').value);
+      const insta = $('#fI').value.trim().replace(/^@+/, '').replace(/\s+/g, '');
+      if (!name || !email || !whats || !insta) return toast(t('fillAll'));
+      if (name.split(' ').length < 2 || name.replace(/[^\p{L}]/gu, '').length < 4) { $('#fN').focus(); return toast(t('badName')); }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { $('#fE').focus(); return toast(t('badEmail')); }
+      if (!/^\+[1-9]\d{7,14}$/.test(whats)) { $('#fW').focus(); return toast(t('badWhats')); }
       if (Cal.seatsLeft(x.id, S.date, S.time, S.cap || x.max) < S.pax) { S.step = 1; S.time = null; renderBook(); return toast(t('lastSpotGone')); }
       const btn = $('#payBtn'); btn.disabled = true; btn.textContent = t('confirming');
       setTimeout(() => {
         S.booking = Bookings.create({
           tourId: x.id, date: S.date, time: S.time, name, email, whats,
-          insta: $('#fI').value.trim(), pax: S.pax, criancas: S.criancas, coupon: S.coupon,
+          insta, pax: S.pax, criancas: S.criancas, coupon: S.coupon,
           consent: $('#fOptin').checked,
           policy: splitAllowed ? S.policy : 'full', origin: 'site',
           geo: geoCache || null,
@@ -962,7 +978,7 @@ function renderBook() {
     const b = S.booking, due = Bookings.due(b);
     book.innerHTML = `
       <div class="okc">✓</div>
-      <h2 class="okh">${t('booked')}</h2>
+      <h2 class="okh">${b.prazoPagamento ? t('booked', { h: fmtHora(b.prazoPagamento) }) : t('booked', { h: '' })}</h2>
       <p class="hint center">${t('sentAll')}</p>
       <div class="voucher">
         <small>${t('yourCode')}</small><div class="code">${esc(b.code)}</div>
@@ -1567,8 +1583,17 @@ function situacaoPgto(b, hoje) {
   const conta = t('stDeTotal', { pago: eur(pago), total: eur(total) })
               + (falta > 0 ? ' · ' + t('stFalta', { v: eur(falta) }) : '');
 
-  if (b.status === 'cancelled') return { classe: 'n', titulo: t('cancelled'), conta, aberta: false };
+  if (b.status === 'cancelled') return { classe: 'n', titulo: t(b.canceladaPor === 'prazo' ? 'stCancelPrazo' : 'cancelled'), conta, aberta: false };
   if (falta <= 0)               return { classe: 'ok', titulo: t('stPago'), conta, aberta: false };
+
+  /* Reserva do site sem NADA pago: o que manda e o prazo de pagamento, nao o
+     do saldo. Passou o prazo, o robo cancela na proxima rodada. */
+  if (pago <= 0 && b.prazoPagamento) {
+    const venceu = new Date(b.prazoPagamento).getTime() < Date.now();
+    return { classe: venceu ? 'bad' : 'warn',
+             titulo: venceu ? t('stVencido') : t('stCancelaEm', { h: fmtHora(b.prazoPagamento) }),
+             conta, aberta: true };
+  }
 
   const prazo = Bookings.dueDate(b);
   if (prazo < hoje) {
@@ -2031,6 +2056,9 @@ function admSettings() {
       <label class="optin"><input type="checkbox" id="pgCard" ${DB.settings.stripeAtivo ? 'checked' : ''}>
         <span><b>${t('admCard')}</b><small>${t('admCardHelp')}</small></span></label>
       <small class="why">${t('admCardNota')}</small>
+      <div class="rulesep"></div>
+      <label class="fld">${t('admHoras')}<input id="pgHoras" type="number" min="1" max="168" step="1"
+        value="${esc(DB.settings.horasPagamento || 24)}"><small class="why">${t('admHorasWhy')}</small></label>
       <button class="cta sm" id="pgSave">${t('saveBtn')}</button>
     </section>
     <section class="card">
@@ -2221,6 +2249,7 @@ function admSettings() {
     DB.settings.ibanName = $('#pgIbanName').value.trim();
     DB.settings.payNote  = $('#pgNote').value.trim();
     DB.settings.stripeAtivo   = $('#pgCard').checked;
+    DB.settings.horasPagamento = Math.max(1, Math.min(168, +$('#pgHoras').value || 24));
     /* vazio = cotacao do dia; numero = ela fixou */
     DB.settings.fxTaxa   = Math.max(0, +$('#pgFxTaxa').value || 0) || '';
     DB.settings.fxMargem = Math.max(0, Math.min(30, +$('#pgMargem').value || 0));

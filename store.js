@@ -44,6 +44,10 @@ function _blank() {
            /* cartao pelo Stripe. Desligado ate a gente provar a cobranca
               de ponta a ponta com dinheiro de verdade. */
            stripeAtivo: false,
+           /* Reserva sem pagamento nao e reserva (regra da Melissa, 21/09/2026:
+              "reservou tem que pagar"). A vaga fica segurada por estas horas;
+              se nada entrar, o robo cancela sozinho e a vaga volta. */
+           horasPagamento: 24,
            /* A voz dela dentro do e-mail de confirmacao. Vazio = texto padrao.
               Ela edita a abertura e o recado final; os dados da reserva e a
               nota do saldo ficam fixos, para nao sumirem sem querer. */
@@ -446,6 +450,10 @@ const Bookings = {
       consent: consent ? { ok: true, at: new Date().toISOString(), src: 'checkout' } : { ok: false },
       payments: [], status: 'confirmed',
       createdAt: new Date().toISOString(), origin: origin || 'site',
+      /* Ate quando a vaga fica segurada sem pagamento. Gravado na reserva, e
+         nao calculado depois: foi este prazo que a pessoa leu na tela, e ele
+         nao pode mudar se a Melissa mexer no ajuste amanha. */
+      prazoPagamento: new Date(Date.now() + ((+DB.settings.horasPagamento || 24) * 3600e3)).toISOString(),
       /* Em que idioma ele reservou. Sem isto o e-mail de recibo sai em
          portugues para um frances que leu a tela inteira em ingles. */
       lang: (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'pt',

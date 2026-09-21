@@ -158,7 +158,13 @@ const STR = {
   email:       { pt: 'E-mail', en: 'Email' },
   whatsLbl:    { pt: 'WhatsApp (com DDI)', en: 'WhatsApp (with country code)' },
   whyWhats:    { pt: 'É por aqui que eu te mando o ponto de encontro e aviso se mudar alguma coisa.', en: 'This is how I send you the meeting point and let you know if anything changes.' },
-  instaLbl:    { pt: 'Instagram · se quiser, eu marco você nas fotos', en: 'Instagram · optional, so I can tag you in photos' },
+  instaLbl:    { pt: 'Instagram', en: 'Instagram' },
+  /* 21/09/2026: entrou uma reserva com nome "Hjhhhjhj" e WhatsApp com "±".
+     A Melissa nao tinha como saber quem era. Agora nome e sobrenome de
+     verdade, WhatsApp com o codigo do pais, e Instagram obrigatorio. */
+  fillAll:     { pt: 'Preencha nome, e-mail, WhatsApp e Instagram.', en: 'Fill in name, email, WhatsApp and Instagram.' },
+  badName:     { pt: 'Escreva seu nome e sobrenome.', en: 'Please enter your first and last name.' },
+  badWhats:    { pt: 'WhatsApp com o código do país, ex.: +55 11 99999 9999', en: 'WhatsApp with country code, e.g. +44 7700 900000' },
   /* Dizia "o resto sai do mesmo cartao um dia antes": nao ha cartao salvo, e o
      prazo do saldo e o do passeio (30 dias, no Natal), nao a vespera. */
   payFull:     { pt: 'Pagar tudo de uma vez', en: 'Pay in full' },
@@ -177,8 +183,12 @@ const STR = {
   confirming:  { pt: 'Guardando o seu lugar…', en: 'Holding your spot…' },
   /* Reserva sem pagamento nao e reserva (regra da Melissa, 03/09/2026).
      A tela nao pode dizer "esta reservado" antes de o dinheiro entrar. */
-  booked:      { pt: 'Falta só o pagamento.', en: 'Only the payment is missing.' },
-  sentAll:     { pt: 'Sua vaga fica garantida quando o pagamento (ou o sinal) entrar — aí você recebe um e-mail de confirmação. Guarde o código abaixo.',
+  /* Reservou tem que pagar (regra da Melissa, 21/09/2026). A tela diz ate
+     quando a vaga esta segurada — e que depois disso ela e cancelada. */
+  booked:      { pt: 'Sua vaga está reservada até {h}.', en: 'Your spot is held until {h}.' },
+  sentAll:     { pt: 'Pague até lá — cartão ou Pix — para garantir. Se o pagamento não entrar, a reserva é cancelada automaticamente e a vaga volta a ficar livre. Guarde o código abaixo.',
+                 en: 'Pay by then — card or Pix — to secure it. If the payment does not arrive, the booking is cancelled automatically and the spot is released. Keep the code below.' },
+  sentAllVelho:{ pt: 'Sua vaga fica garantida quando o pagamento (ou o sinal) entrar — aí você recebe um e-mail de confirmação. Guarde o código abaixo.',
                  en: 'Your spot is secured once the payment (or the deposit) arrives — then you get a confirmation email. Keep the code below.' },
   yourCode:    { pt: 'Seu código', en: 'Your code' },
   /* Nao ha cartao salvo: ninguem "cobra" sozinho. Ela avisa e a pessoa paga. */
@@ -208,6 +218,13 @@ const STR = {
      quem pagou metade e quem nao pagou nada. */
   stPago:      { pt: 'Pago', en: 'Paid' },
   stEsperando: { pt: 'Aguardando pagamento · vaga não garantida', en: 'Awaiting payment · spot not secured' },
+  stCancelaEm: { pt: 'Aguardando pagamento · cancela sozinha {h}', en: 'Awaiting payment · auto-cancels {h}' },
+  stVencido:   { pt: 'Prazo de pagamento vencido · cancela na próxima rodada', en: 'Payment deadline passed · cancels on the next run' },
+  stCancelPrazo:{ pt: 'Cancelada · não pagou no prazo', en: 'Cancelled · did not pay in time' },
+  /* ajuste do prazo */
+  admHoras:    { pt: 'Reserva sem pagamento é cancelada sozinha depois de (horas)', en: 'Unpaid booking is cancelled automatically after (hours)' },
+  admHorasWhy: { pt: 'A vaga fica segurada por esse tempo. Se nada entrar — cartão ou Pix que você marcou "Recebi" — o robô cancela e a vaga volta. Você recebe um e-mail quando isso acontecer.',
+                 en: 'The spot is held for this long. If nothing arrives — card, or Pix you marked "Received" — the robot cancels it and the seat is released. You get an email when that happens.' },
   stSinal:     { pt: 'Sinal recebido · vaga garantida', en: 'Deposit received · spot secured' },
   stAtrasado:  { pt: 'Atrasado há {n} dias', en: '{n} days late' },
   stDeTotal:   { pt: '{pago} de {total}', en: '{pago} of {total}' },
@@ -804,6 +821,14 @@ function t(key, vars) {
 }
 function setLang(l) { LANG = l; DB.settings.lang = l; save(); }
 function eur(n) { return '€ ' + Number(n).toLocaleString(LANG === 'pt' ? 'pt-BR' : 'en-GB'); }
+/* dia e hora de um instante (o prazo de pagamento): "21/09 às 23:50" */
+function fmtHora(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  return LANG === 'pt'
+    ? d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' at ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
 function fmtDate(iso) {
   const d = new Date(iso + 'T12:00:00');
   return LANG === 'pt'
