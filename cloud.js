@@ -139,7 +139,7 @@ function cloudPushState() {
       }
       cloudRejected = false;
       alteracaoPendente = false;            /* agora sim a nuvem tem o que temos */
-      lastStamp = body.updated_at;          /* evita reler o que nos mesmos escrevemos */
+      guardaStamp(body.updated_at);         /* evita reler o que nos mesmos escrevemos */
     } catch (e) { qPush({ path: 'appstate?id=eq.1', method: 'PATCH', body }); }
   }, 700);
 }
@@ -224,7 +224,21 @@ async function cloudUpdateBooking(b) {
 
 /* ---------- puxar tudo ---------- */
 let lastBookingIds = null;
+/* A data do catalogo que esta no aparelho SOBREVIVE ao fechar a pagina.
+   Ate 21/09/2026 ela morria a cada abertura: toda visita — inclusive a
+   Melissa reabrindo o painel, o cliente voltando para pagar — baixava os
+   1,9 MB do catalogo de novo, mesmo com o aparelho ja tendo copia identica.
+   Com a cota de 5 GB estourada (13,5 GB no mes), cada abertura custava.
+   Guardada, a segunda visita pergunta "mudou?" (48 bytes) e so baixa se
+   mudou. So vale se o aparelho tem catalogo de verdade (DB.tours), senao um
+   aparelho limpo com a data velha ficaria vazio para sempre. */
+const STAMP_KEY = 'vi_stamp_v1';
 let lastStamp = null;
+try { lastStamp = localStorage.getItem(STAMP_KEY) || null; } catch (e) { lastStamp = null; }
+function guardaStamp(v) {
+  lastStamp = v || null;
+  try { if (v) localStorage.setItem(STAMP_KEY, v); else localStorage.removeItem(STAMP_KEY); } catch (e) {}
+}
 /* O que foi aplicado da ultima vez (data do estado + reservas). Se a nuvem
    devolver exatamente o mesmo, nao ha o que aplicar nem redesenhar. */
 let lastAssinatura = null;
@@ -246,7 +260,7 @@ async function cloudPull() {
        exatamente isso: ela via "5 vagas" em datas sem reserva nenhuma, porque
        o aparelho mostrava uma contagem de dias antes. A contagem pública são
        poucos bytes; relemos sempre. */
-    if (lastStamp && !logged) {
+    if (lastStamp && !logged && DB.tours && DB.tours.length) {
       try {
         const [hR, scR] = await Promise.all([
           supaFetch('appstate?id=eq.1&select=updated_at', { headers: { Prefer: '' } }),
@@ -307,7 +321,7 @@ async function cloudPull() {
        tivesse nada. Uma coisa nao pode derrubar a outra. */
     if (precisaCatalogo && !stR.ok) return { ok: false };
     const st = precisaCatalogo ? (await stR.json())[0] : null;
-    if (st) lastStamp = st.updated_at;
+    if (st) guardaStamp(st.updated_at);
 
     const reservasOk = bkR.ok;
     let bk = [];

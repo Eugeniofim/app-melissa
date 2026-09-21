@@ -21,13 +21,15 @@ const CATALOGO = {
   blocks: [], coupons: [], settings: {},
 };
 
-function amb({ logada = true, stamp = '2026-08-30T00:00:00Z' } = {}) {
+function amb({ logada = true, stamp = '2026-08-30T00:00:00Z', memoria = null } = {}) {
   const ctx = {
     console, JSON, AbortController, Date, Math, Number, Object, Array, String, Set,
     setTimeout, clearTimeout, setInterval: () => 0, clearInterval: () => {},
     document: { hidden: false, addEventListener: () => {} },
     addEventListener: () => {},
-    localStorage: { _d: {}, getItem(k) { return this._d[k] ?? null },
+    /* `memoria` = o localStorage de uma visita anterior: e assim que se
+       simula fechar a pagina e abrir de novo no mesmo aparelho */
+    localStorage: { _d: memoria || {}, getItem(k) { return this._d[k] ?? null },
       setItem(k, v) { this._d[k] = v }, removeItem(k) { delete this._d[k] } },
     /* cada chamada fica anotada com o caminho e o tamanho da resposta */
     __chamadas: [],
@@ -49,7 +51,8 @@ function amb({ logada = true, stamp = '2026-08-30T00:00:00Z' } = {}) {
   };
   ctx.window = ctx; vm.createContext(ctx);
   vm.runInContext(fs.readFileSync(SERVE + '/store.js', 'utf8'), ctx);
-  vm.runInContext('load(); DB.tours=[]; DB.bookings=[];', ctx);
+  /* com memoria de outra visita, load() traz o catalogo de la; sem, comeca vazio */
+  vm.runInContext(memoria ? 'load();' : 'load(); DB.tours=[]; DB.bookings=[];', ctx);
   ctx.isLoggedIn = () => logada; ctx.authEnsure = async () => {}; ctx.authToken = () => 'tok';
   ctx.onCloudRejected = () => {};
   vm.runInContext(fs.readFileSync(SERVE + '/cloud.js', 'utf8'), ctx);
@@ -120,6 +123,49 @@ t('visitante com catalogo igual tambem nao baixa o catalogo', async () => {
   const c = amb({ logada: false }); await vm.runInContext('cloudPull()', c);
   zera(c); await vm.runInContext('cloudPull()', c);
   assert.ok(!rotulos(c).includes('CATALOGO'), rotulos(c).join(','));
+});
+
+/* 21/09/2026: a cota de 5 GB estourou (13,5 GB). Alem do relogio, cada
+   ABERTURA da pagina baixava o catalogo inteiro, mesmo com o aparelho ja
+   tendo copia identica — a data do catalogo morria com a pagina. */
+console.log('reabrir a pagina nao baixa o catalogo de novo');
+
+t('visitante volta ao site: pergunta a data, nao baixa 1,9 MB', async () => {
+  const a = amb({ logada: false }); await vm.runInContext('cloudPull()', a);
+  assert.ok(rotulos(a).includes('CATALOGO'), 'a 1a visita tem que baixar');
+  const b = amb({ logada: false, memoria: a.localStorage._d });   /* mesmo aparelho, pagina nova */
+  await vm.runInContext('cloudPull()', b);
+  assert.ok(!rotulos(b).includes('CATALOGO'), 'baixou o catalogo de novo: ' + rotulos(b));
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(passeios(b))), ['natal-fn', 'natal-vinhos'], 'e o catalogo tem que estar la');
+});
+
+t('a Melissa reabre o painel: idem', async () => {
+  const a = amb({ logada: true }); await vm.runInContext('cloudPull()', a);
+  const b = amb({ logada: true, memoria: a.localStorage._d });
+  await vm.runInContext('cloudPull()', b);
+  assert.ok(!rotulos(b).includes('CATALOGO'), rotulos(b).join(','));
+  assert.ok(rotulos(b).includes('reservas'), 'as reservas dela continuam vindo');
+});
+
+t('catalogo mudou desde a ultima visita: baixa', async () => {
+  const a = amb({ logada: false }); await vm.runInContext('cloudPull()', a);
+  const b = amb({ logada: false, memoria: a.localStorage._d, stamp: '2026-09-21T00:00:00Z' });
+  await vm.runInContext('cloudPull()', b);
+  assert.ok(rotulos(b).includes('CATALOGO'), 'mudou e nao baixou');
+});
+
+t('data guardada mas aparelho SEM catalogo: baixa (senao fica vazio pra sempre)', async () => {
+  const a = amb({ logada: false }); await vm.runInContext('cloudPull()', a);
+  const mem = Object.assign({}, a.localStorage._d); delete mem.vi_db_v1;   /* app limpo, so a data sobrou */
+  const b = amb({ logada: false, memoria: mem });
+  vm.runInContext('DB.tours=[]; DB.bookings=[];', b);
+  await vm.runInContext('cloudPull()', b);
+  assert.ok(rotulos(b).includes('CATALOGO'), rotulos(b).join(','));
+});
+
+t('o que ela mesma publicou tambem fica guardado como data atual', async () => {
+  const a = amb({ logada: true }); await vm.runInContext('cloudPull()', a);
+  assert.ok(a.localStorage._d.vi_stamp_v1, 'sem gravar, a proxima abertura baixa tudo');
 });
 
 t('o relogio nao bate com a aba escondida', async () => {
