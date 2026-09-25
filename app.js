@@ -1006,6 +1006,7 @@ function renderBook() {
 const ADM_TABS = [
   ['today',    'admToday'],
   ['agenda',   'admAgenda'],
+  ['tarefas',  'admTarefas'],
   ['tours',    'admTours'],
   ['bookings', 'admBookings'],
   ['money',    'admMoney'],
@@ -1076,6 +1077,7 @@ function viewAdm(tab, arg) {
   else if (tab === 'coupons')  admCoupons();
   else if (tab === 'look')     admAparencia();
   else if (tab === 'settings') admSettings();
+  else if (tab === 'tarefas')  admTarefas();
   else admToday();
 }
 

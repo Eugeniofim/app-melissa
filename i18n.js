@@ -726,6 +726,7 @@ const STR = {
 
   /* agenda */
   admAgenda:  { pt: 'Agenda', en: 'Calendar' },
+  admTarefas: { pt: 'Tarefas', fr: 'Tâches', en: 'Tasks' },
   agTitle:    { pt: 'Sua agenda', en: 'Your calendar' },
   agNoDep:    { pt: 'Nenhuma saída neste dia.', en: 'No departures this day.' },
   agDayOf:    { pt: 'Saídas de {d}', en: 'Departures on {d}' },

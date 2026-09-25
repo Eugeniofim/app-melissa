@@ -136,3 +136,56 @@
    8. Todo controle clicável precisa de :focus-visible próprio ou herdado.
    9. Botão só com ícone precisa de aria-label; ícone decorativo, aria-hidden.
    ========================================================= */
+
+/* =====================================================
+   TAREFAS — a agenda pessoal e profissional dela.
+   Cores só dos tokens da marca: vinho = alta, amarelo = média,
+   cinza = baixa. Contraste conferido no marfim.
+   ===================================================== */
+.tarbarra{ display:flex; flex-wrap:wrap; gap:14px; align-items:center;
+  justify-content:space-between; margin:0 0 14px; }
+.tarareas, .tarperiodos{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.tarperiodos{ margin:18px 0 12px; }
+.tarchip{ border:1px solid var(--line-2); background:var(--surface); color:var(--ink-2);
+  border-radius:999px; padding:8px 16px; font:600 14px/1 inherit; cursor:pointer; }
+.tarchip:hover{ border-color:var(--accent-line); }
+.tarchip.on{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+.tarcontas{ display:flex; gap:14px; font-size:14px; color:var(--ink-2); }
+.tarvermelho{ color:var(--brand-vinho); font-weight:600; }
+.tarfraco{ color:var(--ink-3); }
+.tarver{ display:inline-flex; align-items:center; gap:7px; font-size:14px; color:var(--ink-3); margin-left:4px; }
+.tarnova .tarcresce{ flex:1 1 260px; }
+
+.tarlista{ display:flex; flex-direction:column; gap:10px; }
+.tarcard{ display:grid; grid-template-columns:auto 1fr auto auto; gap:12px; align-items:center;
+  background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:13px 15px; }
+.tarcard.atrasada{ border-left:4px solid var(--brand-vinho); padding-left:12px; }
+.tarcard.feita{ background:var(--surface-2); }
+.tarcard.feita .tartit{ text-decoration:line-through; color:var(--ink-3); }
+
+.tarbox{ width:26px; height:26px; flex:0 0 26px; border-radius:8px; cursor:pointer;
+  border:2px solid var(--line-2); background:var(--surface); color:transparent;
+  font:700 15px/1 inherit; display:grid; place-items:center; }
+.tarbox:hover{ border-color:var(--accent); }
+.tarbox.on{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+
+.tarmeio{ cursor:pointer; min-width:0; }
+.tartit{ display:block; font-size:16px; line-height:1.35; }
+.tarmeta{ display:flex; flex-wrap:wrap; gap:9px; align-items:center;
+  margin-top:3px; font-size:13px; color:var(--ink-3); }
+.tarprio{ border-radius:999px; padding:2px 9px; font-weight:600; font-size:12px; }
+.tarprio.p-alta{ background:#fbe3ec; color:#a20e45; }        /* vinho legível: 5.6:1 */
+.tarprio.p-media{ background:var(--highlight-wash); color:var(--highlight-text); }
+.tarprio.p-baixa{ background:var(--surface-3); color:var(--ink-3); }
+.tarrep{ color:var(--accent); font-weight:600; }
+
+.tareditor{ grid-column:1 / -1; border-top:1px solid var(--line); margin-top:10px; padding-top:12px; }
+.tareditor .frow{ margin-bottom:8px; }
+.tarbts{ display:flex; gap:10px; align-items:center; margin-top:10px; }
+
+@media (max-width:560px){
+  .tarcard{ grid-template-columns:auto 1fr auto; }
+  .tarcard [data-tampanha]{ display:none; }   /* no celular, empurrar sai: o toque é pequeno demais */
+  .tarcontas{ width:100%; }
+}
+.tarfaixa{ margin:-4px 0 12px; font-size:13px; color:var(--ink-3); }
