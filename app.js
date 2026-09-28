@@ -1079,6 +1079,8 @@ function viewAdm(tab, arg) {
   else if (tab === 'settings') admSettings();
   else if (tab === 'tarefas')  admTarefas();
   else admToday();
+  /* o assistente é o mesmo em todas as abas (um chat só, nunca um por aba) */
+  if (typeof iaNaAba === 'function') iaNaAba(tab);
 }
 
 /* ---- Hoje ---- */
