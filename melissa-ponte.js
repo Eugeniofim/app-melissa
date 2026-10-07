@@ -26,7 +26,10 @@
     if (c.data != null) o.data = c.data;
     if (c.hora != null) o.hora = c.hora;
     if (c.horaFim != null) o.horaFim = c.horaFim;
-    if (c.area != null) o.area = c.area;
+    /* a aba Tarefas da Melissa separa por AREA e só mostra 'profissional' ou
+       'pessoal'. O assistente (modelo da Mari) manda 'pro' — sem traduzir, a
+       tarefa some das duas listas. Mapeio pro valor que a tela dela entende. */
+    if (c.area != null) o.area = (c.area === 'pessoal' ? 'pessoal' : 'profissional');
     if (c.repete != null) o.repete = c.repete;
     if (c.ate != null) o.ate = c.ate;
     if (c.feita != null) { o.feito = !!c.feita; o.feita = !!c.feita; }

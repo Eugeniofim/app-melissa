@@ -2407,6 +2407,13 @@ function admAgenda() {
 
   const selList = (byDay[sel] || []).sort((a, b) => a.time.localeCompare(b.time));
 
+  /* As anotações e tarefas DO DIA escolhido (as duas áreas), para a agenda não
+     ficar vazia quando não há saída e para ela anotar direto no dia. É o mesmo
+     DB.tarefas da aba Tarefas — some aqui, some lá, sobe pra nuvem igual. */
+  const tarefasDoDia = Tarefas.todas().filter(x => x.data === sel && !x.feito)
+    .sort((a, b) => (a.hora || '99:99').localeCompare(b.hora || '99:99'));
+  const agL = (pt, en) => (LANG === 'pt' ? pt : en);
+
   admShell('agenda', `
     <div class="pagehead"><h1 class="pageh">${t('agTitle')}</h1>
       <div class="chips">
@@ -2434,7 +2441,27 @@ function admAgenda() {
           </div>`;
         }).join('') : `<p class="empty">${t('agNoDep')}</p>`}
       </section>
-    </div>`);
+    </div>
+    <section class="card" style="margin-top:14px">
+      <div class="tar-h"><h3>${agL('Anotações e tarefas do dia', 'Notes & tasks for the day')}</h3>
+        <p class="why">${agL('O que lembrar para ', 'What to remember for ')}${fmtDate(sel)}.</p></div>
+      <div class="tar-add">
+        <input id="agTarIn" placeholder="${agL('Anotar algo para este dia…', 'Note something for this day…')}" autocomplete="off">
+        <button class="cta sm" id="agTarAdd">${agL('Anotar', 'Add')}</button>
+      </div>
+      <div id="agTarList">
+        ${tarefasDoDia.length ? tarefasDoDia.map(x => `
+          <div class="tar-row">
+            <button class="tar-check" data-done="${x.id}" aria-label="ok">○</button>
+            <div class="tar-body">
+              <div class="tar-top">${x.hora ? `<span class="tar-quando">${x.hora}</span>` : ''}${x.area === 'pessoal' ? `<span class="tar-cli">${agL('pessoal', 'personal')}</span>` : ''}${x.prio === 'alta' ? `<span class="tar-prio p-alta">${agL('importante', 'high')}</span>` : ''}</div>
+              <div class="tar-tit">${esc(x.titulo)}</div>
+              ${x.nota ? `<div class="tar-nota">${esc(x.nota)}</div>` : ''}
+            </div>
+            <div class="tar-acts"><button class="mini ghost danger" data-del="${x.id}">✕</button></div>
+          </div>`).join('') : `<p class="empty">${agL('Nada anotado para este dia.', 'Nothing noted for this day.')}</p>`}
+      </div>
+    </section>`);
 
   /* mes anterior/seguinte no relogio local — ver mesMais() */
   const shift = (n) => { admAgenda._m = mesMais(cur, n); admAgenda._d = null; admAgenda(); };
@@ -2442,6 +2469,12 @@ function admAgenda() {
   $('#agNext').onclick = () => shift(1);
   $('#agNow').onclick = () => { admAgenda._m = isoToday().slice(0, 7); admAgenda._d = isoToday(); admAgenda(); };
   $$('#agGrid .agc[data-d]').forEach(c => c.onclick = () => { admAgenda._d = c.dataset.d; admAgenda(); });
+  /* anotações/tarefas do dia: anotar, concluir, apagar — tudo no dia escolhido */
+  const agAddTar = () => { const el = $('#agTarIn'); const v = (el.value || '').trim(); if (!v) return; Tarefas.cria({ titulo: v, data: sel, area: 'profissional' }); admAgenda(); };
+  if ($('#agTarAdd')) $('#agTarAdd').onclick = agAddTar;
+  if ($('#agTarIn')) $('#agTarIn').onkeydown = (e) => { if (e.key === 'Enter') agAddTar(); };
+  $$('#agTarList [data-done]').forEach(b => b.onclick = () => { Tarefas.conclui(b.dataset.done); admAgenda(); });
+  $$('#agTarList [data-del]').forEach(b => b.onclick = () => { Tarefas.apaga(b.dataset.del); admAgenda(); });
 }
 
 /* =====================================================
