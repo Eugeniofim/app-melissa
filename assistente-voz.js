@@ -6,8 +6,10 @@
    a tela e o jeito de conversar; o cérebro é o motor (assistente.js) + a
    camada da Mari (assistente-mari.js, carregada DEPOIS deste arquivo).
 
-   - FALAR: aperta o microfone, fala, e quando ela para de falar o pedido
-     vai sozinho (ditado do próprio navegador: sem chave, sem custo).
+   - FALAR: aperta o microfone e fala; continua ouvindo nas pausas e só para
+     quando ela aperta Parar — aí o texto fica na caixa para ela conferir e
+     enviar (igual ao ditado do chat do Claude). Ditado do próprio navegador:
+     sem chave, sem custo.
    - OUVIR: as respostas lidas em voz alta (🔊), voz do aparelho; com a
      chave da ElevenLabs, voz de estúdio.
    - ANEXAR: fotos e PDF (comprovante, roteiro, orçamento de agência).
@@ -23,14 +25,14 @@
 'use strict';
 
 const IAV_VOZ = IA_NS + 'ia_voz';            /* ler as respostas em voz alta */
-const IAV_ENVIA = IA_NS + 'ia_voz_envia';    /* mandar sozinho quando parar de falar */
+const IAV_ENVIA = IA_NS + 'ia_voz_envia';    /* mandar sozinho ao apertar Parar (padrão: desligado) */
 const IAV_EL = IA_NS + 'ia_el';              /* {chave, voz, nomeVoz} da ElevenLabs — só neste aparelho */
 const FALA_REC = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 const LER = ('speechSynthesis' in window) ? window.speechSynthesis : null;
 /* microfone só em endereço seguro (https ou localhost) */
 const iavTemMic = () => !!FALA_REC && (location.protocol === 'https:' || location.hostname === 'localhost');
 const iavVozOn = () => iaLe(IAV_VOZ, false) === true;
-const IAV = { rec: null, juntado: '', antes: '', naMao: false, cancelou: false, t0: 0, relogio: null, anexos: [], menu: false, ultima: '' };
+const IAV = { rec: null, juntado: '', antes: '', naMao: false, cancelou: false, parar: false, fatal: false, t0: 0, relogio: null, anexos: [], menu: false, ultima: '' };
 
 /* ícones (traço fino, 24px) */
 const IAV_IC = {
@@ -172,15 +174,18 @@ function iavPintaMic() {
   const g = iaEl && iaEl.g; if (!g) return;
   const m = g.querySelector('#iavMic'), bar = g.querySelector('#iavOuvindo'), on = !!IAV.rec;
   if (m) { m.classList.toggle('ouvindo', on); m.setAttribute('aria-pressed', on); m.querySelector('.t').textContent = on ? 'Parar' : 'Falar';
-    m.title = on ? 'Ouvindo — quando você parar de falar, eu mando' : 'Falar — aperta, fala, e vai sozinho quando você parar'; }
+    m.title = on ? 'Ouvindo — aperte Parar quando terminar' : 'Falar — aperte para ditar; aperte de novo para parar'; }
   if (bar) bar.classList.toggle('on', on);
 }
 function iavParaOuvir(mandar) {
   IAV.naMao = !mandar;
+  IAV.parar = true;   /* pedido explícito de parar: o onend NÃO recomeça a ouvir */
   try { IAV.rec && IAV.rec.stop(); } catch (e) {}
 }
 async function iavOuvir() {
-  if (IAV.rec) { iavParaOuvir(false); return; }
+  /* já ouvindo? este toque é o "Parar". Manda sozinho só se ela ligou a opção;
+     senão o texto fica na caixa para ela conferir e enviar (como no chat do Claude). */
+  if (IAV.rec) { iavParaOuvir(iaLe(IAV_ENVIA, false) === true); return; }
   if (!iavTemMic()) { toast('Este navegador não ouve — no iPhone use o Safari; no computador, Chrome ou Safari'); return; }
   /* o microfone já foi negado neste navegador? Avisar ANTES, com o caminho:
      o ditado sozinho falha em silêncio e ela acha que o app está quebrado */
@@ -189,8 +194,11 @@ async function iavOuvir() {
   iavPararFala();                                  /* não ouvir a si mesmo falando */
   const ta = iaEl.g.querySelector('#iaTxt'); if (!ta) return;
   const r = new FALA_REC();
-  r.lang = 'pt-BR'; r.interimResults = true; r.maxAlternatives = 1;   /* continuous no padrão: o silêncio encerra e manda */
-  IAV.antes = ta.value.trim(); IAV.juntado = ''; IAV.naMao = false; IAV.cancelou = false;
+  /* continuous = continua ouvindo nas pausas; só para quando ela aperta Parar.
+     Sem isto, o navegador encerrava sozinho no primeiro silêncio e "fechava o
+     assunto" antes da hora. */
+  r.lang = 'pt-BR'; r.interimResults = true; r.maxAlternatives = 1; r.continuous = true;
+  IAV.antes = ta.value.trim(); IAV.juntado = ''; IAV.naMao = false; IAV.cancelou = false; IAV.parar = false; IAV.fatal = false;
   const mostra = (meio) => {
     const tudo = [IAV.antes, IAV.juntado, meio].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
     ta.value = tudo; ta.dispatchEvent(new Event('input'));
@@ -205,17 +213,26 @@ async function iavOuvir() {
   };
   r.onerror = (e) => {
     const q = e && e.error;
-    if (q === 'not-allowed' || q === 'service-not-allowed') toast('Falta liberar o microfone: toque no cadeado ao lado do endereço');
-    else if (q === 'no-speech') toast('Não ouvi nada — aperte de novo e fale mais perto');
-    else if (q === 'network') toast('Sem internet para transcrever a voz');
-    else if (q !== 'aborted') toast('Deu problema no microfone (' + (q || '?') + ')');
+    /* erros que NÃO adianta reabrir: avisa e deixa o onend encerrar de vez */
+    if (q === 'not-allowed' || q === 'service-not-allowed') { IAV.fatal = true; toast('Falta liberar o microfone: toque no cadeado ao lado do endereço'); }
+    else if (q === 'network') { IAV.fatal = true; toast('Sem internet para transcrever a voz'); }
+    else if (q === 'audio-capture') { IAV.fatal = true; toast('Não achei o microfone deste aparelho'); }
+    /* 'no-speech' e 'aborted' não são fatais: no modo contínuo o onend reabre */
+    else if (q !== 'aborted' && q !== 'no-speech') toast('Deu problema no microfone (' + (q || '?') + ')');
   };
   r.onend = () => {
-    IAV.rec = null; iavPintaMic(); iavRelogio(false); Orbe.fecharMicrofone();
+    /* modo contínuo: se ela NÃO apertou Parar (e não houve erro fatal nem
+       cancelamento), o navegador encerrou sozinho numa pausa — reabre e segue
+       ouvindo. É o que mantém o microfone ligado entre uma frase e outra. */
+    if (IAV.rec === r && !IAV.parar && !IAV.cancelou && !IAV.fatal) {
+      try { r.start(); return; } catch (e) { /* não deu: encerra normal abaixo */ }
+    }
+    IAV.rec = null; IAV.parar = false; IAV.fatal = false;
+    iavPintaMic(); iavRelogio(false); Orbe.fecharMicrofone();
     if (IAV.cancelou) { ta.value = IAV.antes || ''; ta.dispatchEvent(new Event('input')); return; }
     const txt = ta.value.trim();
-    if (!txt || IAV.naMao) return;
-    if (iaLe(IAV_ENVIA, true) !== false) iaEl.g.querySelector('#iaForm').requestSubmit(); else ta.focus();
+    if (!txt || IAV.naMao) { ta.focus(); return; }   /* parou na mão: texto fica na caixa */
+    if (iaLe(IAV_ENVIA, false) === true) iaEl.g.querySelector('#iaForm').requestSubmit(); else ta.focus();
   };
   try { r.start(); IAV.rec = r; mostra(''); iavPintaMic(); iavRelogio(true); Orbe.ouvirMicrofone().catch(() => Orbe.estado('ouvindo')); }
   catch (e) { toast('Não consegui abrir o microfone'); }
@@ -363,7 +380,7 @@ iaDesenha = function () {
   if (cn) cn.onclick = () => { if (typeof irParaCreditos === 'function') { iaFecha(); irParaCreditos(); } else { iaMostrandoChave = true; _iaDesenhaBase(); } };
   if (!demo) {
     const f = corpo.querySelector('#iaForm'), ta = corpo.querySelector('#iaTxt'), arq = corpo.querySelector('#iaArq');
-    f.onsubmit = (e) => { e.preventDefault(); const v = ta.value.trim(); if (!v && !IAV.anexos.length) return; if (IAV.rec) { IAV.naMao = true; try { IAV.rec.stop(); } catch (x) {} }
+    f.onsubmit = (e) => { e.preventDefault(); const v = ta.value.trim(); if (!v && !IAV.anexos.length) return; if (IAV.rec) { IAV.naMao = true; IAV.parar = true; try { IAV.rec.stop(); } catch (x) {} }
       const anx = IAV.anexos; IAV.anexos = []; iaMostraAnexo(); ta.value = ''; ta.style.height = ''; iaConversa(v, anx); };
     ta.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey && !('ontouchstart' in window)) { e.preventDefault(); f.requestSubmit(); } };
     ta.oninput = () => { ta.style.height = ''; ta.style.height = Math.min(140, ta.scrollHeight) + 'px'; };
@@ -414,7 +431,7 @@ function iavMenu() {
   m.hidden = !IAV.menu; if (!IAV.menu) return;
   const demo = iaDemo(), vivo = iaModo() === 'vivo';
   m.innerHTML = `<label class="iavLiga"><input type="checkbox" id="iaConf" ${iaPerguntaAntes() ? 'checked' : ''}><span><b>Perguntar antes de gravar</b><small>O cartão "confirma?" antes de mexer no app.</small></span></label>
-    <label class="iavLiga"><input type="checkbox" id="iavEnvia" ${iaLe(IAV_ENVIA, true) !== false ? 'checked' : ''}><span><b>Mandar sozinho quando eu parar de falar</b><small>Desligado, o texto fica na caixa para você revisar.</small></span></label>
+    <label class="iavLiga"><input type="checkbox" id="iavEnvia" ${iaLe(IAV_ENVIA, false) === true ? 'checked' : ''}><span><b>Mandar sozinho ao apertar Parar</b><small>Desligado (recomendado): ao apertar Parar, o texto fica na caixa para você conferir e enviar.</small></span></label>
     ${iavVozCfgHtml()}
     <div class="iavMenuPe"><span id="iaGastoMenu"></span>
       <button type="button" class="mini" id="iaLimpa">Nova conversa</button>
@@ -449,7 +466,7 @@ function iavVozCfgHtml() {
 }
 function iavLigaVozCfg(root, redesenha) {
   const q = (c) => root.querySelector(c), el = iaLe(IAV_EL, {});
-  q('.vzTeste').onclick = () => iavFalar('Oi, Mari! Amanhã você guia a família Souza no walking tour essencial, às 10 horas, com saída em Nyhavn.');
+  q('.vzTeste').onclick = () => iavFalar('Oi, Melissa! Amanhã você guia a família Souza no passeio dos mercados de Natal, às 10 horas, com saída em Colmar.');
   if (q('.vzTira')) q('.vzTira').onclick = () => { iaGrava(IAV_EL, {}); toast('Voltei para a voz do aparelho'); redesenha(); };
   q('.vzBusca').onclick = async () => {
     const inp = q('.vzKey'); const chave = /^•+$/.test(inp.value) ? el.chave : inp.value.trim();
