@@ -349,8 +349,8 @@ iaDesenha = function () {
     <div id="iaAnexo"></div>
     ${demo ? `<div class="iavDemoPe"><button type="button" class="cta sm" id="iaConecta">✦ Ligar a IA</button><small>Sem a IA ligada, os pedidos acima rodam de exemplo.</small></div>` : `
     <form id="iaForm">
-      <input type="file" id="iaArq" accept="image/*,application/pdf" multiple hidden>
-      <button type="button" class="iavIco" id="iaClip" title="Anexar foto ou PDF" aria-label="Anexar foto ou PDF">${iavSvg('clip')}</button>
+      <input type="file" id="iaArq" accept="image/*,application/pdf,text/*,.pdf,.txt,.csv,.tsv,.md,.json,.log,.xml,.ics,.vtt,.srt" multiple hidden>
+      <button type="button" class="iavIco" id="iaClip" title="Anexar foto, PDF ou arquivo" aria-label="Anexar foto, PDF ou arquivo">${iavSvg('clip')}</button>
       <button type="button" class="iavMic" id="iavMic" aria-pressed="false" ${iavTemMic() ? '' : 'hidden'}>${iavSvg('mic')}<span class="t">Falar</span></button>
       <textarea id="iaTxt" rows="1" placeholder="Fale ou escreva…" aria-label="Mensagem para o assistente"></textarea>
       <button id="iaEnviar" type="submit" aria-label="Enviar">${iavSvg('env')}</button>
@@ -395,7 +395,7 @@ iaDesenha = function () {
     /* arrastar/soltar em qualquer lugar da tela e Cmd+V de print: vai pro assistente (pedido de 01/10) */
     if (!window.__iavSoltaOk) { window.__iavSoltaOk = true;
       const pega = async (lista) => {
-        const files = [...lista].filter(f => /^image\/|pdf/.test(f.type)).slice(0, Math.max(0, 4 - IAV.anexos.length)); if (!files.length) return;
+        const files = [...lista].slice(0, Math.max(0, 4 - IAV.anexos.length)); if (!files.length) return;   /* o iavLeArquivo valida o tipo e avisa o que não dá */
         if (iaEl && iaEl.g && !iaEl.g.classList.contains('aberta')) iaAbre();
         for (const file of files) { try { IAV.anexos.push(await iavLeArquivo(file)); } catch (e) { toast(e.message || 'Não consegui ler o arquivo'); } }
         iaMostraAnexo(); const t = document.querySelector('#iaTxt'); if (t) t.focus(); };
@@ -539,14 +539,27 @@ iaBolha = function (tipo, texto, antesDe, semCopiar, foto) {
 /* o histórico: fica o iaAparaHist do MOTOR (troca foto/PDF por [foto]/[documento], encolhe
    resultado grande e tem teto de tamanho) — a versão antiga da Carol não fazia as duas últimas */
 
-/* ler um arquivo para anexar: foto reduzida, PDF até 5 MB (o cofre recusa pedido grande) */
+/* ler um arquivo para anexar. O modelo lê de verdade IMAGEM e PDF; arquivo de
+   TEXTO (txt, csv, md, json…) eu leio e mando o conteúdo escrito. Outros tipos
+   (Word, Excel, zip…) o modelo não abre — peço em PDF, print ou texto colado.
+   Teto ~20 MB no PDF (o cofre deixa passar até ~30 MB no pedido inteiro). */
+const IAV_TEXTO_RE = /\.(txt|csv|tsv|md|markdown|json|log|rtf|vtt|srt|html?|xml|ya?ml|ics)$/i;
 async function iavLeArquivo(file) {
-  if (/pdf/.test(file.type)) {
-    if (file.size > 5e6) throw new Error('PDF grande demais (até 5 MB).');
+  const t = file.type || '', nome = file.name || 'arquivo';
+  if (/pdf/.test(t) || /\.pdf$/i.test(nome)) {
+    if (file.size > 20e6) throw new Error('PDF grande demais (máx. 20 MB) — divida ou comprima.');
     const data = await new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => ko(new Error('Não li o PDF')); r.readAsDataURL(file); });
-    return { tipo: 'pdf', data, nome: file.name };
+    return { tipo: 'pdf', data, nome };
   }
-  return { tipo: 'img', data: await iaReduzFoto(file), nome: file.name };
+  if (/^image\//.test(t) || /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(nome)) {
+    return { tipo: 'img', data: await iaReduzFoto(file), nome };
+  }
+  if (/^text\//.test(t) || IAV_TEXTO_RE.test(nome)) {
+    if (file.size > 3e6) throw new Error('Arquivo de texto grande demais (máx. 3 MB).');
+    const txt = await new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result || '')); r.onerror = () => ko(new Error('Não li o arquivo')); r.readAsText(file); });
+    return { tipo: 'texto', data: txt.slice(0, 300000), nome };
+  }
+  throw new Error('Esse tipo eu ainda não leio direto. Me manda em PDF (dá pra "Salvar como PDF" no Word/Excel), em imagem (um print) ou cole o texto aqui.');
 }
 
 /* a conversa é a do MOTOR (com prazo, histórico seguro e interrupção); aqui só o orbe e a voz.
@@ -554,9 +567,15 @@ async function iavLeArquivo(file) {
 const _iavConversaMotor = iaConversa;
 iaConversa = async function (texto, anexos) {
   if (iaOcupado) return;
-  const urls = (!anexos ? [] : Array.isArray(anexos) ? anexos : [anexos]).map(a => typeof a === 'string' ? a : a.data).filter(Boolean);
+  const lista = (!anexos ? [] : Array.isArray(anexos) ? anexos : [anexos]);
+  /* imagem e PDF vão como anexo visual (o modelo os lê); arquivo de texto vira
+     conteúdo escrito dentro da própria mensagem */
+  const urls = lista.map(a => typeof a === 'string' ? a : (a && a.tipo !== 'texto' ? a.data : null)).filter(Boolean);
+  const textos = lista.filter(a => a && a.tipo === 'texto' && a.data);
+  let t = texto || '';
+  if (textos.length) t = textos.map(a => `📄 Arquivo "${a.nome}":\n${a.data}`).join('\n\n') + (t ? '\n\n' + t : '');
   iavPararFala(); IAV.ultima = ''; Orbe.estado('pensando');
-  try { return await _iavConversaMotor(texto, urls); }
+  try { return await _iavConversaMotor(t, urls); }
   finally { Orbe.estado('repouso'); if (IAV.ultima && iavVozOn()) iavFalar(IAV.ultima); }
 };
 

@@ -273,6 +273,7 @@ IA_FERRAMENTAS.push(
   { name: 'anotar_diario', description: 'Anota no DIÁRIO uma decisão ou combinado da conversa que não virou ação no app ("esperar a agência responder", "subir preço no verão"), com o porquê. O que ela confirma nos cartões já entra sozinho.', input_schema: obj({ texto: S_('uma linha, com o porquê') }, ['texto']) },
   { name: 'ver_diario', description: 'Lê o DIÁRIO (o que foi feito e decidido, dia a dia): mais dias para trás ou buscando uma palavra.', input_schema: obj({ dias: N_('quantos dias (padrão 60)'), busca: S_() }) },
   { name: 'abrir_aba', description: 'Leva a Melissa até uma tela quando a coisa se faz tocando. Abas: ' + AB_NOMES + '. item = cliente (para clients), passeio_id (para tours) ou número/cliente do orçamento (para orcamentos).', input_schema: obj({ aba: { type: 'string', enum: ['today', 'agenda', 'tarefas', 'tours', 'bookings', 'money', 'reports', 'clients', 'orcamentos', 'coupons', 'look', 'settings'] }, item: S_() }, ['aba']) },
+  { name: 'batizar_assistente', description: 'Dá ou troca o SEU nome (o nome do assistente). Ela pode querer te batizar, inclusive em francês. nome = como ela quer te chamar.', input_schema: obj({ nome: S_('o nome que ela escolheu') }, ['nome']) },
 );
 for (const n of ['ver_hoje', 'ver_ficha', 'contas_do_cliente', 'link_pagamento', 'ver_dados', 'ver_diario', 'abrir_aba']) IA_LEITURA.add(n);
 /* registrar pagamento aceita Wise; e a regra da Mari aparece no cartão */
@@ -429,6 +430,12 @@ const MARI_PLANO = {
     return { titulo: 'Sincronizar com o Google Agenda', assumiu: [], linhas: [['O que vai', 'tarefas com dia e passeios reservados (só o que mudou)']],
       fazer: async () => { try { const r = await GCal.sincronizar(true); return { ok: true, enviados: r.salvos || 0, tirados: r.apagados || 0 }; } catch (e) { return E_(e.message); } } };
   },
+  batizar_assistente(i) {
+    const nome = String(i.nome || '').trim().replace(/\s+/g, ' ').slice(0, 40);
+    if (!nome) return E_('qual nome ela quer te dar?');
+    return { titulo: 'Dar um nome ao assistente', assumiu: [], linhas: [['Nome', nome]],
+      fazer: () => { DB.settings = DB.settings || {}; DB.settings.iaNome = nome; save(); try { iaAtualizaFab(); } catch (e) {} return { ok: true }; } };
+  },
   criar_orcamento(i) {
     if (!String(i.cliente || '').trim()) return E_('para quem é o orçamento?');
     const c = mariOrcCampos(i); if (c.erro) return c;
@@ -563,13 +570,33 @@ iaAgora = function () {
     `Google Agenda: ${GCal.ligada() ? 'ligado' : 'não ligado'}.`,
   ].filter(Boolean).join('\n');
 };
+/* o NOME do assistente — ela pode batizar (inclusive em francês), guardado em
+   DB.settings.iaNome. Aparece no topo da gaveta e o próprio assistente se chama assim. */
+function iaNomeAssist() { try { return (DB.settings && DB.settings.iaNome) || ''; } catch (e) { return ''; } }
+if (typeof iaAtualizaFab === 'function') {
+  const _mariFab = iaAtualizaFab;
+  iaAtualizaFab = function () {
+    _mariFab.apply(this, arguments);
+    try {
+      const g = iaEl && iaEl.g, t = g && g.querySelector('#iaTit'), nome = iaNomeAssist();
+      if (t && nome) { const selo = t.querySelector('.iaModo'); t.textContent = nome + ' '; if (selo) t.appendChild(selo); }
+    } catch (e) {}
+  };
+}
+/* o redesenho da gaveta reescreve o cabeçalho; reaplica o nome na hora (sem piscar) */
+if (typeof iaDesenha === 'function') {
+  const _mariDesenhaNome = iaDesenha;
+  iaDesenha = function () { const r = _mariDesenhaNome.apply(this, arguments); try { iaAtualizaFab(); } catch (e) {} return r; };
+}
 iaSaudacao = function () {
   const h = new Date().getHours(), hoje = hojeLocalIso();
   const hj = DB.bookings.filter(b => b.status === 'confirmed' && b.date === hoje), G = Tarefas.grupos(hoje);
   const l = [(h < 12 ? 'Bom dia' : h < 19 ? 'Boa tarde' : 'Boa noite') + ', ' + guiaNome() + '!'];
   l.push(hj.length ? `Hoje ${hj.length === 1 ? 'tem 1 passeio' : `são ${hj.length} passeios`}.` : 'Hoje não tem passeio reservado.');
   const n = G.atrasadas.length + G.hoje.filter(o => !o.feita).length; if (n) l.push(`${n} tarefa(s) para hoje.`);
-  l.push('É só falar: "anota: ligar pro hotel sexta às 10h", "quanto a Ana paga no dia?", "manda o link do sinal pro Carlos".');
+  l.push('É só falar: "anota: ligar pro hotel sexta às 10h", "quanto a Ana paga no dia?", "escreve uma legenda sobre os mercados de Natal".');
+  if (!iaNomeAssist()) l.push('Ah — ainda não tenho nome. Se quiser me batizar (pode ser em francês), é só dizer.');
+  l.push('Quer ver tudo o que eu faço? Pergunte "o que você faz?".');
   return l.join('\n');
 };
 iaSistema = function () {
@@ -578,13 +605,26 @@ iaSistema = function () {
   return [
     { type: 'text', cache_control: { type: 'ephemeral' }, text: `${linhaHoje()}
 
-Você é o assistente de ${guiaNome()} (Melissa Hallais), guia e fotógrafa brasileira na Alsácia e Floresta Negra. Passeios em português por Colmar, Estrasburgo, a Rota dos Vinhos (Riquewihr e Ribeauvillé) e a Floresta Negra, além de sessões de foto nos vinhedos. Atendimento humano e próximo. Você trabalha com ela há anos: frase curta, calorosa, sem jargão, resolve. Chame pelo nome de vez em quando.
+Você é o assistente pessoal de ${guiaNome()} (Melissa Hallais) — o braço direito dela dentro do app: criativo, estratégico e operacional. ${iaNomeAssist() ? 'Seu nome é ' + iaNomeAssist() + '.' : 'Você ainda não tem nome; se ela quiser te batizar (ela gosta da ideia de um nome em francês), use batizar_assistente e, a partir daí, se chame assim.'} Você trabalha com ela há anos: frase curta, calorosa, sem jargão, resolve — e chama pelo nome de vez em quando. Fuso e dinheiro: Europa, euro.
+
+## QUEM É A MELISSA (para você entender o olhar dela)
+Brasileira, formada em Turismo e Hotelaria, cerca de 20 anos de vida internacional: hotéis, escolas no Reino Unido, navios de cruzeiro vendendo excursões. Uma viagem de três meses virou duas décadas pelo mundo. A fotografia sempre andou junto — foi a câmera que formou o olhar dela. Hoje, baseada em Strasbourg, ela é quatro coisas ao mesmo tempo: guia-conférencière licenciada, fotógrafa profissional, motorista VTC e fundadora da MH Voyages & Images. Ela não vende lugares — oferece uma maneira de enxergá-los. Territórios: Alsácia e Floresta Negra (especialidade), também Lorena e Champagne. O cliente dela é o viajante curioso, que quer compreender, não só colecionar fotos. Propósito: curiosidade → compreensão → respeito. Diferencial: ORIGINALIDADE, o olhar próprio dela. Fala português, inglês e francês. Assinatura visual: a casquette (boné) amarela.
 
 ## A MARCA DA MELISSA (regras dela, nunca quebrar)
 - Nunca escreva "conto de fadas", "Bela e a Fera" como venda, "luxo" solto, "o melhor", "imperdível", "experiência única", nem superlativo vazio.
 - Posicionamento: "Alsácia e Floresta Negra" — só "Alsácia" quando o assunto for especificamente alsaciano.
 - Três filtros antes de qualquer texto: Verdade (é correto, separa fato de lenda?), Identidade (soa como a Melissa, não como qualquer guia?), Relevância (interessa ao público dela?). Se poderia ser de outro guia, não está pronto.
 - Ela é guia E fotógrafa; a fotografia é um diferencial dela.
+- Nunca "conto de fadas" (nem no Natal), nunca "Bela e a Fera" como venda. "Luxo" só quando ressignificado como riqueza de experiência (encontro, origem, tempo, pequenos produtores), nunca ostentação. A Alsácia tem beleza E cicatrizes (guerras, fronteiras) — respeite as duas.
+
+## A VOZ DA MELISSA (quando você escreve POR ela ou PARA ela)
+Clara, concisa, elegante e autoral, com uma dose controlada de poesia — enxuto não é seco. Menos informação, melhor escolhida e melhor explicada. Humor e ironia são bem-vindos (até um dark humor fino, dos anos de Londres): inteligência e quebra de expectativa, nunca piada por piada. Prefere revelação a provocação. Frases curtas, perguntas, pausas. Todo texto precisa provocar algo ("não sabia disso", "agora faz sentido", um sorriso). Teste de autoria: se poderia ter sido escrito por qualquer outro guia, não está pronto — falta o olhar dela. Personalidade: profissional sem ser formal, exigente sem ser elitista, conhecedora sem ser pedante, espontânea sem ser improvisada, emotiva sem ser melodramática, franca sem deixar de ser justa. Frases dela, para ecoar quando couber (sem repetir à exaustão): "A beleza faz você parar, mas a história faz você lembrar."; "A Alsácia é feita de beleza e de cicatrizes."; "Fotos com intenção. Viagens com profundidade."; "Transformo turistas em viajantes curiosos."
+
+## O QUE VOCÊ FAZ POR ELA (seja proativo)
+Você é a extensão criativa, estratégica e operacional da Melissa. Além de mexer no app (abas abaixo), você: pensa junto; pesquisa na internet o que ajuda o trabalho dela; estrutura ideias soltas que ela joga; escreve e MELHORA textos, legendas, ganchos, roteiros de reel/story, carrosséis, propostas, apresentações e mensagens — sempre na voz dela, para ela revisar. Seja PROATIVO: termine oferecendo um próximo passo, aponte uma oportunidade ou uma melhora sem ela pedir. Mas AUTONOMIA É CONCEDIDA, não presumida: você sugere e prepara; quem decide, publica e fala com o cliente é ela. Quando ela te corrigir ou disser "sempre…", ofereça guardar na memória para você aprender. Pergunta operacional sempre: "como a Melissa faria isso?".
+
+## QUANDO ELA PERGUNTAR O QUE VOCÊ FAZ
+Se ela disser "o que você faz?", "como você me ajuda?" ou "me ensina a te usar", responda curto e caloroso, em grupos, com um exemplo de fala em cada, e termine oferecendo começar um: (1) Meu dia — "o que tenho hoje?"; (2) Agenda e tarefas — "anota: ligar pro hotel sexta 10h"; (3) Clientes e dinheiro — "quanto a Ana paga no dia?", "registra o sinal do Carlos"; (4) Reservas e link de pagamento — "fechei o walking tour do João dia 15 por 600", "manda o link do sinal"; (5) Textos e conteúdo na sua voz — "escreve uma legenda sobre os mercados de Natal", "melhora esse texto", "ideia de reel"; (6) Pesquisa na internet — "que horas fecha o mercado de Colmar?", "vai ter greve dia 20?"; (7) Orçamentos e propostas; (8) Memória e diário — "lembra que eu sempre começo às 10h". Diga que você prepara e ela confere, e que nada sai sem o ok dela.
 
 ## POSTURA
 - Consulte ANTES e responda UMA vez. Nunca se corrija no meio ("opa", "deixa eu corrigir"): se precisa de um dado, chame a ferramenta primeiro.
@@ -635,7 +675,7 @@ Cada serviço = um dia da viagem: rotulo em maiúsculas ("TRANSFER DE CHEGADA ·
 Quando ela quer PENSAR junto ("o que você acha?", "vale criar um passeio de…", "pediu desconto, e aí?"): leia os dados antes (ver_relatorio, ver_ficha, ver_agenda); no máximo UMA pergunta; depois 2 ou 3 caminhos com prós e contras e qual você escolheria. Termine oferecendo a ação.
 
 ## INTERNET
-web_search só para o que NÃO está no app: horário e fechamento de atração (mercados de Natal, castelos, vinícolas…), feriado na França/Alemanha, greve, clima na Alsácia, status de voo, endereço de hotel, dúvida de cliente sobre a região. Resuma e cite a fonte. No máximo 3 buscas. Nunca pesquise dados de clientes.
+Use web_search sempre que ajudar o trabalho dela e não estiver no app: horário e fechamento de atração (mercados de Natal, castelos, vinícolas…), feriado na França/Alemanha, greve, clima na Alsácia, status de voo, endereço de hotel; e também contexto histórico-cultural para um conteúdo, tendências e formatos no Instagram, referências para uma ideia, uma dúvida pontual dela. Resuma e cite a fonte; nunca invente número, data, estudo ou citação que a busca não trouxe (inventar ciência para soar profundo queima a credibilidade dela). No máximo 3 buscas por pergunta. Nunca pesquise dados pessoais de clientes.
 
 ## O MANUAL DOS PASSEIOS DA MELISSA (se ela corrigir, aprenda)
 - Passeios: Marchés de Noël em Colmar, Estrasburgo a pé (Petite France), sessão de fotos nos vinhedos, Rota dos Vinhos (Riquewihr e Ribeauvillé), Bike na Floresta Negra. Preços podem estar "sob consulta" — nunca invente valor.
@@ -740,7 +780,7 @@ iaChamar = async function (mensagens) {
   const tok = typeof authToken === 'function' ? authToken() : null;
   const monta = (comWeb) => JSON.stringify({ max_tokens: 4000, ...(cliente ? { cliente } : {}), system: iaSistema(), tools: mariFerramentas(comWeb), messages: mariComCache(mariSemPensamento(mensagensParaEnvio(mensagens))) });
   const cab = { 'content-type': 'application/json', ...(cliente && tok ? { authorization: 'Bearer ' + tok } : {}) };
-  if (monta(true).length > 1950000) throw new Error('Esse arquivo é grande demais para o assistente (máx. ~1,4 MB). Mande um print, uma foto ou um PDF menor.');
+  if (monta(true).length > 29000000) throw new Error('Esse arquivo é grande demais para o assistente (máx. ~20 MB). Divida o PDF, comprima ou mande um print.');
   const vai = (comWeb) => () => iaFetch(COFRE + '/api/claude', { method: 'POST', headers: cab, body: monta(comWeb) });
   let { r, corpo } = await mariPede(vai(true));
   if (!r.ok && mariSemWeb(corpo)) ({ r, corpo } = await mariPede(vai(false)));
