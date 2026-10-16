@@ -39,6 +39,15 @@ if (typeof window !== 'undefined') {
   window.Roteiro = window.Roteiro || { all: () => [] };
 }
 
+/* O motor (criar_passeio) usa regioes() para a região do passeio novo — a base
+   app-guia tem; a da Melissa não. As regiões dela são 'alsace' e 'blackforest'
+   (ver store.js + o seletor da aba Passeios). Sem isto, CRIAR PASSEIO quebrava
+   com "regioes is not defined". Passeio novo nasce em 'alsace'; ela troca para
+   Floresta Negra no próprio passeio quando for o caso. */
+if (typeof window !== 'undefined' && typeof window.regioes !== 'function') {
+  window.regioes = function () { return [['alsace', 'Alsácia'], ['blackforest', 'Floresta Negra']]; };
+}
+
 /* A base app-guia tem guiaNome/guiaNegocio/guiaBase (lêem a identidade do guia);
    a base própria da Melissa guarda em DB.settings. Shims compatíveis. */
 if (typeof window !== 'undefined') {

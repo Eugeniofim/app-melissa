@@ -83,6 +83,28 @@
     window.GCal = { ligada: () => false, cfg: () => ({}), agendarEnvio: () => {}, sincronizar: async () => ({ salvos: 0, apagados: 0 }) };
   }
 
+  /* RELATÓRIO: o motor (ver_relatorio) chama Reports.interesse e Reports.byOrigin
+     (nomes da base app-guia). A Melissa tem byTour e byGeo. Ponte com a MESMA
+     forma que o motor espera — reservas, receita e origem são reais; "visitas"
+     e "quase reservaram" não são medidos neste app (vão 0, não invento). */
+  if (typeof Reports !== 'undefined') {
+    if (typeof Reports.interesse !== 'function') {
+      Reports.interesse = function (de, ate) {
+        return (typeof Reports.byTour === 'function' ? Reports.byTour(de, ate) : []).map(function (r) {
+          return { tour: r.tour, visitas: 0, quase: 0, reservas: r.departures || 0, conv: 0, receita: r.revenue || 0 };
+        });
+      };
+    }
+    if (typeof Reports.byOrigin !== 'function') {
+      Reports.byOrigin = function (de, ate) {
+        var g = typeof Reports.byGeo === 'function' ? Reports.byGeo(de, ate) : { paises: [], total: 0, semInfo: 0 };
+        return (g.paises || []).map(function (p) {
+          return { pais: p.nome, reservas: p.n, pct: p.pct, cidades: (p.cidades || []).slice(0, 3).map(function (c) { return c.nome; }).join(', ') };
+        });
+      };
+    }
+  }
+
   /* Link de pagamento e cadastro de cliente: módulos de fase 2. Stubs seguros
      — se o assistente tentar, degrada em vez de derrubar a conversa. */
   if (typeof window !== 'undefined') {
