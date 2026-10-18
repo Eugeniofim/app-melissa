@@ -69,5 +69,10 @@ ok('a busca da nuvem no login tem teto de tempo',
 /* e o cloud.js nao pode regredir */
 ok('cloud.js continua com prazo', /AbortController/.test(cloud));
 
+/* a trava do painel vai para o DB deste app (DB_KEY), nunca para uma chave escrita a mao */
+ok('o login grava no DB_KEY, nao numa chave fixa',
+   !/setItem\(\s*['"]vi_db_v1['"]/.test(app) && /authRequired = true;\s*localStorage\.setItem\(DB_KEY,/.test(app),
+   'com a chave fixa a trava do painel nao ficava no DB do app');
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : '\ntudo passou');
 process.exit(falhas ? 1 : 0);
