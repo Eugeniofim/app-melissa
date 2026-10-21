@@ -75,10 +75,9 @@ async function qFlush() {
 /* ---------- estado (tudo menos reservas) ---------- */
 function statePayload() {
   return { tours: DB.tours, rules: DB.rules, departures: DB.departures,
-           blocks: DB.blocks, coupons: DB.coupons, settings: DB.settings,
-           /* tarefas entram aqui senao ficam presas num aparelho so —
-              ela anota no laptop e nao ve no celular */
-           tarefas: DB.tarefas || [] };
+           blocks: DB.blocks, coupons: DB.coupons, settings: DB.settings };
+  /* 21/10/2026: as tarefas SAÍRAM daqui — o appstate é público (qualquer um lê) e tarefa é
+     privado. Agora elas sobem linha a linha pela tabela `itens`, só da dona (nuvem-itens.js). */
 }
 /* A trancada do banco devolve HTTP 200 mesmo quando descarta a escrita:
    quem não é a dona simplesmente não altera nenhuma linha. Se a gente
@@ -381,7 +380,8 @@ async function cloudPull() {
         coupons: st.data.coupons || [],
         /* nuvem antiga ainda nao tem tarefas: manter as do aparelho em vez
            de apagar com uma lista vazia */
-        tarefas: st.data.tarefas || DB.tarefas || [],
+        /* tarefa é privada (nuvem-itens.js): a do aparelho vale; a cópia antiga do appstate só completa o que faltar */
+        tarefas: (DB.tarefas && DB.tarefas.length) ? DB.tarefas : (st.data.tarefas || []),
         /* a nuvem pode ser mais antiga que o app: completa o que faltar */
         settings: fillSettings({ ...st.data.settings, lang: keepLang,
                     tutorialClient: DB.settings.tutorialClient, tutorialAdm: DB.settings.tutorialAdm }),
