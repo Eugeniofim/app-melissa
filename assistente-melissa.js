@@ -865,7 +865,7 @@ iaChamar = async function (mensagens) {
    anexo (foto/PDF) não vira foto de marketing */
 const _mariConversa = iaConversa;
 iaConversa = async function (texto, anexos) {
-  if (iaOcupado) return;
+  if (iaOcupado) { if (typeof iavManda === 'function') iavManda(texto, anexos); return; }   /* 24/10: ocupado → fila (antes sumia) */
   mariFerrTurno = 0; mariEscTurno = 0; mariConferiu = false;
   mariNumerosTurno = new Set();
   try { for (const v of mariNumerosDoHistorico(iaLe(IA_HIST, []))) mariNumerosTurno.add(v); mariColheNumeros(texto); mariColheNumeros(iaAgora()); mariColheNumeros((Mkt.get().memoria || []).map(x => x.texto).join(' ')); mariColheNumeros(mariDiarioTexto(14)); } catch (e) {}
