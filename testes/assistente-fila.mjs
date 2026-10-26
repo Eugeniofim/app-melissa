@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 const PASTA = path.resolve(process.argv[2] || path.join(path.dirname(new URL(import.meta.url).pathname), '..'));
-const BASE = 'https://guia.eugeniofim.com/fila-teste/', PORT = 9300 + Math.floor(Math.random() * 400), PERFIL = fs.mkdtempSync(path.join(os.tmpdir(), 'fila-'));
+const BASE = 'https://fila.teste/app/', PORT = 9300 + Math.floor(Math.random() * 400), PERFIL = fs.mkdtempSync(path.join(os.tmpdir(), 'fila-'));
 const chrome = spawn('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', ['--headless=new', `--remote-debugging-port=${PORT}`, `--user-data-dir=${PERFIL}`, '--no-first-run', '--use-angle=swiftshader', 'about:blank'], { stdio: 'ignore' });
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 const TIPO = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json' };
@@ -23,16 +23,17 @@ function servir(p) {
   const u = new URL(p.request.url);
   /* nada de fora: nem banco, nem cofre, nem fonte — o teste roda sem rede */
   if (!u.href.startsWith(BASE)) return send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'BlockedByClient' });
-  let rel = decodeURIComponent(u.pathname.replace('/fila-teste/', '')) || 'index.html';
+  let rel = decodeURIComponent(u.pathname.replace('/app/', '')) || 'index.html';
   if (rel === '' || rel.endsWith('/')) rel += 'index.html';
   const f = path.join(PASTA, rel);
   if (rel === 'sw.js' || !f.startsWith(PASTA) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return send('Fetch.fulfillRequest', { requestId: p.requestId, responseCode: 404, body: '' });
   let corpo = fs.readFileSync(f);
-  if (rel === 'config.js') corpo = Buffer.from(corpo.toString('utf8').replace(/supabaseUrl:\s*'[^']*'/g, "supabaseUrl: ''"));
+  /* sem banco, e sem a mudança de endereço (o app da Ingrid manda quem não está em app.emroma.com para lá) */
+  if (rel === 'config.js') corpo = Buffer.from(corpo.toString('utf8').replace(/supabaseUrl:\s*'[^']*'/g, "supabaseUrl: ''").replace(/novoEndereco:\s*'[^']*'/g, "novoEndereco: ''"));
   return send('Fetch.fulfillRequest', { requestId: p.requestId, responseCode: 200, responseHeaders: [{ name: 'Content-Type', value: TIPO[path.extname(f)] || 'application/octet-stream' }], body: corpo.toString('base64') });
 }
-/* a fila mora no IAV (camada de voz) ou no iaFila (apps sem a camada de voz) */
-const FILA = `((typeof IAV !== 'undefined' && IAV.fila) || window.iaFila)`;
+/* a fila mora no IAV (camada de voz) ou no iaFila (apps sem a camada de voz: Ingrid, Yalla) */
+const FILA = `(typeof IAV !== 'undefined' ? IAV.fila : iaFila)`;
 const FILA_EL = `(document.getElementById('iavFila') || document.getElementById('iaFila'))`;
 try {
   let list = null; for (let k = 0; k < 40 && !list; k++) { await wait(250); try { list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json(); } catch (e) {} }
@@ -86,6 +87,12 @@ try {
   ok('sem chamada extra à IA para o cartão cancelado (2 chamadas: a do cartão e a da nova)', await ev(`window.__chamadas.length === 2`), await ev(`window.__chamadas`));
   const hist = await ev(`(function(){ const h = iaLe(IA_HIST, []); return h.map(m => m.role + ':' + (typeof m.content === 'string' ? 'txt' : m.content.map(b => b.type).join('+'))); })()`);
   ok('o histórico ficou válido (todo tool_use tem tool_result logo depois)', hist.every((x, k) => !/tool_use/.test(x) || /tool_result/.test(hist[k + 1] || '')), hist);
+  console.log('3b. o cartão some da tela (limpar a conversa) com ele esperando: não trava');
+  await ev(`(function(){ window.__proxima = { stop_reason: 'tool_use', content: [{ type: 'tool_use', id: 'tu2', name: 'criar_cupom', input: { codigo: 'FILA20', desconto: 20 } }] }; return true; })()`);
+  await manda('cria um cupom FILA20 de 20%');
+  card = false; for (let k = 0; k < 30 && !card; k++) { await wait(200); card = await ev(`!!document.querySelector('#iaMsgs .iaCard .bts .sim')`); }
+  await ev(`(function(){ iaGrava(IA_HIST, []); iaDesenha(); return true; })()`);
+  ok('sem o cartão na tela, ele solta sozinho (sem gravar o cupom)', card && await espera(5000) && await ev(`!iaOcupado && DB.coupons.length === ${antes}`), await ev(`({ ocupado: iaOcupado, cupons: DB.coupons.map(c => c.code) })`));
   console.log('4. relógio do "pensando"');
   await ev(`(function(){ window.__lento = 4500; return true; })()`); await manda('pergunta demorada'); await wait(3600);
   ok('"Pensando… N s" aparece quando demora', await ev(`/Pensando… \\d+ s/.test((document.querySelector('#iaMsgs .iaB.pensa') || {}).textContent || '')`), await ev(`(document.querySelector('#iaMsgs .iaB.pensa') || {}).textContent`));
