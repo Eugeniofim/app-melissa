@@ -25,9 +25,10 @@ if (typeof temNuvem !== 'function') { var temNuvem = () => typeof SUPA_URL !== '
 
 /* Melissa (21/10/2026): o que é PRIVADO e sobe linha a linha — o appstate é público
    (o site lê de lá), então nada daqui pode ir para ele. */
-const ITENS_COLS = ['tarefas'];
-/* estas sao "dicionarios" no DB (chave -> valor); as outras sao listas com id */
-const ITENS_DIC = [];
+const ITENS_COLS = ['tarefas', 'kits'];
+/* estas sao "dicionarios" no DB (chave -> valor); as outras sao listas com id.
+   kits (27/10/2026): o codigo do link curto do kit da viagem de cada cliente (kit-melissa.js) */
+const ITENS_DIC = ['kits'];
 const IT_SOMBRA = 'vi_sombra_v1', IT_FILA = 'vi_fila_v1', IT_MARCA = 'vi_marca_v1';
 /* a chave antiga do "em dia" (ate 18/10): nao vale mais nada, so e apagada */
 const IT_EMDIA_VELHO = 'vi_emdia_v1';

@@ -296,6 +296,12 @@ function route(opts) {
   const h = location.hash.slice(2) || '';
   const p = h.split('/');
   document.documentElement.lang = LANG === 'pt' ? 'pt-BR' : 'en';
+  /* páginas que moram em outros arquivos: o kit da viagem do cliente (#/kt/…, #/k/… — kit-melissa.js) */
+  if (window.ROTAS_EXTRA && typeof window.ROTAS_EXTRA[p[0]] === 'function') {
+    window.ROTAS_EXTRA[p[0]](p.slice(1), opts);
+    if (!manter) scrollTo(0, 0);
+    return;
+  }
   if (p[0] === 'novasenha') viewNewPass();
   else if (p[0] === 'login') viewLogin();
   else if (p[0] === 'adm') {
@@ -1678,7 +1684,7 @@ function admBookings() {
               ? esc(t('paxComKids', { a: b.pax - b.criancas, c: b.criancas }))
               : esc(b.pax) + 'p'} · <span class="mono">${esc(b.code)}</span></small></div>
         <b class="mono">${eur(b.total)}</b>${pill}
-        <div class="tacts" id="ta-${esc(b.id)}">${cobrar}${act}${conf}<button class="mini danger" data-del="${esc(b.id)}" title="${t('apagarX')}" aria-label="${t('apagarX')}">×</button></div>
+        <div class="tacts" id="ta-${esc(b.id)}">${cobrar}${act}${conf}${b.status === 'confirmed' && typeof kitBotao === 'function' ? kitBotao(b) : ''}<button class="mini danger" data-del="${esc(b.id)}" title="${t('apagarX')}" aria-label="${t('apagarX')}">×</button></div>
       </div>`;
     }).join('')}</div>`
     : `<div class="emptybox"><p>${t('emptyBookings')}</p></div>`}`);
@@ -2622,6 +2628,7 @@ function admClients() {
             aria-label="WhatsApp — ${esc(c.name)}" title="WhatsApp">${ICO.whats}<span>WhatsApp</span></a>` : ''}
           ${c.email ? `<a class="ico-btn ml" href="mailto:${esc(c.email)}" aria-label="E-mail — ${esc(c.name)}" title="${esc(c.email)}">${ICO.mail}<span>E-mail</span></a>` : ''}
           ${c.insta ? `<a class="ico-btn ig" target="_blank" rel="noopener" href="https://instagram.com/${esc(c.insta.replace(/^@/, ''))}" aria-label="Instagram — ${esc(c.name)}" title="@${esc(c.insta.replace(/^@/, ''))}">${ICO.insta}<span>Instagram</span></a>` : ''}
+          ${typeof kitBotao === 'function' ? kitBotao(String(c.email || c.whats || c.name).toLowerCase()) : ''}
         </td></tr>`).join('')}</tbody></table>`
       : `<p class="empty">${t('clEmpty')}</p>`}
     </section>`);

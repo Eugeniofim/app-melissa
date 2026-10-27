@@ -276,6 +276,9 @@ IA_FERRAMENTAS.push(
   { name: 'batizar_assistente', description: 'Dá ou troca o SEU nome (o nome do assistente). Ela pode querer te batizar, inclusive em francês. nome = como ela quer te chamar.', input_schema: obj({ nome: S_('o nome que ela escolheu') }, ['nome']) },
 );
 for (const n of ['ver_hoje', 'ver_ficha', 'contas_do_cliente', 'link_pagamento', 'ver_dados', 'ver_diario', 'abrir_aba']) IA_LEITURA.add(n);
+/* O KIT DA VIAGEM (27/10/2026, kit-melissa.js): só lê — devolve o link e a mensagem pronta, não manda nada */
+IA_FERRAMENTAS.push({ name: 'kit_viagem', description: 'O KIT DA VIAGEM de um cliente que PAGOU: uma página só (no celular, sem senha; também vira PDF) com o voucher de cada passeio dele, dia e hora, ponto de encontro (mapa), o programa, incluso/não incluso, o que levar, o pagamento (pago, o que falta, botão do cartão), as dicas dela e o contato. Devolve o link (o curto se atualiza sozinho) e a mensagem pronta para ELA mandar. Use para "manda o kit da Ana", "o que mando pro cliente que pagou". Não envia nada.', input_schema: obj({ cliente: S_('nome, WhatsApp, e-mail ou código da reserva') }, ['cliente']) });
+IA_LEITURA.add('kit_viagem');
 /* registrar pagamento aceita Wise; e a regra da Mari aparece no cartão */
 for (const f of IA_FERRAMENTAS) if (f.name === 'registrar_pagamento') {
   f.description = 'Registra dinheiro que entrou numa reserva (reserva = código OU nome do cliente). tipo: "sinal" ("o sinal caiu", "pagou a metade") · "resto" ("pagou o resto", "quitou", "pagou no dia") · "outro" (um valor que ela disse). Sem valor, o APP sabe quanto é o sinal ou o resto — nunca calcule nem pergunte. "pagou no dia" = metodo cash.';
@@ -380,6 +383,16 @@ const MARI_LER = {
     if (i.aba === 'orcamentos' && i.item) { const r = mariAchaOrc(i.item); if (!r.erro) destino += '/' + encodeURIComponent(r.o.id); }
     setTimeout(() => go(destino), 0); return { ok: true, aberta: i.aba };
   },
+};
+MARI_LER.kit_viagem = async function (i) {
+  const r = mariAchaCliente(i.cliente); if (r.erro) return r;
+  if (typeof Kit === 'undefined') return E_('o kit não está ligado neste app');
+  const d = await Kit.dados(r.chave); if (!d) return E_('esse cliente ainda não tem reserva paga (confirmada) — o kit nasce quando o dinheiro entra');
+  const url = await Kit.link(r.chave);
+  return { cliente: d.nome, idioma: d.lang === 'en' ? 'inglês' : 'português', servicos: d.servicos.map(s => `${s.data} ${s.hora || ''} · ${s.nome} · voucher ${s.code}${s.restante > 0 ? ' · falta ' + eur(s.restante) : ' · pago'}`),
+    link: url, link_curto_e_atualizado: Kit.curto(r.chave), mensagem_pronta: await Kit.mensagem(r.chave, url),
+    onde: 'em Reservas (ou em Clientes), botão "Kit da viagem": ali dá para gerar o PDF e trocar o idioma',
+    regra: 'mostre a mensagem pronta para ela copiar; você não envia nada. O cliente que pagou já recebe o link do kit sozinho no e-mail de confirmação.' };
 };
 const MARI_PLANO = {
   mexer(i) {
@@ -653,7 +666,7 @@ Se ela disser "o que você faz?", "como você me ajuda?" ou "me ensina a te usar
 - Nunca diga "não consigo" nem "faça na aba X" sem tentar a ferramenta. Sem ferramenta → abrir_aba e diga o que tocar.
 
 ## VOCÊ ALCANÇA TODAS AS ABAS
-Hoje: ver_hoje · Orçamentos: ver_orcamentos, criar_orcamento, editar_orcamento · Agenda e Tarefas: anotar_tarefa, concluir_tarefa, ver_dados tarefas, mexer tarefas, apagar_registro, google_agenda · Meus passeios: ver_passeios, criar_passeio, alterar_passeio, mudar_preco, adicionar/remover_horario · Agenda de saídas: ver_agenda, ver_bloqueios, bloquear/liberar_datas · Reservas: ver_reservas, criar/alterar/cancelar_reserva, registrar_pagamento, link_pagamento · Clientes (fichas): ver_clientes, ver_ficha, contas_do_cliente, ver_dados fichas/clientes, mexer fichas (ficha cadastral), mexer clientes (cliente novo sem reserva) · Pedidos do "Personalize seu passeio": ver_dados pedidos, mexer pedidos (respondido) · Cupons e brindes: ver_cupons, criar/apagar_cupom, ver_dados brindes/brindesPendentes, mexer brindes · Relatórios e extrato: ver_relatorio · Ajustes: ver_ajustes, alterar_ajustes · Memória e diário: guardar/apagar_memoria, anotar/ver_diario · Qualquer tela: abrir_aba (${AB_NOMES}).
+Hoje: ver_hoje · Orçamentos: ver_orcamentos, criar_orcamento, editar_orcamento · Agenda e Tarefas: anotar_tarefa, concluir_tarefa, ver_dados tarefas, mexer tarefas, apagar_registro, google_agenda · Meus passeios: ver_passeios, criar_passeio, alterar_passeio, mudar_preco, adicionar/remover_horario · Agenda de saídas: ver_agenda, ver_bloqueios, bloquear/liberar_datas · Reservas: ver_reservas, criar/alterar/cancelar_reserva, registrar_pagamento, link_pagamento · Kit da viagem de quem pagou: kit_viagem · Clientes (fichas): ver_clientes, ver_ficha, contas_do_cliente, ver_dados fichas/clientes, mexer fichas (ficha cadastral), mexer clientes (cliente novo sem reserva) · Pedidos do "Personalize seu passeio": ver_dados pedidos, mexer pedidos (respondido) · Cupons e brindes: ver_cupons, criar/apagar_cupom, ver_dados brindes/brindesPendentes, mexer brindes · Relatórios e extrato: ver_relatorio · Ajustes: ver_ajustes, alterar_ajustes · Memória e diário: guardar/apagar_memoria, anotar/ver_diario · Qualquer tela: abrir_aba (${AB_NOMES}).
 
 ## ONDE GUARDAR CADA COISA
 - Coisa para fazer ou lembrar → anotar_tarefa (texto curto + nota). Com hora marcada = compromisso. Ideia solta = tipo anotacao. Vida pessoal = area pessoal.
@@ -661,6 +674,7 @@ Hoje: ver_hoje · Orçamentos: ver_orcamentos, criar_orcamento, editar_orcamento
 - APRENDER COM ELA (o tempo todo): quando ela te corrigir, reescrever um texto seu, ou você notar um jeito/preferência que se repete ("sempre começo às 10h", "não uso a palavra X", "meu tom é assim", "esse cliente é VIP") → OFEREÇA guardar numa linha ("quer que eu guarde isso pra sempre?") e, no sim, guardar_memoria. A memória vale para sempre, em todos os aparelhos, e você a relê a cada conversa. Ofereça, nunca guarde escondido; e nunca transforme um dado pontual de cliente em regra geral.
 - Decisão da conversa que não virou ação → anotar_diario.
 - Dinheiro que entrou → registrar_pagamento. Link para o cliente pagar o sinal → link_pagamento (mostre a mensagem pronta).
+- Kit da viagem (voucher, horário, encontro, o que levar, pagamento e as dicas dela, numa página ou PDF) para quem pagou → kit_viagem (mostre a mensagem pronta). O cliente já recebe esse link sozinho no e-mail de confirmação do pagamento; mandar pelo WhatsApp é a mais.
 - Pedido do Personalize respondido → mexer pedidos mudar respondido true.
 - Brinde: ver quem falta → ver_dados brindesPendentes; mandar é ela, na aba Cupons e brindes (abrir_aba coupons) ou na ficha.
 - Orçamento / proposta de serviços (cliente ou agência pediu) → criar_orcamento NA HORA com o que ela deu (o cartão é a conferência); mudança no MESMO → editar_orcamento; "mandei"/"aceitou"/"perdi" → editar_orcamento status. O PDF ela salva na aba Orçamentos (abrir_aba orcamentos com o número).

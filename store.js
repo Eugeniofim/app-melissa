@@ -45,6 +45,9 @@ function _blank() {
               ou Pix (ela marca "recebi" no painel). Regra da Melissa
               (03/09/2026): o cliente recebe UMA mensagem, e so quando pagou. */
            avisarClientes: true,
+           /* o app sabe abrir o KIT DA VIAGEM (#/kt/…): e o sinal para quem monta
+              link de kit fora dele (kit-melissa.js; o robo de e-mail usa o mesmo formato) */
+           kitVersao: 1,
            /* cartao pelo Stripe. Desligado ate a gente provar a cobranca
               de ponta a ponta com dinheiro de verdade. */
            stripeAtivo: false,
