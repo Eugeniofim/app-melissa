@@ -7,8 +7,17 @@
    ===================================================== */
 'use strict';
 
-const SUPA_URL = 'https://kqphzdowtjcewazikzyn.supabase.co';
-const SUPA_KEY = 'sb_publishable_oH2MHKj7n9luEj9tnp6VBA_CetadqRi';
+/* 27/10/2026: o banco saiu do projeto próprio dela ("app-melissa", um
+   segundo servidor pago à parte) e virou a SALA 'melissa' no projeto da Ti Artes,
+   como os outros clientes. Cada sala é um schema; o PostgREST escolhe o schema
+   pelo cabeçalho (leitura = Accept-Profile, escrita = Content-Profile). */
+const SUPA_URL = 'https://uopfqlogjzuqpabptxkb.supabase.co';
+const SUPA_KEY = 'sb_publishable_VKIdd2RNpMf3e4IEDprxJw_TOKPIHT2';
+const SALA = 'melissa';
+function salaHeaders(metodo) {
+  const m = String(metodo || 'GET').toUpperCase();
+  return m === 'GET' || m === 'HEAD' ? { 'Accept-Profile': SALA } : { 'Content-Profile': SALA };
+}
 const QUEUE_KEY = 'vi_queue_v1';
 
 /* Sem prazo maximo, uma requisicao pendurada trava o app inteiro: foi isso
@@ -34,6 +43,7 @@ function supaFetch(path, opts = {}) {
          o cliente via "Esta reservado" e a Melissa nunca recebia.
          Conflito de id vira 409 e e tratado como sucesso mais abaixo. */
       Prefer: 'return=minimal',
+      ...salaHeaders(opts.method),
       ...(opts.headers || {}),
     },
   }).finally(() => clearTimeout(corta));

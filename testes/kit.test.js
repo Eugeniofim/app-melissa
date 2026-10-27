@@ -40,6 +40,19 @@ ok('o link curto publica só com login (dona) e cai no comprido sem a tabela', /
 ok('o endereço que vai para o cliente é o oficial dela', kit.includes("'https://app.melissahallais.com/'"));
 ok('o SQL do link curto existe (banco de hoje e sala)', fs.existsSync(SERVE + '/LIGAR-KIT-MELISSA.sql') && /public\.is_owner\(\)/.test(ler('LIGAR-KIT-MELISSA.sql'))
   && /melissa\.is_owner\(\)/.test(ler('LIGAR-KIT-MELISSA-SALA.sql')) && /notify pgrst, 'reload schema'/.test(ler('LIGAR-KIT-MELISSA.sql')));
+/* na sala (projeto da Ti Artes): o link curto lê e grava NA SALA dela (o PostgREST escolhe o schema pelo cabeçalho) */
+if (/function salaHeaders/.test(cloud)) {
+  const vm = require('vm'), chamadas = [];
+  const ctx = { console, JSON, Object, String, AbortController, setTimeout, clearTimeout,
+    fetch: (url, o) => { chamadas.push({ url, h: o.headers || {} }); return Promise.resolve({ ok: true }); },
+    localStorage: { getItem() { return null; }, setItem() {}, removeItem() {} } };
+  vm.createContext(ctx); vm.runInContext(cloud, ctx);
+  vm.runInContext(`supaFetch('rpc/kit', { method: 'POST', headers: { Prefer: '' }, body: '{}' }); supaFetch('kits', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: '{}' });`, ctx);
+  const [rpc, up] = chamadas;
+  ok('o cliente lê o kit na sala dela (rpc/kit com Content-Profile: melissa, resposta inteira)', rpc && /\/rest\/v1\/rpc\/kit$/.test(rpc.url) && rpc.h['Content-Profile'] === 'melissa' && rpc.h.Prefer === '');
+  ok('a dona grava o kit na sala dela (kits, upsert, Content-Profile: melissa)', up && up.h['Content-Profile'] === 'melissa' && /merge-duplicates/.test(up.h.Prefer));
+  ok('o painel aponta o SQL da sala', /LIGAR-KIT-MELISSA-SALA\.sql/.test(kit));
+}
 const asis = ler('assistente-melissa.js');
 ok('o assistente tem kit_viagem, só de leitura', /name: 'kit_viagem'/.test(asis) && /IA_LEITURA\.add\('kit_viagem'\)/.test(asis) && /MARI_LER\.kit_viagem = async function/.test(asis));
 

@@ -15,9 +15,14 @@
 
    Por que gravar aqui e não no app: o navegador não pode ser a autoridade
    sobre "isto foi pago". Aqui a gente pergunta ao Stripe e escreve no banco
-   com a chave de serviço. */
+   com a chave de serviço.
 
-const STRIPE = Deno.env.get('STRIPE_SECRET_KEY') ?? '';
+   27/10/2026: o banco dela virou a SALA 'melissa' (um schema) no projeto da
+   Ti Artes, por isso a função se chama pagar-melissa, o segredo tem o nome
+   dela (o projeto tem outros clientes) e toda leitura/escrita diz a sala. */
+
+const SALA = 'melissa';
+const STRIPE = Deno.env.get('STRIPE_SECRET_KEY_MELISSA') ?? '';
 const SUPA_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
@@ -69,12 +74,17 @@ async function stripe(caminho: string, corpo?: URLSearchParams, metodo = 'POST')
 }
 
 async function supa(caminho: string, init: RequestInit = {}) {
+  /* o PostgREST escolhe o schema pelo cabeçalho: leitura = Accept-Profile,
+     escrita = Content-Profile. Sem ele, cairia no public (o da Ti Artes). */
+  const metodo = (init.method || 'GET').toUpperCase();
+  const sala = metodo === 'GET' || metodo === 'HEAD' ? { 'Accept-Profile': SALA } : { 'Content-Profile': SALA };
   const r = await fetch(SUPA_URL + '/rest/v1/' + caminho, {
     ...init,
     headers: {
       apikey: SERVICE,
       Authorization: 'Bearer ' + SERVICE,
       'Content-Type': 'application/json',
+      ...sala,
       ...(init.headers || {}),
     },
   });
@@ -105,7 +115,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origem) });
   if (req.method !== 'POST') return json({ erro: 'metodo' }, 405, origem);
 
-  if (!STRIPE) return json({ erro: 'falta o segredo STRIPE_SECRET_KEY' }, 500, origem);
+  if (!STRIPE) return json({ erro: 'falta o segredo STRIPE_SECRET_KEY_MELISSA' }, 500, origem);
 
   let corpo: any = {};
   try { corpo = await req.json(); } catch { /* corpo vazio */ }

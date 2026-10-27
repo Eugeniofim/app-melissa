@@ -5,7 +5,9 @@
    ===================================================== */
 'use strict';
 
-const AUTH_KEY = 'vi_session_v1';
+/* v2 desde 27/10/2026: o login do banco antigo (projeto próprio) não vale no
+   projeto da Ti Artes. Chave nova = a sessão velha é esquecida e ela entra de novo. */
+const AUTH_KEY = 'vi_session_v2';
 let SESSION = null;   // { access_token, refresh_token, expires_at, user }
 
 /* Prazo para TODA chamada de rede daqui.
@@ -163,19 +165,23 @@ async function authSetPassword(pass) {
   } catch (e) { return { ok: false, error: String(e) }; }
 }
 
-/* --------- posse do app: a primeira conta vira a dona --------- */
+/* --------- posse do app ---------
+   Na sala do projeto da Ti Artes (27/10/2026) a dona é gravada à mão em
+   melissa.app_config (num projeto com vários clientes, 'a primeira conta vira a
+   dona' deixaria qualquer conta nova tomar o app): o PATCH abaixo é recusado
+   pelo banco e aqui só se confere se quem entrou é a dona. */
 async function claimOwnership() {
   if (!isLoggedIn()) return { ok: false };
   const h = { apikey: SUPA_KEY, Authorization: 'Bearer ' + authToken(), 'Content-Type': 'application/json' };
   try {
-    const cur = await comPrazo(SUPA_URL + '/rest/v1/app_config?id=eq.1&select=owner_uid', { headers: h })
+    const cur = await comPrazo(SUPA_URL + '/rest/v1/app_config?id=eq.1&select=owner_uid', { headers: { ...h, ...salaHeaders('GET') } })
       .then(r => r.ok ? r.json() : null);
     if (!cur) return { ok: false, noTable: true };           // SQL ainda não aplicado
     const owner = cur[0] && cur[0].owner_uid;
     if (owner && owner !== authUser().id) return { ok: false, taken: true };
     if (owner === authUser().id) return { ok: true, already: true };
     const r = await comPrazo(SUPA_URL + '/rest/v1/app_config?id=eq.1', {
-      method: 'PATCH', headers: { ...h, Prefer: 'return=minimal' },
+      method: 'PATCH', headers: { ...h, ...salaHeaders('PATCH'), Prefer: 'return=minimal' },
       body: JSON.stringify({ owner_uid: authUser().id }),
     });
     return { ok: r.ok };

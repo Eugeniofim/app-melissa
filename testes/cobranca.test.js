@@ -6,7 +6,7 @@
    390 por 1 no formulário para fazer o passeio por um euro — e por isso
    este teste também confere que a função não aceita valor de fora. */
 const fs = require('fs'), assert = require('assert');
-const F = __dirname + '/../supabase/functions/pagar/index.ts';
+const F = __dirname + '/../supabase/functions/pagar-melissa/index.ts';
 assert.ok(fs.existsSync(F), 'nao achei a funcao de cobranca');
 const src = fs.readFileSync(F, 'utf8');
 

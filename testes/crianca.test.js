@@ -97,7 +97,7 @@ t('reserva lançada à mão também aceita criança',
 t('a lista mostra a divisão', /paxComKids/.test(app));
 
 console.log('o cartão cobra o total, sem saber de idade');
-const f = fs.readFileSync(SERVE + '/supabase/functions/pagar/index.ts', 'utf8');
+const f = fs.readFileSync(SERVE + '/supabase/functions/pagar-melissa/index.ts', 'utf8');
 const i = f.indexOf('function centavosDevidos');
 eval(f.slice(i, f.indexOf('Deno.serve')).replace(/:\s*any/g, '').replace(/:\s*number/g, ''));
 t('485 com sinal de 50% = 24300 centavos',

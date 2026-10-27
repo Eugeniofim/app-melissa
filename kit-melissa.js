@@ -15,7 +15,7 @@
    MESMO kit e manda o link na confirmação de pagamento.
 
    O LINK CURTO E SEMPRE ATUALIZADO (#/k/<código>): o kit fica numa tabela só
-   dele no banco (kits — LIGAR-KIT-MELISSA.sql). O cliente lê UM kit pelo
+   dele no banco (melissa.kits — LIGAR-KIT-MELISSA-SALA.sql). O cliente lê UM kit pelo
    código (função kit), nunca a tabela; só a dona grava. Mudou a hora ou
    entrou um pagamento → o app republica sozinho e o cliente vê no mesmo link.
    Sem a tabela (ou sem login), cai no link COMPRIDO (#/kt/…, o kit viaja
@@ -71,14 +71,14 @@ const KIT_TX = {
 const KIT_ADM = {
   pt: { botao: 'Kit da viagem', voltar: '← voltar', copiar: 'Copiar link', zap: 'Mandar no WhatsApp', zap2: 'Mandar no WhatsApp (escolher contato)', pdf: 'Gerar PDF',
     curto: '✓ Link curto e sempre atualizado: o cliente vê as mudanças no mesmo link.', nasce: 'O link curto nasce quando você copiar ou mandar.',
-    semTabela: 'Link comprido: falta ligar a tabela do kit no Supabase (LIGAR-KIT-MELISSA.sql). Funciona, mas não se atualiza sozinho.',
+    semTabela: 'Link comprido: falta ligar a tabela do kit no Supabase (LIGAR-KIT-MELISSA-SALA.sql). Funciona, mas não se atualiza sozinho.',
     semLogin: 'Link comprido (sem login ou sem nuvem): funciona, mas não se atualiza sozinho.', idioma: 'Idioma do kit:',
     edTit: 'As dicas e o que levar', edTxt: 'Vão em todo kit, no idioma escolhido acima. Uma por linha.', dicas: 'Dicas da Melissa', levar: 'O que levar',
     salvar: 'Salvar', padrao: 'Voltar ao padrão', salvo: 'Salvo', padraoOk: 'O texto padrão voltou', copiado: 'Link copiado', copie: 'Copie o link:',
     semReserva: 'Esse cliente ainda não tem reserva confirmada (paga): o kit nasce quando o dinheiro entra.' },
   en: { botao: 'Trip kit', voltar: '← back', copiar: 'Copy link', zap: 'Send on WhatsApp', zap2: 'Send on WhatsApp (choose contact)', pdf: 'Make PDF',
     curto: '✓ Short link that updates itself: the guest sees changes on the same link.', nasce: 'The short link is created when you copy or send it.',
-    semTabela: 'Long link: the kit table is not switched on in Supabase yet (LIGAR-KIT-MELISSA.sql). It works, but does not update itself.',
+    semTabela: 'Long link: the kit table is not switched on in Supabase yet (LIGAR-KIT-MELISSA-SALA.sql). It works, but does not update itself.',
     semLogin: 'Long link (not logged in or no cloud): it works, but does not update itself.', idioma: 'Kit language:',
     edTit: 'Tips and what to bring', edTxt: 'They go in every kit, in the language chosen above. One per line.', dicas: "Melissa's tips", levar: 'What to bring',
     salvar: 'Save', padrao: 'Back to default', salvo: 'Saved', padraoOk: 'Default text is back', copiado: 'Link copied', copie: 'Copy the link:',

@@ -656,7 +656,7 @@ function prazoSaldo(b, saldo) {
 /* ---------- cartao pelo Stripe ----------
    O app manda so o id da reserva. Quem decide o valor e a funcao no
    servidor, que le a reserva no banco. Ver supabase/functions/pagar. */
-const PAGAR_URL = (typeof SUPA_URL !== 'undefined' ? SUPA_URL : '') + '/functions/v1/pagar';
+const PAGAR_URL = (typeof SUPA_URL !== 'undefined' ? SUPA_URL : '') + '/functions/v1/pagar-melissa';
 
 async function pagarNoServidor(corpo, segundos = 20) {
   const ctrl = new AbortController();
