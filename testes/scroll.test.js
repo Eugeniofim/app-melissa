@@ -69,8 +69,12 @@ t('route aceita manterScroll', async () => {
   assert.ok(/scrollTo\(\{ top: y, left: 0, behavior: 'instant' \}\)/.test(app), 'sem behavior instant, o smooth do CSS anima a volta');
 });
 t('a sincronia chama route com manterScroll', async () => {
+  /* 30/10/2026: a sincronia passa pelo redesenhaSuave(), que chama route({ manterScroll: true }) */
   const i = app.indexOf('cloudStart((r) =>'); assert.ok(i > 0);
-  assert.ok(/route\(\{ manterScroll: true \}\)/.test(app.slice(i)), 'a sincronia ainda chama route() seco');
+  const nuvem = app.slice(i, app.indexOf('\n});', i));
+  assert.ok(/redesenhaSuave\(\)/.test(nuvem) && !/\broute\(\)/.test(nuvem), 'a sincronia ainda chama route() seco');
+  const suave = app.slice(app.indexOf('function redesenhaSuave'), app.indexOf('\n}\n', app.indexOf('function redesenhaSuave')));
+  assert.ok(/route\(\{ manterScroll: true \}\)/.test(suave), 'o redesenho suave chama route() seco');
 });
 t('navegar normal continua indo para o topo', async () => {
   assert.ok(/else scrollTo\(0, 0\);/.test(app));

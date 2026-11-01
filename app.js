@@ -300,6 +300,7 @@ function route(opts) {
   if (window.ROTAS_EXTRA && typeof window.ROTAS_EXTRA[p[0]] === 'function') {
     window.ROTAS_EXTRA[p[0]](p.slice(1), opts);
     if (!manter) scrollTo(0, 0);
+    _assinaturaTela = assinaturaTela();
     return;
   }
   if (p[0] === 'novasenha') viewNewPass();
@@ -316,6 +317,57 @@ function route(opts) {
   else                       viewHub();
   if (manter) scrollTo({ top: y, left: 0, behavior: 'instant' });
   else scrollTo(0, 0);
+  _assinaturaTela = assinaturaTela();
+}
+
+/* A TELA NÃO SOBE MAIS SOZINHA (30/10/2026 — o mesmo conserto da Dulcineia, que nasceu na Yalla em
+   28/10). Com o site aberto em duas abas (ou o app instalado junto com o navegador), cada gravação de
+   uma delas fazia a outra chamar route(): a tela voltava ao topo e o que estava digitado sumia. A
+   nuvem, quando chegava algo, fazia o mesmo. Agora: (1) só redesenha se o que aparece na tela mudou
+   de verdade; (2) na mesma altura e sem a animação de entrada; (3) nunca por cima de quem está
+   digitando; (4) o que foi digitado e não salvo volta para o campo, se a nuvem não mudou aquele campo. */
+let _assinaturaTela = '';
+function assinaturaTela() {
+  /* tudo o que o DB guarda, menos as marcas internas da sincronia (_itensEmDia…) */
+  try { return JSON.stringify(Object.keys(DB).filter(k => k[0] !== '_').sort().map(k => [k, DB[k]])); }
+  catch (e) { return String(Math.random()); }
+}
+function _camposSujos() {
+  const l = [];
+  document.querySelectorAll('#app input[id], #app textarea[id], #app select[id]').forEach(e => {
+    if (e.type === 'checkbox' || e.type === 'radio') { if (e.checked !== e.defaultChecked) l.push({ id: e.id, chk: e.checked, ori: e.defaultChecked }); }
+    else if (e.type === 'file') return;
+    else if (e.tagName === 'SELECT') { const d = [...e.options].find(o => o.defaultSelected); const ori = d ? d.value : ''; if (e.value !== ori) l.push({ id: e.id, v: e.value, ori, sel: true }); }
+    else if (e.value !== e.defaultValue) l.push({ id: e.id, v: e.value, ori: e.defaultValue });
+  });
+  return l;
+}
+function _devolveCampos(l) {
+  for (const c of l) {
+    const e = document.getElementById(c.id); if (!e) continue;
+    if ('chk' in c) { if (e.defaultChecked === c.ori) e.checked = c.chk; continue; }
+    const ori = c.sel ? ((([...e.options].find(o => o.defaultSelected)) || {}).value || '') : e.defaultValue;
+    if (ori === c.ori) e.value = c.v;   /* a nuvem não mexeu neste campo: o que foi digitado fica */
+  }
+}
+function redesenhaSuave(forcar) {
+  if (!forcar && assinaturaTela() === _assinaturaTela) return false;          /* nada mudou: a tela fica quieta */
+  if (isBusyEditing()) { pendingSync = true; return false; }
+  const y = scrollY, sujos = _camposSujos(), raiz = document.documentElement, alto = app.offsetHeight;
+  /* a rolagem do site é suave (html{scroll-behavior:smooth}): o scrollTo(0, 0) do route() e a volta
+     viravam uma animação de subir e descer. E, trocando o conteúdo, a página encolhia até as fotos
+     carregarem e o navegador puxava para cima. Durante a troca: rolagem seca e altura segura. */
+  raiz.style.scrollBehavior = 'auto';
+  app.style.minHeight = alto + 'px';
+  document.body.classList.add('sem-anima');
+  route({ manterScroll: true });
+  _devolveCampos(sujos);
+  scrollTo(0, y);
+  requestAnimationFrame(() => {
+    scrollTo(0, y);
+    setTimeout(() => { document.body.classList.remove('sem-anima'); app.style.minHeight = ''; raiz.style.scrollBehavior = ''; }, 450);
+  });
+  return true;
 }
 
 /* barra de idioma do cliente */
@@ -1049,7 +1101,7 @@ function onCloudRejected() {
 
 function admShell(tab, inner) {
   /* a sincronia por linha (nuvem-itens.js) liga na primeira tela do painel, com a dona logada */
-  if (typeof itLigar === 'function') itLigar(() => { if (isBusyEditing()) pendingSync = true; else route(); });
+  if (typeof itLigar === 'function') itLigar(() => redesenhaSuave());
   app.innerHTML = `
   <div class="adm">
     <aside class="rail">
@@ -2823,7 +2875,7 @@ addEventListener('hashchange', () => {
    Nao bloqueia o arranque: a tela abre e o valor em real entra quando a
    cotacao chegar. So redesenha se a pessoa nao estiver no meio de algo. */
 if (typeof fxAtualiza === 'function') {
-  fxAtualiza().then((c) => { if (c && !isBusyEditing()) route({ manterScroll: true }); });
+  fxAtualiza().then((c) => { if (c && !isBusyEditing()) redesenhaSuave(true); });
 }
 
 /* ---------- nuvem ---------- */
@@ -2833,8 +2885,6 @@ cloudStart((r) => {
     const b = r.fresh[r.fresh.length - 1];
     toast((LANG === 'pt' ? '🎉 Nova reserva: ' : '🎉 New booking: ') + b.name + ' · ' + eur(b.total));
   }
-  /* re-render seguro: nunca por cima de trabalho em andamento — e sem
-     puxar a pagina para o topo (a pessoa continua onde estava) */
-  if (isBusyEditing()) { pendingSync = true; return; }
-  route({ manterScroll: true });
+  /* re-render seguro: só se mudou algo, na mesma altura, nunca por cima de trabalho em andamento */
+  redesenhaSuave();
 });
