@@ -48,6 +48,11 @@ function _blank() {
            /* o app sabe abrir o KIT DA VIAGEM (#/kt/…): e o sinal para quem monta
               link de kit fora dele (kit-melissa.js; o robo de e-mail usa o mesmo formato) */
            kitVersao: 1,
+           /* o endereco do app dela (o site publico e o ADM moram no mesmo lugar).
+              O robo de e-mail (funcao avisos) usa isto como BASE dos links do
+              e-mail de confirmacao (kit/voucher). Sem ele, a base cairia num
+              endereco generico errado e o link do kit chegaria quebrado. */
+           siteUrl: 'https://app.melissahallais.com/',
            /* cartao pelo Stripe. Desligado ate a gente provar a cobranca
               de ponta a ponta com dinheiro de verdade. */
            stripeAtivo: false,
@@ -493,9 +498,11 @@ const Bookings = {
 
   /* Reserva fechada fora do app (WhatsApp, Instagram, na rua). A Melissa
      informa o que combinou e quanto ja recebeu — nada e inventado aqui. */
-  /* Nao existe mais "avisar cliente" a mao: a confirmacao sai sozinha, pelo
-     robo, quando a reserva tem metade paga (ver garantida). O robo grava
-     clienteConfirmado na reserva quando o e-mail sai; o painel so mostra. */
+  /* Nao existe mais "avisar cliente" a mao: a confirmacao sai sozinha quando a
+     reserva fica garantida (metade paga). O app grava a marca clienteConfirmado
+     (ver marcaConfirmado, chamado no payBalance) e o gatilho no banco manda o
+     e-mail; o painel so mostra. Reserva fechada a mao (origem manual) fica de
+     fora: essa a Melissa ja combinou por fora. */
   criarManual({ tourId, date, time, name, whats, email, pax, criancas, total, recebido, metodo }) {
     const b = {
       id: uid(), code: bookCode(), tourId, date, time,
@@ -593,6 +600,20 @@ const Bookings = {
   confirmaSePago(b) {
     if (b && b.status === 'pending' && Bookings.paid(b) > 0) { b.status = 'confirmed'; b.confirmadaEm = new Date().toISOString(); }
   },
+  /* A confirmacao ao cliente (o "robo"). Quando a reserva fica GARANTIDA
+     (metade paga), o app grava a marca clienteConfirmado; o gatilho no banco
+     (aviso_mudou, sala melissa) ve a marca aparecer e manda UMA confirmacao ao
+     cliente, com o kit. Regra da Melissa: uma mensagem, e so quando pagou.
+     So reserva de verdade (origem != manual — a fechada a mao ela ja combinou
+     por fora), com e-mail, nao cancelada, e so se "avisar clientes" estiver
+     ligado. Grava UMA vez: se ja tem a marca, nao mexe (nao reenvia). */
+  marcaConfirmado(b) {
+    if (!b || b.clienteConfirmado) return;
+    if (b.origin === 'manual' || b.status === 'cancelled') return;
+    if (!b.email || !DB.settings.avisarClientes) return;
+    if (!Bookings.garantida(b)) return;
+    b.clienteConfirmado = new Date().toISOString();
+  },
   /* "Recebi o sinal": num pedido, grava so a metade (ou tudo, se a
      politica for pagar de uma vez) e confirma. Numa reserva ja confirmada
      com saldo, grava o que falta — comportamento de sempre. */
@@ -602,6 +623,7 @@ const Bookings = {
     const valor = (b.status === 'pending' && Bookings.paid(b) === 0) ? Math.min(due, Bookings.sinal(b)) : due;
     b.payments.push({ amount: valor, date: isoToday(), method: method || 'card', kind: valor >= due ? (Bookings.paid(b) === 0 ? 'full' : 'balance') : 'deposit' });
     Bookings.confirmaSePago(b);
+    Bookings.marcaConfirmado(b);   /* virou garantida? marca p/ o gatilho mandar a confirmacao */
     localStorage.setItem(DB_KEY, JSON.stringify(DB));
     if (typeof cloudUpdateBooking === 'function') cloudUpdateBooking(b);
   },
