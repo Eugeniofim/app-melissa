@@ -765,34 +765,12 @@ async function viewPago(codigo) {
   }
 }
 
-/* Link da cobranca do saldo (#/pagar/<id da reserva>), que chega no e-mail
-   30 dias antes do passeio. So abre o Stripe: o valor e decidido no servidor,
-   pela reserva no banco — nunca pelo link. */
-async function viewPagarSaldo(id) {
-  app.innerHTML = `<div class="wrap narrow"><div class="paybox">
-    <h2 class="okh" id="pgTit">${t('pgAbrindo')}</h2>
-    <p class="hint center" id="pgMsg">${t('pgEspere')}</p>
-    <a class="mini" href="#/tours">${t('backTours')}</a></div></div>`;
-  let r = null;
-  try { r = await pagarNoServidor({ reservaId: decodeURIComponent(id) }, 25); }
-  catch (e) { r = null; }
-  if (r && r.url) { location.replace(r.url); return; }
-  const msg = $('#pgMsg'), tit = $('#pgTit');
-  if (!msg || !tit) return;
-  tit.textContent = t('pgDuvidaTit');
-  msg.innerHTML = `${t('pgSaldoErro')} <a class="mini" target="_blank" rel="noopener" href="${waLink(t('waHello'))}">WhatsApp</a>`;
-}
-
-function comoPagar(b, x) {
+/* O bloco de Pix para um valor em euro: QR + copia-e-cola com o valor em real
+   DENTRO do codigo (fx.js). Mesmo bloco no checkout (sinal) e na cobranca do
+   saldo, para as duas telas ficarem iguais. Devolve '' quando nao ha chave Pix.
+   `txid` identifica o pagamento (o codigo da reserva, quando houver). */
+function blocoPixEuro(agora, txid) {
   const st = DB.settings || {};
-  const agora = b.policy === 'split' ? Math.round(b.total / 2) : b.total;
-  const saldo = b.total - agora;
-  const linha = (rot, valor, dono) => `
-    <div class="payline">
-      <small>${rot}</small>
-      <div class="crow"><input readonly value="${esc(valor)}"><button class="mini" data-cp="${esc(valor)}">${t('copyBtn')}</button></div>
-      ${dono ? `<small class="who">${t('inNameOf')} ${esc(dono)}</small>` : ''}
-    </div>`;
   /* O codigo Pix leva o valor em real DENTRO dele. Sem isso o banco pergunta
      quanto e e o cliente nao sabe — foi o que travou a primeira venda de
      verdade dela em 07/09/2026. Sem cotacao, o codigo sai sem valor e a tela
@@ -800,10 +778,10 @@ function comoPagar(b, x) {
   const brlValor = (typeof pixValorEmReais === 'function') ? pixValorEmReais(agora) : null;
   const codigoPix = (typeof pixDisponivel === 'function' && pixDisponivel())
     ? pixCopiaECola({ chave: st.pixKey, nome: pixNome(), cidade: pixCidade(),
-                      valor: brlValor || undefined, txid: b.code })
+                      valor: brlValor || undefined, txid })
     : null;
-
-  const blocoPix = codigoPix ? `
+  if (!codigoPix) return '';
+  return `
     <div class="pixbox">
       <b class="pixtit">${t('pixTit')}</b>
       <p class="pixvalor">${brlValor
@@ -819,7 +797,74 @@ function comoPagar(b, x) {
       ${brlValor ? `<p class="why">${t('pixComo')}</p>` : ''}
       <textarea class="pixcod" id="pixCod" readonly rows="3">${esc(codigoPix)}</textarea>
       <button class="cta sm" data-cp="${esc(codigoPix)}">${t('pixCopiar')}</button>
+    </div>`;
+}
+
+/* Link da cobranca do saldo (#/pagar/<id da reserva>), que chega no e-mail
+   30 dias antes do passeio. O servidor le a reserva no banco e diz quanto
+   falta (o valor nunca vem do navegador). Antes isto abria direto o Stripe —
+   so cartao. Agora o cliente escolhe: Pix (o valor ja vai dentro do codigo)
+   ou cartao. */
+async function viewPagarSaldo(id) {
+  app.innerHTML = `<div class="wrap narrow"><div class="paybox">
+    <h2 class="okh" id="pgTit">${t('pgAbrindo')}</h2>
+    <p class="hint center" id="pgMsg">${t('pgEspere')}</p>
+    <a class="mini" href="#/tours">${t('backTours')}</a></div></div>`;
+  /* O cliente veio do e-mail, sem login: garante os ajustes (chave Pix, cidade)
+     e a cotacao antes de montar o Pix. Sem isso o Pix sai vazio na primeira
+     carga e so apareceria o cartao. Best-effort: se falhar, degrada para
+     cartao, que nao depende destes dados. */
+  try { if (typeof nuvemJaCarregada !== 'undefined' && !nuvemJaCarregada && typeof cloudPull === 'function') await cloudPull(); } catch (e) {}
+  try { if (typeof fxAtualiza === 'function') await fxAtualiza(); } catch (e) {}
+
+  let r = null;
+  try { r = await pagarNoServidor({ reservaId: decodeURIComponent(id) }, 25); }
+  catch (e) { r = null; }
+
+  /* sem valor para cobrar (reserva paga, cancelada ou erro) → fala com ela */
+  if (!r || r.erro || !(+r.valor > 0)) {
+    const msg = $('#pgMsg'), tit = $('#pgTit');
+    if (tit) tit.textContent = t('pgDuvidaTit');
+    if (msg) msg.innerHTML = `${t('pgSaldoErro')} <a class="mini" target="_blank" rel="noopener" href="${waLink(t('waHello'))}">WhatsApp</a>`;
+    return;
+  }
+
+  const agora = +r.valor;                        /* saldo em euro, do servidor */
+  const blocoPix = blocoPixEuro(agora, decodeURIComponent(id));
+  const blocoCartao = r.url ? `
+    <div class="cardbox">
+      <a class="cta sm" href="${esc(r.url)}">${t('cardPagar', { v: eur(agora) })}</a>
+      <small class="why">${t('cardComo')}</small>
     </div>` : '';
+
+  app.innerHTML = `<div class="wrap narrow"><div class="paybox">
+    <h3>${t('pgSaldoTit')}</h3>
+    <p class="paynow"><small>${t('pgSaldoNow')}</small><b>${eur(agora)}</b></p>
+    ${blocoCartao}${blocoPix}
+    ${blocoPix ? `<p class="why">${t('payProof')}</p>` : ''}
+    <a class="mini" href="#/tours">${t('backTours')}</a>
+  </div></div>`;
+
+  /* o handler de copiar e local da tela do checkout; aqui refazemos para o Pix */
+  $$('[data-cp]').forEach(btn => btn.onclick = async () => {
+    try { await navigator.clipboard.writeText(btn.dataset.cp); toast(t('copiedOk')); }
+    catch (e) { const ta = $('#pixCod'); if (ta) { ta.focus(); ta.select(); } }
+  });
+}
+
+function comoPagar(b, x) {
+  const st = DB.settings || {};
+  const agora = b.policy === 'split' ? Math.round(b.total / 2) : b.total;
+  const saldo = b.total - agora;
+  const linha = (rot, valor, dono) => `
+    <div class="payline">
+      <small>${rot}</small>
+      <div class="crow"><input readonly value="${esc(valor)}"><button class="mini" data-cp="${esc(valor)}">${t('copyBtn')}</button></div>
+      ${dono ? `<small class="who">${t('inNameOf')} ${esc(dono)}</small>` : ''}
+    </div>`;
+  /* Pix: QR + copia-e-cola com o valor em real dentro do codigo. Mesmo bloco
+     da cobranca do saldo (ver blocoPixEuro). */
+  const blocoPix = blocoPixEuro(agora, b.code);
 
   /* Cartao. O botao so chama o servidor com o ID da reserva — o valor e
      calculado la, nunca aqui: se o navegador dissesse quanto pagar, bastava
@@ -831,7 +876,7 @@ function comoPagar(b, x) {
     </div>` : '';
 
   const meios = blocoCartao + blocoPix
-              + (st.pixKey && !codigoPix ? linha(t('pixLbl'), st.pixKey, st.pixName) : '')
+              + (st.pixKey && !blocoPix ? linha(t('pixLbl'), st.pixKey, st.pixName) : '')
               + (st.iban ? linha(t('ibanLbl'), st.iban, st.ibanName) : '');
   return `
   <div class="paybox">

@@ -418,6 +418,8 @@ const STR = {
   /* link da cobranca do saldo (#/pagar/<id>), que chega no e-mail */
   pgAbrindo:    { pt: 'Abrindo o pagamento seguro…', en: 'Opening secure payment…' },
   pgSaldoErro:  { pt: 'Não consegui abrir o pagamento agora. Tente de novo em instantes ou fale comigo no', en: 'Could not open the payment right now. Try again shortly or message me on' },
+  pgSaldoTit:   { pt: 'Pagar o saldo da sua reserva', en: 'Pay your booking balance' },
+  pgSaldoNow:   { pt: 'Falta pagar', en: 'Remaining to pay' },
   dateFull:     { pt: 'lotado', en: 'full' },
   /* ---- cobranca por Pix na tela do cliente ---- */
   pixTit:      { pt: 'Pagar por Pix', en: 'Pay with Pix' },
