@@ -403,6 +403,7 @@ const STR = {
   cardPagar: { pt: 'Pagar {v} com cartão', en: 'Pay {v} by card' },
   cardComo:  { pt: 'Você vai para a página segura do Stripe. O cartão não passa por aqui.',
                en: 'You are taken to Stripe\'s secure page. The card never touches this site.' },
+  cardTit:   { pt: 'Pagar no cartão', en: 'Pay by card' },
   cardIndo:  { pt: 'Abrindo o pagamento…', en: 'Opening payment…' },
   cardErro:  { pt: 'Não consegui abrir o pagamento. Tente o Pix ou fale comigo.',
                en: 'Could not open the payment. Try Pix or get in touch.' },
