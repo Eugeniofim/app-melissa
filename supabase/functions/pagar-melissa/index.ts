@@ -115,14 +115,14 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origem) });
   if (req.method !== 'POST') return json({ erro: 'metodo' }, 405, origem);
 
-  if (!STRIPE) return json({ erro: 'falta o segredo STRIPE_SECRET_KEY_MELISSA' }, 500, origem);
-
   let corpo: any = {};
   try { corpo = await req.json(); } catch { /* corpo vazio */ }
 
   try {
     /* ---------- conferir um pagamento e gravar ---------- */
     if (corpo.verificar) {
+      /* conferir uma sessão exige o Stripe; sem a chave, não há o que conferir */
+      if (!STRIPE) return json({ pago: false, erro: 'sem stripe' }, 200, origem);
       const s = await stripe('checkout/sessions/' + encodeURIComponent(corpo.verificar), undefined, 'GET');
       if (s.payment_status !== 'paid') return json({ pago: false }, 200, origem);
 
@@ -173,6 +173,12 @@ Deno.serve(async (req) => {
     const centavos = centavosDevidos(b);
     /* O Stripe recusa valores minúsculos, e cobrar zero não faz sentido. */
     if (centavos < 100) return json({ erro: 'nada a cobrar' }, 400, origem);
+
+    /* Sem a chave do Stripe (o cartão ainda não está configurado — falta o SIRET
+       da conta francesa dela), ainda assim devolvemos o VALOR do saldo para a
+       tela mostrar o PIX (que não passa pelo Stripe). Só não aparece o botão de
+       cartão. Quando a chave entrar, o botão volta sozinho. */
+    if (!STRIPE) return json({ valor: centavos / 100 }, 200, origem);
 
     /* O nome do passeio vem do banco, não do navegador: é o que o cliente
        vai ler na fatura do cartão dele. */
