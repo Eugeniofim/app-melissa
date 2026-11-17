@@ -833,8 +833,8 @@ async function viewPagarSaldo(id) {
   const blocoPix = blocoPixEuro(agora, decodeURIComponent(id));
   const blocoCartao = r.url ? `
     <div class="cardbox">
-      <b class="pixtit">${t('cardTit')}</b>
-      <p class="pixvalor">${eur(agora)}</p>
+      <b class="cardtit">💳 ${t('cardTit')}</b>
+      <p class="cardval">${eur(agora)}</p>
       <a class="cta" href="${esc(r.url)}">${t('cardPagar', { v: eur(agora) })}</a>
       <small class="why">${t('cardComo')}</small>
     </div>` : '';
@@ -873,8 +873,8 @@ function comoPagar(b, x) {
      mexer no console para fazer o passeio por um euro. */
   const blocoCartao = st.stripeAtivo ? `
     <div class="cardbox">
-      <b class="pixtit">${t('cardTit')}</b>
-      <p class="pixvalor">${eur(agora)}</p>
+      <b class="cardtit">💳 ${t('cardTit')}</b>
+      <p class="cardval">${eur(agora)}</p>
       <button class="cta" id="btCartao">${t('cardPagar', { v: eur(agora) })}</button>
       <small class="why">${t('cardComo')}</small>
     </div>` : '';
