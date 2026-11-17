@@ -1765,8 +1765,13 @@ function admBookings() {
       const conf = (b.clienteConfirmado || confAuto) ? `<span class="mini done">✉ ${t('confClienteFeito')}</span>` : '';
       const first = b.name.split(' ')[0];
       const tourName = x ? (x.name[LANG] || x.name.pt) : '';
+      /* Link de pagamento do saldo: abre a tela #/pagar com Pix e cartão, sem
+         login. É o que faltava na mensagem de cobrança — ela mandava o pedido
+         sem o link, e o cliente não tinha como pagar. */
+      const payLink = (typeof appHome === 'function' ? appHome() : location.origin + location.pathname)
+                      + '#/pagar/' + encodeURIComponent(b.id);
       const waText = (b.status !== 'cancelled' && due > 0)
-        ? t('waCharge', { name: first, v: eur(due), tour: tourName, when: fmtDate(b.date) })
+        ? t('waCharge', { name: first, v: eur(due), tour: tourName, when: fmtDate(b.date), link: payLink })
         : t('waHi', { name: first, tour: tourName, when: fmtDate(b.date) + ' ' + b.time });
       const wa = waLink(waText, (b.whats || '').replace(/\D/g, ''));
       /* cobrar é mandar mensagem. É este o botão que a palavra "cobrar" promete. */

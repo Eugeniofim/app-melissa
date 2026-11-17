@@ -787,7 +787,7 @@ const STR = {
   waSendBooking: { pt: 'WhatsApp Melissa', en: 'WhatsApp Melissa' },
   waBookingMsg: { pt: 'Oi Melissa! Acabei de reservar: {tour}, {when}. Meu código é {code}. Sou {name} 🙂', en: 'Hi Melissa! I just booked: {tour}, {when}. My code is {code}. I’m {name} 🙂' },
   waHi:      { pt: 'Oi {name}! Aqui é a Melissa 🙂 Sobre o seu passeio {tour}, {when} — está tudo certo por aí?', en: 'Hi {name}! Melissa here 🙂 About your {tour} on {when} — all good on your end?' },
-  waCharge:  { pt: 'Oi {name}! Aqui é a Melissa 🙂 Faltam {v} do passeio {tour} ({when}). Consegue acertar por aqui? Obrigada!', en: 'Hi {name}! Melissa here 🙂 {v} is still due for {tour} ({when}). Could you settle it here? Thank you!' },
+  waCharge:  { pt: 'Oi {name}! Aqui é a Melissa 🙂 Faltam {v} do passeio {tour} ({when}). É só pagar por aqui, no Pix ou no cartão: {link} — depois me manda o comprovante. Obrigada!', en: 'Hi {name}! Melissa here 🙂 {v} is still due for {tour} ({when}). You can pay here, by Pix or card: {link} — then send me the receipt. Thank you!' },
   yourContact:{ pt: 'Seu contato', en: 'Your contact' },
   yourWhats: { pt: 'Seu WhatsApp (com DDI)', en: 'Your WhatsApp (with country code)' },
   yourInsta: { pt: 'Seu Instagram (sem @)', en: 'Your Instagram (without @)' },
